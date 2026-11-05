@@ -6,7 +6,7 @@ now. Unlike `elections/2026`, this is a results-history map rather than a live
 feed — none of it moves.
 
     index.html        the interactive map; fetches the three files below
-    data/senate2028.json      state rows and county rows, packed for the page
+    data/senate2028.json      state rows, county rows and the chamber block, for the page
     data/counties.topojson    county geometry, the 34 states only
     data/states.topojson      all 50 state outlines, for context
     data/class3_states.csv    34 rows, one per state
@@ -22,6 +22,17 @@ Built by `build/senate-2028/`:
 
 `incumbents.py` holds the roster and the per-state caveats by hand, and
 `ratings.py` holds the rating rule; the other three are mechanical.
+
+## The rest of the chamber
+
+`senate2028.json` carries a `chamber` block so the page can say what is not in
+play: Class I's 33 seats from magic-wall's `holdovers_2026.json` (checked
+against the senate.gov roster), Class III's 34 counted from this data set, and
+Class II left without numbers. Class II was elected on November 3, 2026 and is
+still being counted, and a split taken from a two-day-old count is the sort of
+figure that is wrong by morning. The build asserts that the holdovers file's 32
+Class III seats plus Florida and Ohio equal our 34, which catches a roster
+drifting from this data.
 
 ## Ratings
 

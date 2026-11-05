@@ -305,6 +305,51 @@ def requantize(arc, src, dst):
     return out
 
 
+def chamber(state_rows):
+    """The other two thirds of the Senate, so the map says what is and is not in
+    play. Class I comes from magic-wall's holdovers file, which is checked
+    against the senate.gov roster; Class III is counted from our own rows, and
+    the two agree on the 32 Class III seats the holdovers file also lists.
+
+    Class II was elected on November 3, 2026 and is still being counted, so it
+    carries no numbers here. Guessing at the split from a two-day-old count is
+    exactly the sort of figure that is wrong by morning."""
+    path = os.path.join(MW, "data", "reference", "holdovers_2026.json")
+    sen = json.load(open(path))["senate"]
+    c1 = [h for h in sen["holdovers"] if h.get("class") == 1]
+    c3_file = [h for h in sen["holdovers"] if h.get("class") == 3]
+
+    def tally(rows, key):
+        out = {"dem": 0, "rep": 0, "ind": 0}
+        for h in rows:
+            out[h.get(key, "ind")] = out.get(h.get(key, "ind"), 0) + 1
+        return out
+
+    party, caucus = tally(c1, "party"), tally(c1, "caucus")
+    d3 = sum(1 for r in state_rows if r["incumbent_party"] == "D")
+
+    # The holdovers file lists 32 Class III seats: Florida and Ohio were on the
+    # 2026 ballot as specials, so they are ours to count, not its.
+    check = tally(c3_file, "party")
+    assert check["dem"] + check["rep"] + 2 == len(state_rows), "Class III mismatch"
+
+    return {
+        "seats": sen["seats"], "majority": sen["majority"],
+        "classes": [
+            {"name": "Class I", "seats": len(c1), "elected": 2024, "next": 2030,
+             "dem": party["dem"], "rep": party["rep"], "ind": party["ind"],
+             "caucus_dem": caucus["dem"], "caucus_rep": caucus["rep"]},
+            {"name": "Class II", "seats": 33, "elected": 2026, "next": 2032,
+             "pending": "Elected November 3, 2026. Still being counted."},
+            {"name": "Class III", "seats": len(state_rows), "elected": 2022, "next": 2028,
+             "dem": d3, "rep": len(state_rows) - d3, "ind": 0,
+             "caucus_dem": d3, "caucus_rep": len(state_rows) - d3, "this_map": True},
+        ],
+        "source": "magic-wall data/reference/holdovers_2026.json, checked against "
+                  "the senate.gov roster; Class III counted from this data set.",
+    }
+
+
 def main():
     topo = load_fips()
     pres, cname = load_pres()
@@ -426,6 +471,7 @@ def main():
         "generated": "2026-11-04",
         "fields": ["name", "state", "p24_dem", "p24_rep", "p24_total",
                    "s22_dem", "s22_rep", "s22_total"],
+        "chamber": chamber(state_rows),
         "rating_order": ratings.ORDER,
         "rating_short": ratings.SHORT,
         "states": state_rows,
