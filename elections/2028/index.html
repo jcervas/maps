@@ -38,7 +38,7 @@ summary: "Every seat up in 2028, with the race that filled it, the presidential 
   --tip-bg: #ffffff;
   --hR0: #f6dcd6; --hR1: #dd7466; --hD0: #dfe7f7; --hD1: #6a8fd5;
   /* Cook's seven, in the palette redrawn-districts-2026 uses, so a rating
-     reads the same colour across the site. */
+     reads the same color across the site. */
   --cook-solidD:  #1366b3; --cook-likelyD: #5784c5; --cook-leanD: #a9c6e8;
   --cook-toss:    #e0a63a;
   --cook-leanR:   #eb9c92; --cook-likelyR: #d35f4f; --cook-solidR: #be2c25;
@@ -238,7 +238,7 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
       <h1>2028 <span>Senate</span> Ratings</h1>
       <small>Class III · 34 seats · November 7, 2028 · <a class="backlink" href="/maps/">← Maps</a></small>
     </div>
-    <div class="ctl"><label>Colour the map by</label>
+    <div class="ctl"><label>Color the map by</label>
       <div class="seg" id="views" role="group" aria-label="Map view"></div>
     </div>
     <div class="spacer"></div>
@@ -304,11 +304,15 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
     return s + Math.abs(v).toFixed(dp === undefined ? 1 : dp);
   }
   function heat(v, max) {
-    // The house ramp: pale to strong on each side, nothing in between.
+    // Deep blue at D+max, through light blue at the middle, to light red and
+    // then deep red. Built from the Cook ends already on the page, so the
+    // margin views and the rating view are the same two hues: the --hD0/--hR0
+    // pair invert by theme, which put the darkest tone at "even" in dark mode
+    // and read as a ramp running the wrong way.
     if (v === null || v === undefined || Number.isNaN(v)) return token("--nodata");
     var t = Math.min(1, Math.abs(v) / max);
-    return v < 0 ? d3.interpolateLab(token("--hD0"), token("--hD1"))(t)
-                 : d3.interpolateLab(token("--hR0"), token("--hR1"))(t);
+    return v < 0 ? d3.interpolateLab(token("--cook-leanD"), token("--cook-solidD"))(t)
+                 : d3.interpolateLab(token("--cook-leanR"), token("--cook-solidR"))(t);
   }
   function ratingColor(r) { return token(RATING_TOKEN[r] || "--nodata"); }
 
@@ -390,7 +394,7 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
       .attr("fill", function (f) {
         return fillFor(S.sel ? f.properties.id : f.properties.state);
       })
-      // A filtered-out seat keeps its rating colour and only recedes. Painting
+      // A filtered-out seat keeps its rating color and only recedes. Painting
       // it flat would make it look like a state that is not up at all.
       .attr("opacity", function (f) {
         if (S.sel || !S.filter) return 1;
@@ -410,7 +414,7 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   function renderStatus() {
     var v = VIEWS.filter(function (x) { return x.id === S.view; })[0];
     if (!S.sel) {
-      el.status.innerHTML = "<b>34 seats</b> coloured by " + v.label.toLowerCase() +
+      el.status.innerHTML = "<b>34 seats</b> colored by " + v.label.toLowerCase() +
         ". Click a state for its " + "counties, or pick one at the top right.";
     } else {
       var s = byAbbr[S.sel];
@@ -428,7 +432,7 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
     var view = (S.sel && S.view === "rating") ? "pres24" : S.view;
     var max = SCALE_MAX[view];
     // Ten stops either side of the midpoint, none of them exactly zero: a grey
-    // middle would read as the no-data colour rather than as an even seat.
+    // middle would read as the no-data color rather than as an even seat.
     var steps = d3.range(10).map(function (i) { return -max + (i + 0.5) * (max / 5); });
     el.legend.innerHTML =
       '<div class="ramp">' + steps.map(function (v) {

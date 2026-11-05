@@ -26,19 +26,33 @@ GH = os.path.dirname(REPO)
 
 
 def find_magic_wall():
-    """Where the magic-wall repo is checked out. It used to be assumed to sit
-    beside this one; it does not always, so look in the usual places and let
-    MAGIC_WALL override."""
-    tried = [p for p in (os.environ.get("MAGIC_WALL"),
-                         os.path.join(GH, "magic-wall"),
-                         os.path.expanduser("~/magic-wall-live"),
-                         os.path.expanduser("~/magic-wall")) if p]
+    """Where the magic-wall repo is checked out: $MAGIC_WALL, else beside this
+    repo. Nothing else. There is a second copy at ~/magic-wall-live which was
+    once in this chain; it is a snapshot frozen on November 3, 2026, the poller
+    does not write to it, and falling through to it produced a build from stale
+    sources that looked entirely normal. Failing is better."""
+    def looks_right(path):
+        return os.path.isfile(os.path.join(path, "geo", "counties.topojson"))
+
+    # An explicit MAGIC_WALL that does not hold a magic-wall checkout is an
+    # error, not something to quietly route around: being specific about the
+    # wrong path should not land you on a different one.
+    env = os.environ.get("MAGIC_WALL")
+    if env:
+        if looks_right(env):
+            return env
+        raise SystemExit("MAGIC_WALL is set to %r, which has no "
+                         "geo/counties.topojson in it." % env)
+    tried = [os.path.join(GH, "magic-wall")]
     for path in tried:
-        if os.path.isfile(os.path.join(path, "geo", "counties.topojson")):
+        if looks_right(path):
             return path
-    raise SystemExit("Cannot find the magic-wall repo. Looked in:\n  "
-                     + "\n  ".join(tried)
-                     + "\nSet MAGIC_WALL to its path and run again.")
+    raise SystemExit(
+        "Cannot find the magic-wall repo. Looked in:\n  " + "\n  ".join(tried)
+        + "\nSet MAGIC_WALL to its path and run again.\n"
+        "Note ~/magic-wall-live is NOT a safe fallback: it is a dormant snapshot, "
+        "not the checkout the poller writes to, and a build from it silently uses "
+        "stale geometry and returns.")
 
 
 MW = find_magic_wall()
@@ -274,7 +288,7 @@ def requantize(arc, src, dst):
                       int(round((lat - dst["translate"][1]) / dst["scale"][1]))))
     # Alaska's house districts carry a far more detailed coastline than this map
     # ever draws, so drop points inside a cell about 200 m across. Arcs are shared
-    # between neighbouring districts and each is thinned the same way, so the
+    # between neighboring districts and each is thinned the same way, so the
     # boundaries still meet.
     tol = 30
     thinned = [quant[0]]

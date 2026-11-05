@@ -31,7 +31,7 @@ Each seat gets a lean in margin points, positive Republican:
 
 then four points toward the party that holds it, with bands at 5, 10 and 20.
 The categories are Cook's — Solid / Likely / Lean / Toss Up — so the map reads
-against the others on this site, and the colours are the same palette
+against the others on this site, and the colors are the same palette
 `redrawn-districts-2026` uses. **The thresholds are mine**, so a rating here is
 not Cook's rating of that seat.
 
