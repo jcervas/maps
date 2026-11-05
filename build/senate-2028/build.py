@@ -59,7 +59,8 @@ MW = find_magic_wall()
 OUT = os.path.join(REPO, "elections", "2028", "data")
 
 sys.path.insert(0, HERE)
-from incumbents import CLASS_III, SEAT_NOTES, NAME_FIXES  # noqa: E402
+from incumbents import (CLASS_III, SEAT_NOTES, NAME_FIXES,  # noqa: E402
+                        CHAMBER_CONTROL)
 import ratings  # noqa: E402
 
 ABBRS = [r[1] for r in CLASS_III]
@@ -335,6 +336,7 @@ def chamber(state_rows):
 
     return {
         "seats": sen["seats"], "majority": sen["majority"],
+        "control": CHAMBER_CONTROL,
         "classes": [
             {"name": "Class I", "seats": len(c1), "elected": 2024, "next": 2030,
              "dem": party["dem"], "rep": party["rep"], "ind": party["ind"],

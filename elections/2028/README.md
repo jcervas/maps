@@ -26,7 +26,16 @@ Built by `build/senate-2028/`:
 ## The rest of the chamber
 
 `senate2028.json` carries a `chamber` block so the page can say what is not in
-play: Class I's 33 seats from magic-wall's `holdovers_2026.json` (checked
+play. It separates two facts that have different certainty: **who holds the
+chamber**, which is settled — Democrats passed 51 on November 4, 2026, and the
+two races still being counted cannot take them back under it — and **the size
+of the majority**, which is not, so no split is recorded for Class II. Alaska
+runs on ranked choice and may take weeks; Mississippi was about a thousand
+votes apart. `CHAMBER_CONTROL` in `incumbents.py` holds the first, checked
+against NBC, CBS and CNN on November 5, 2026, and wants updating when the count
+finishes.
+
+The rest of the block: Class I's 33 seats from magic-wall's `holdovers_2026.json` (checked
 against the senate.gov roster), Class III's 34 counted from this data set, and
 Class II left without numbers. Class II was elected on November 3, 2026 and is
 still being counted, and a split taken from a two-day-old count is the sort of

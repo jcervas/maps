@@ -218,6 +218,9 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 .dhead .counties { color: var(--muted); margin-top: 4px; font-size: 12px; }
 .xbtn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 12px; white-space: nowrap; }
 .xbtn:hover { background: var(--land); }
+.control { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 9px; }
+.control b { font-family: var(--f-display); font-stretch: 85%; font-size: 14px; font-weight: 750; display: block; }
+.control small { color: var(--muted); font-size: 11px; }
 .ratingbox { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
 .ratingbox i { width: 14px; height: 14px; border-radius: 4px; flex: none; }
 .ratingbox b { font-family: var(--f-display); font-stretch: 85%; font-size: 15px; font-weight: 750; }
@@ -600,7 +603,17 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   function chamberRows() {
     var ch = DATA.chamber;
     if (!ch) return "";
-    return '<table class="dtable"><thead><tr><th>Class</th><th>Seats</th>' +
+    var ctl = ch.control;
+    // Control and the size of the majority are separate facts with separate
+    // certainty. The first is settled; the second is not, so only the first
+    // gets stated.
+    var head = ctl ? '<div class="control"><span class="chip c-' +
+      (ctl.party === "Democratic" ? "D" : "R") + '">' +
+      (ctl.party === "Democratic" ? "D" : "R") + "</span><div><b>" +
+      ctl.party + " Senate</b><small>called " + ctl.called + " · " +
+      ctl.uncalled.length + " race" + (ctl.uncalled.length === 1 ? "" : "s") +
+      " still counting</small></div></div>" : "";
+    return head + '<table class="dtable"><thead><tr><th>Class</th><th>Seats</th>' +
       "<th>Next</th><th>Split</th></tr></thead><tbody>" +
       ch.classes.map(function (c) {
         var split = c.pending
@@ -612,8 +625,9 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
           '</td><td class="n">' + c.seats + '</td><td class="n">' + c.next +
           '</td><td class="n">' + split + "</td></tr>";
       }).join("") + "</tbody></table>" +
-      '<p class="note">' + ch.classes[1].pending + " Caucus totals, so Maine's and " +
-      "Vermont's independents count with the Democrats.</p>";
+      '<p class="note">' + (ctl ? ctl.note + " " : "") +
+      "Caucus totals, so Maine's and Vermont's independents count with the " +
+      "Democrats.</p>";
   }
 
   // -------------------------------------------------------------- right panel

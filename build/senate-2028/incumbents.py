@@ -110,3 +110,22 @@ NAME_FIXES = {
     "perkins-jo-rae": "Jo Rae Perkins",
     "schatz-brian": "Brian Schatz",
 }
+
+# Who holds the chamber the 2028 class will sit in. Control and the split are
+# two different facts with two different levels of certainty, and only one of
+# them is settled: 51 is the majority, the Democrats are past it, and the two
+# races still being counted cannot take them back under it. The size of the
+# majority is NOT settled and is deliberately absent — Mississippi was about a
+# thousand votes apart and Alaska, on ranked choice, may take weeks.
+#
+# Checked November 5, 2026 against NBC News, CBS News and CNN, which agree on
+# control and on the two outstanding races.
+CHAMBER_CONTROL = {
+    "party": "Democratic",
+    "called": "November 4, 2026",
+    "uncalled": ["Alaska", "Mississippi"],
+    "note": ("Democrats passed 51 on November 4. The two races still being "
+             "counted, Alaska and Mississippi, decide the size of the majority "
+             "but not who holds it."),
+    "source": "NBC News, CBS News and CNN, checked November 5, 2026",
+}
