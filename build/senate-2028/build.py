@@ -23,7 +23,25 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))        # build/senate-2028
 REPO = os.path.dirname(os.path.dirname(HERE))            # the maps repo
 GH = os.path.dirname(REPO)
-MW = os.path.join(GH, "magic-wall")
+
+
+def find_magic_wall():
+    """Where the magic-wall repo is checked out. It used to be assumed to sit
+    beside this one; it does not always, so look in the usual places and let
+    MAGIC_WALL override."""
+    tried = [p for p in (os.environ.get("MAGIC_WALL"),
+                         os.path.join(GH, "magic-wall"),
+                         os.path.expanduser("~/magic-wall-live"),
+                         os.path.expanduser("~/magic-wall")) if p]
+    for path in tried:
+        if os.path.isfile(os.path.join(path, "geo", "counties.topojson")):
+            return path
+    raise SystemExit("Cannot find the magic-wall repo. Looked in:\n  "
+                     + "\n  ".join(tried)
+                     + "\nSet MAGIC_WALL to its path and run again.")
+
+
+MW = find_magic_wall()
 OUT = os.path.join(REPO, "elections", "2028", "data")
 
 sys.path.insert(0, HERE)
