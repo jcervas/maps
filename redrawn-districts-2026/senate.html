@@ -51,6 +51,7 @@
        the country: the squares are the subject, and the district lines are
        cue enough that these are the states in scope. */
     --chicfill: #e8e8e4;
+    --uncalled: #c9c9c6;
     /* The Post sets its charts in ITC Franklin Std, which is licensed and
        served from their own CDN, so it cannot be loaded here. Libre Franklin
        is a Franklin Gothic revival and the closest face on Google Fonts, which
@@ -74,6 +75,7 @@
       --cook-toss:    #c08f2c;
       --cook-leanR:   #d4877c; --cook-likelyR: #b93b32; --cook-solidR: #9e2a24;
       --chicfill: #262626;
+      --uncalled: #4f4f4f;
       color-scheme: dark;
     }
   }
@@ -90,6 +92,7 @@
     --cook-toss:    #c08f2c;
     --cook-leanR:   #d4877c; --cook-likelyR: #b93b32; --cook-solidR: #9e2a24;
     --chicfill: #262626;
+    --uncalled: #4f4f4f;
     color-scheme: dark;
   }
 
@@ -183,6 +186,14 @@
   .swatches { display: grid; grid-template-columns: repeat(2, auto); gap: 0.15rem 0.6rem; }
   .sw { display: flex; align-items: center; gap: 0.33rem; white-space: nowrap; }
   .sw i { width: 11px; height: 11px; border-radius: 4px; flex: none; }
+  button.sw {
+    font: inherit; color: inherit; background: none; border: 0; padding: 1px 3px;
+    margin: 0 -3px; border-radius: 3px; cursor: pointer; text-align: left;
+  }
+  button.sw:hover { background: var(--rule); }
+  button.sw.on { font-weight: 700; box-shadow: inset 0 0 0 1px var(--ink); }
+  button.sw.off { opacity: 0.45; }
+  button.sw.clear { grid-column: 1 / -1; justify-self: start; color: var(--ink-soft); text-decoration: underline; }
   /* The flip legend's chips carry a hatch angle, and an 11px chip is barely
      two stripes wide -- too few to read a direction from. */
   .legend.flip .sw i {
@@ -212,10 +223,26 @@
     min-width: 15px; box-sizing: border-box;
   }
   .cb-seg + .cb-seg { border-left: 1px solid var(--paper); }
+  /* The bands are buttons, so the legend is also the filter. Reset to the
+     block they used to be -- a band that looks like a button would read as a
+     control bar, and this is still the tally. */
+  button.cb-seg, button.cb-lab {
+    appearance: none; -webkit-appearance: none;
+    border: 0; padding: 0; margin: 0; font: inherit; cursor: pointer;
+  }
+  button.cb-seg + button.cb-seg { border-left: 1px solid var(--paper); }
+  /* The pick, marked on the band itself: an inset rule, which survives on a
+     9px block where a glow or a shadow would not. */
+  .cb-seg.on { box-shadow: inset 0 0 0 2px var(--ink); }
+  .cb-lab.on { color: var(--ink); font-weight: 700; }
+  .cb-seg:focus-visible, .cb-lab:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: -2px;
+  }
   .cb-foot { display: flex; margin-top: 3px; }
-  .cb-foot span {
+  .cb-foot span, .cb-foot button {
     font-size: 9.75px; color: var(--ink-soft); text-align: center;
     overflow: hidden; white-space: nowrap; min-width: 0;
+    background: none;
   }
   .cb-sum {
     margin-top: 4px; font-size: 11px; color: var(--ink-soft);
@@ -337,6 +364,13 @@
   .readout .r { color: var(--rep); font-weight: 600; }
   .readout .muted { color: var(--ink-soft); font-weight: 400; }
   .readout .idle { color: var(--ink-soft); font-style: italic; }
+  /* The result panel, as on the House view: verdict across the top, a
+     candidate per row, the seat's party going in underneath. */
+  .readout dl.res { grid-template-columns: 1fr auto auto; gap: 3px 8px; }
+  .readout dl.res dt { color: var(--ink); }
+  .readout dl.res .wide { grid-column: 1 / -1; text-align: left; }
+  .readout dl.res .verdict { font-weight: 600; margin-bottom: 3px; }
+  .readout dl.res .base { margin-top: 4px; padding-top: 5px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-soft); }
   .flag {
     margin-top: 0.4rem; padding-top: 0.35rem; border-top: 1px solid var(--rule);
     font-size: 0.76rem; color: var(--ink-soft);
@@ -438,7 +472,7 @@
     .legend { font-size: 11.5px; max-width: none; }
     .legend.cook { max-width: none; }
     .swatches { grid-template-columns: repeat(2, 1fr); }
-    .cb-foot span { font-size: 9px; }
+    .cb-foot span, .cb-foot button { font-size: 9px; }
 
     /* The source line and the legend's provenance note are the two blocks
        of small print competing with the map for a short screen. */
@@ -498,7 +532,8 @@
     <div class="seg" role="group" aria-labelledby="l-color">
       <button id="cElection" aria-pressed="false">2024 result</button>
       <button id="cCook" aria-pressed="false">Cook rating</button>
-      <button id="cFlip" aria-pressed="true">Changing hands</button>
+      <button id="cFlip" aria-pressed="false">Changing hands</button>
+      <button id="cResult" aria-pressed="true">2026 result</button>
     </div>
   </div>
 
@@ -553,7 +588,7 @@
 <script>
 (function () {
   "use strict";
-  var BUILD = "2026-10-30d";
+  var BUILD = "2026-11-04a";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   document.getElementById("build").textContent = "build " + BUILD;
 
@@ -591,6 +626,21 @@
     { cat: "tossR",   label: "R seat, toss-up", held: "R", side: "R", fate: "toss" }
   ];
   var FLIP_TONE = { D: "Solid Democrat", R: "Solid Republican" };
+  // The 2026 result tab, the House view's bands and marks: flips striped in
+  // the winner's color with the loser's ring; uncalled races grey, ringed
+  // dashed in the leader's color; seats that stayed put in the lighter tone.
+  var RESULT_BANDS = [
+    { cat: "loseR", label: "R seat \u2192 D", held: "R", side: "D", fate: "lose" },
+    { cat: "loseD", label: "D seat \u2192 R", held: "D", side: "R", fate: "lose" },
+    { cat: "leadRD", label: "R seat, D ahead", held: "R", lead: "D", fate: "uncalled" },
+    { cat: "leadDR", label: "D seat, R ahead", held: "D", lead: "R", fate: "uncalled" },
+    { cat: "leadDD", label: "D seat, D ahead", held: "D", lead: "D", fate: "uncalled" },
+    { cat: "leadRR", label: "R seat, R ahead", held: "R", lead: "R", fate: "uncalled" },
+    { cat: "pending", label: "Not yet called", fate: "uncalled" },
+    { cat: "runoff", label: "Runoff", fate: "uncalled" }
+  ];
+  var HOLD_TONE = { D: "Lean Democrat", R: "Lean Republican" };
+  var QUIET_ALPHA = 0.25;
   var PARTY_WORD = { D: "Democratic", R: "Republican" };
   var PARTY_LETTER = { D: "D", R: "R", I: "I" };
   var FLIP_PHRASE = {
@@ -601,7 +651,10 @@
     hold: "Still rated for the party that holds it"
   };
 
-  var state = { color: "flip", squares: true, data: null, states: [], nation: null, hover: null };
+  var state = { color: "result", squares: true, data: null, states: [], nation: null,
+                hover: null, rating: null, results: null };
+  // The page's own hint, kept so the filter can borrow the line and give it back.
+  var HINT = document.getElementById("hint").textContent;
 
   var cv = document.getElementById("map"), ctx = cv.getContext("2d");
   var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
@@ -635,7 +688,8 @@
         "Solid Republican":  g("--cook-solidR")  || "#be2c25"
       },
       ink: g("--ink") || "#111111", paper: g("--paper") || "#ffffff",
-      basefill: g("--basefill") || "#f2f2f0", baseedge: g("--baseedge") || "#b9b9b4"
+      basefill: g("--basefill") || "#f2f2f0", baseedge: g("--baseedge") || "#b9b9b4",
+      uncalled: g("--uncalled") || "#c9c9c6"
     };
     return THEME;
   }
@@ -667,15 +721,90 @@
   function catOf(r) { return r.fate === "hold" ? "hold" : r.fate + r.held; }
   function inPlay(r) { return !!r && (r.fate === "change" || r.fate === "toss"); }
   function competitive(r) { return !!r && r.rating.indexOf("Solid") !== 0; }
-  function ratingMode() { return state.color === "cook" || state.color === "flip"; }
+  function ratingMode() { return state.color === "cook" || state.color === "flip" || state.color === "result"; }
+
+  /* ------------------------------------------------------------ results */
+
+  function leaderOf(r) {
+    var c = (r && r.cands) || [], best = null;
+    for (var i = 0; i < c.length; i++) {
+      if (c[i].votes == null) continue;
+      if (!best || c[i].votes > best.votes) best = c[i];
+      else if (c[i].votes === best.votes) best = { party: null, votes: c[i].votes };
+    }
+    return best && best.votes > 0 ? best.party : null;
+  }
+
+  // "Flipped" against the party holding the seat going in, as the build
+  // records it from senate.json.
+  function resultInfo(f) {
+    var res = state.results && state.results.byState[stOf(f)];
+    if (!res) return null;
+    var held = res.held === "D" || res.held === "R" ? res.held : null;
+    var i = { result: res, held: held, side: res.winner || null };
+    if (!res.called) {
+      i.fate = "uncalled";
+      i.lead = res.runoff ? null : leaderOf(res);
+      i.cat = res.runoff ? "runoff" : held && i.lead ? "lead" + held + i.lead : "pending";
+    } else if (!held) {
+      i.cat = i.fate = "unknown";
+    } else if (res.winner !== held) {
+      i.fate = "lose"; i.cat = "lose" + held;
+    } else {
+      i.cat = i.fate = "hold";
+    }
+    return i;
+  }
+  function resultFill(i) {
+    var T = theme();
+    if (!i || i.fate === "uncalled") return T.uncalled;
+    var tone = i.fate === "lose" ? FLIP_TONE : HOLD_TONE;
+    return (i.side && T.cook[tone[i.side]]) || T.cook["Toss Up"];
+  }
+  // Uncalled, and the party already holding the seat is ahead: nothing is
+  // expected to change, so it is drawn faint.
+  function resultQuiet(f, i) {
+    if (state.color !== "result" || state.hover === f) return false;
+    i = i || resultInfo(f);
+    return !!i && i.fate === "uncalled" && !!i.lead && i.lead === i.held && state.rating !== i.cat;
+  }
   function chicletMode() { return ratingMode() && state.squares; }
 
   // The House view's rules, unchanged: the Cook tab squares the races worth
   // watching -- everything short of Solid -- and Changing hands squares the
   // seats rated for the other party or called a toss-up.
   function wantsSquare(f) {
+    if (state.color === "result") {
+      var i = resultInfo(f);
+      return !!i && (i.fate === "lose" || i.fate === "uncalled");
+    }
     var r = raceOf(f);
     return state.color === "flip" ? inPlay(r) : competitive(r);
+  }
+
+  // One tier of the Cook scale, picked out of the legend, exactly as the
+  // House view does it: nothing leaves the map, the seats outside the tier
+  // grey, and the tally underneath still counts all 35.
+  function ratingFiltered(f) {
+    if (!state.rating) return false;
+    if (state.color === "result") {
+      var i = resultInfo(f);
+      return !i || i.cat !== state.rating;
+    }
+    if (state.color !== "cook") return false;
+    var r = raceOf(f);
+    return !r || r.rating !== state.rating;
+  }
+
+  // The House view's grey, so a state greyed here and a district greyed there
+  // are the same tone: lightness kept, color taken away.
+  function desaturate(col) {
+    var c = d3.color(col);
+    if (!c) return theme().nodata;
+    var r = c.rgb();
+    var l = 0.299 * r.r + 0.587 * r.g + 0.114 * r.b;
+    var m = Math.round(l * 0.35 + 190 * 0.65);
+    return "rgb(" + m + "," + m + "," + m + ")";
   }
 
   function fillFor(f) {
@@ -685,8 +814,16 @@
       return electionColor(info ? info.pres24_dem_share_two_party : null);
     }
     if (chicletMode()) return T.chicfill;            // the square carries it
-    if (state.color === "cook") return r ? T.cook[r.rating] : T.chicfill;
-    return inPlay(r) ? T.cook[r.rating] : T.chicfill;
+    if (state.color === "result") {
+      var ri = resultInfo(f);
+      if (!ri || ri.fate === "unknown") return T.chicfill;
+      var rc = resultFill(ri);
+      if (ratingFiltered(f)) return desaturate(rc);
+      return ri.fate === "lose" ? hatchFor(rc) : rc;
+    }
+    var col = state.color === "cook" ? (r ? T.cook[r.rating] : T.chicfill)
+            : (inPlay(r) ? T.cook[r.rating] : T.chicfill);
+    return ratingFiltered(f) ? desaturate(col) : col;
   }
 
   // Diagonal stripes in the rating's color, cut by the page tone -- the
@@ -810,8 +947,10 @@
     // the one hole in the states; the nation underneath fills it.
     if (state.nation) { ctx.beginPath(); path(state.nation); ctx.fillStyle = T.basefill; ctx.fill(); }
     state.states.forEach(function (f) {
+      ctx.globalAlpha = !chicletMode() && resultQuiet(f) && !ratingFiltered(f) ? QUIET_ALPHA : 1;
       ctx.beginPath(); path(f); ctx.fillStyle = fillFor(f); ctx.fill();
     });
+    ctx.globalAlpha = 1;
     ctx.beginPath();
     state.states.forEach(function (f) { path(f); });
     ctx.strokeStyle = T.paper; ctx.lineWidth = 1; ctx.lineJoin = "round"; ctx.stroke();
@@ -828,18 +967,47 @@
       ctx.beginPath(); ctx.moveTo(s.ax, s.ay); ctx.lineTo(s.x, s.y); ctx.stroke();
     });
     squares.forEach(function (s) {
+      if (state.color === "result") { drawResultSquare(s, T, h); return; }
       var r = raceOf(s.f), base = T.cook[r.rating], flip = state.color === "flip";
+      var dim = ratingFiltered(s.f);
       roundRect(ctx, s.x - h, s.y - h, CHIC, CHIC, CHIC_R);
       // Hatched where the seat changes hands -- only on that tab, as in the
       // House view, where hatching is the one mark that means "flips".
-      ctx.fillStyle = (flip && r.fate === "change") ? hatchFor(base) : base;
+      // Outside the picked rating the square greys instead: where a tier sits
+      // is part of reading it, so it stays on the map rather than leaving.
+      ctx.fillStyle = dim ? desaturate(base)
+                    : (flip && r.fate === "change") ? hatchFor(base) : base;
       ctx.fill();
       var on = state.hover === s.f;
       // On Changing hands the ring is the party holding the seat now.
-      ctx.strokeStyle = on ? T.ink : flip ? T.cook[FLIP_TONE[r.held]] : T.baseedge;
-      ctx.lineWidth = (on || flip) ? 2.6 : 1;
+      ctx.strokeStyle = on ? T.ink : (flip && !dim) ? T.cook[FLIP_TONE[r.held]] : T.baseedge;
+      ctx.lineWidth = (on || (flip && !dim)) ? 2.6 : 1;
       ctx.stroke();
     });
+  }
+
+  // The House view's result square: the hovered one keeps its own colors
+  // whatever the filter says, so it always matches the panel beside it.
+  function drawResultSquare(s, T, h) {
+    var i = resultInfo(s.f), on = state.hover === s.f;
+    var dim = ratingFiltered(s.f) && !on;
+    var base = resultFill(i);
+    ctx.globalAlpha = resultQuiet(s.f, i) ? QUIET_ALPHA : 1;
+    roundRect(ctx, s.x - h, s.y - h, CHIC, CHIC, CHIC_R);
+    ctx.fillStyle = dim ? T.chicfill : i.fate === "lose" ? hatchFor(base) : base;
+    ctx.fill();
+    if (dim) {
+      ctx.strokeStyle = T.baseedge; ctx.lineWidth = 1;
+    } else if (i.fate === "uncalled") {
+      ctx.strokeStyle = (i.lead && T.cook[FLIP_TONE[i.lead]]) || T.baseedge;
+      ctx.lineWidth = 2.6; ctx.setLineDash([3, 2]);
+    } else {
+      ctx.strokeStyle = (i.held && T.cook[FLIP_TONE[i.held]]) || T.baseedge;
+      ctx.lineWidth = 2.6;
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
   }
 
   function resize() {
@@ -877,6 +1045,9 @@
 
   function idleText() {
     if (state.color === "election") return "States are shaded by the 2024 presidential vote.";
+    if (state.color === "result") return state.squares
+      ? "Squares mark seats won by the other party, and races not yet called."
+      : "Shaded by the party that won; flipped seats are striped.";
     if (state.color === "cook") return (state.squares ? "Squares mark " : "Shading marks ") +
       "Cook's rating for each of the 35 seats up this year" + (state.squares ? ", short of Solid." : ".");
     return (state.squares ? "Squares mark " : "Shading marks ") +
@@ -900,6 +1071,9 @@
     box.removeAttribute("data-idle"); idle.hidden = true;
     var st = stOf(f), r = raceOf(f), info = infoOf(f), T = theme(), rows = [];
     rt.textContent = STATE_NAME[st] || st;
+    list.className = "";
+    var ri = state.color === "result" ? resultInfo(f) : null;
+    if (ri) { resultReadout(ri, r, info, list, flag); return; }
     var sens = (info && info.senators) || [];
     var upSen = sens.filter(function (s) { return s.up; })[0];
     var others = sens.filter(function (s) { return !s.up; });
@@ -925,6 +1099,47 @@
     } else {
       flag.hidden = true;
     }
+  }
+
+  function resultReadout(ri, race, info, list, flag) {
+    var res = ri.result;
+    var cls = function (pt) { return pt === "D" ? "d" : pt === "R" ? "r" : ""; };
+    var party = { D: "Democrats", R: "Republicans" };
+    var who = function (pt) { return '<span class="' + cls(pt) + '">' + (party[pt] || pt) + "</span>"; };
+    var verdict;
+    if (res.runoff) {
+      verdict = '<span class="muted">Headed to a runoff</span>';
+    } else if (!res.called) {
+      verdict = '<span class="muted">Not yet called' +
+        (res.pct_in != null ? " \u00b7 " + Math.round(res.pct_in) + "% counted" : "") + "</span>";
+      if (ri.lead) {
+        verdict += "<br>" + who(ri.lead) + " ahead" +
+          (ri.held && ri.lead !== ri.held ? ", <strong>would flip</strong>" : ri.held ? ", would hold" : "");
+      }
+    } else if (ri.fate === "lose") {
+      verdict = "Flipped to " + who(res.winner);
+    } else if (ri.fate === "hold") {
+      verdict = who(res.winner) + " held";
+    } else {
+      verdict = "Won by " + who(res.winner);
+    }
+    var html = '<dd class="wide verdict">' + verdict + "</dd>";
+    (res.cands || []).slice(0, 2).forEach(function (c) {
+      var nm = c.name + ' <span class="' + cls(c.party) + '">(' + (c.party || "?") + ")</span>";
+      if (c.winner && res.called) nm = "<strong>" + nm + "</strong> \u2713";
+      html += "<dt>" + nm + "</dt><dd>" + (c.pct != null ? c.pct.toFixed(1) + "%" : "\u2014") +
+        '</dd><dd class="muted">' + (c.votes != null ? d3.format(",")(c.votes) : "") + "</dd>";
+    });
+    var aside = [];
+    if (race && race.incumbent) aside.push(race.incumbent + (race.open ? ", not running" : ""));
+    if (race && race.seat === "Special") aside.push("special election");
+    html += '<dd class="wide base">Seat before: ' + (ri.held
+      ? '<span class="' + cls(ri.held) + '">' + PARTY_WORD[ri.held] + "</span>" +
+        (aside.length ? " (" + aside.join("; ") + ")" : "")
+      : "not recorded") + "</dd>";
+    list.className = "res";
+    list.innerHTML = html;
+    flag.hidden = true;
   }
 
   function placeReadout(ev) {
@@ -991,8 +1206,19 @@
     var T = theme(), c = counts();
     var cs = COOK_BANDS.map(function (b) { return c[b.cat]; });
     var rated = cs.reduce(function (a, b) { return a + b; }, 0);
+    // Every band is a button: clicking one holds the map to that rating.
+    // Title and aria carry the name and the count the block has no room for.
+    function seg(b, n, bg, fg, text) {
+      var on = state.rating === b.cat;
+      var what = b.label + ", " + n + " seat" + (n === 1 ? "" : "s");
+      return '<button type="button" class="cb-seg' + (on ? " on" : "") +
+        '" data-cat="' + b.cat + '" aria-pressed="' + on +
+        '" title="' + what + '" aria-label="' + what +
+        '" style="flex:' + n + ";background:" + bg +
+        (fg ? ";color:" + fg : "") + '">' + (text || "") + "</button>";
+    }
     document.getElementById("cbAll").innerHTML = COOK_BANDS.map(function (b, i) {
-      return cs[i] ? '<div class="cb-seg" style="flex:' + cs[i] + ";background:" + T.cook[b.cat] + '"></div>' : "";
+      return cs[i] ? seg(b, cs[i], T.cook[b.cat], "", "") : "";
     }).join("");
     var mid = COOK_BANDS.filter(function (b) { return b.cat.indexOf("Solid") !== 0; });
     var midC = mid.map(function (b) { return c[b.cat]; });
@@ -1000,11 +1226,14 @@
     document.getElementById("cbTrack").innerHTML = mid.map(function (b, i) {
       if (!midC[i]) return "";
       var pale = b.label !== "Likely D" && b.label !== "Likely R";
-      return '<div class="cb-seg" style="flex:' + midC[i] + ";background:" + T.cook[b.cat] +
-        ";color:" + (pale ? "#222222" : "#ffffff") + '">' + midC[i] + "</div>";
+      return seg(b, midC[i], T.cook[b.cat], pale ? "#222222" : "#ffffff", String(midC[i]));
     }).join("");
     document.getElementById("cbFoot").innerHTML = mid.map(function (b, i) {
-      return midC[i] ? '<span style="flex:' + midC[i] + '">' + b.label + "</span>" : "";
+      if (!midC[i]) return "";
+      var on = state.rating === b.cat;
+      return '<button type="button" class="cb-lab' + (on ? " on" : "") +
+        '" data-cat="' + b.cat + '" aria-pressed="' + on +
+        '" style="flex:' + midC[i] + '">' + b.label + "</button>";
     }).join("");
     var dem = cs[0] + cs[1] + cs[2], rep = cs[4] + cs[5] + cs[6], toss = cs[3];
     document.getElementById("cbSum").innerHTML = '<span class="cb-seats"><span class="d">' + dem +
@@ -1031,7 +1260,7 @@
     var T = theme();
     box.hidden = false;
     box.classList.toggle("cook", ratingMode());
-    box.classList.toggle("flip", state.color === "flip");
+    box.classList.toggle("flip", state.color === "flip" || state.color === "result");
     ramp.hidden = ends.hidden = bar.hidden = sw.hidden = note.hidden = cnote.hidden = true;
     document.getElementById("markWrap").hidden = !ratingMode();
 
@@ -1046,6 +1275,7 @@
     }
     cnote.hidden = false;
     cnote.textContent = chamberSentence();
+    if (state.color === "result") { resultLegend(title, sw, note, cnote); return; }
     if (state.color === "cook") {
       title.textContent = "Cook Political Report rating, as of " + asOf();
       bar.hidden = false;
@@ -1081,6 +1311,69 @@
         : ". Shading is the Cook rating; who holds each seat and which are changing hands are on the squares.");
   }
 
+  function swatchButton(cat, inner) {
+    var on = state.rating === cat;
+    return '<button type="button" class="sw' + (on ? " on" : "") +
+      (state.rating && !on ? " off" : "") + '" data-cat="' + cat +
+      '" aria-pressed="' + on + '">' + inner + "</button>";
+  }
+  function clearFilterButton() {
+    return state.rating ? '<button type="button" class="sw clear" data-cat="' +
+      state.rating + '">\u00d7 Show all</button>' : "";
+  }
+
+  function resultLegend(title, sw, note, cnote) {
+    var T = theme();
+    title.textContent = "2026 result";
+    note.hidden = false; note.className = "tier";
+    if (!state.results) { note.className = "tier warn"; note.textContent = "Results are not loaded."; return; }
+    var t = { uncalled: 0 };
+    state.states.forEach(function (f) {
+      var i = resultInfo(f);
+      if (!i) return;
+      t[i.cat] = (t[i.cat] || 0) + 1;
+      if (i.fate === "uncalled") t.uncalled++;
+    });
+    sw.hidden = false;
+    sw.innerHTML = RESULT_BANDS.filter(function (b) {
+      return (b.cat !== "pending" && b.cat !== "runoff") || t[b.cat];
+    }).map(function (b) {
+      var col = b.fate === "uncalled" ? T.uncalled : T.cook[FLIP_TONE[b.side]];
+      var chip = b.fate === "lose"
+        ? "repeating-linear-gradient(135deg," + col + " 0 3px," + T.paper + " 3px 4.6px)" : col;
+      var ring = b.fate === "uncalled" ? (b.lead ? T.cook[FLIP_TONE[b.lead]] : T.ink) : T.cook[FLIP_TONE[b.held]];
+      var extra = b.fate === "uncalled" ? ";border-style:dashed" : "";
+      if (b.lead && b.lead === b.held && state.rating !== b.cat) extra += ";opacity:" + QUIET_ALPHA;
+      return swatchButton(b.cat, '<i style="background:' + chip + ";border-color:" + ring + extra +
+        '"></i>' + b.label + ' <span class="muted">' + (t[b.cat] || 0) + "</span>");
+    }).join("") + clearFilterButton();
+    var flipped = (t.loseD || 0) + (t.loseR || 0);
+    var lead = flipped === 0 ? "No seat has flipped" : flipped === 1 ? "One seat flipped" : flipped + " seats flipped";
+    var dLead = (t.leadRD || 0) + (t.leadDD || 0), rLead = (t.leadDR || 0) + (t.leadRR || 0);
+    var could = (t.leadRD || 0) + (t.leadDR || 0);
+    var open = t.uncalled === 0 ? "Every race is called."
+      : (t.uncalled === 1 ? "One race is" : t.uncalled + " races are") + " not yet called: Democrats lead " +
+        dLead + ", Republicans " + rLead + "." +
+        (could ? " " + (could === 1 ? "One lead" : could + " leads") + " would flip the seat." : "");
+    note.textContent = lead + ". " + open + (state.squares && t.uncalled ? " The dashed outline is the party ahead." : "") +
+      " " + (state.results.source || "Unofficial results") + ", " + resultAsOf() + ". Flipped means a different party from the one holding the seat going in.";
+    // The chamber, counted: the seats not up plus the races called.
+    var ch = state.data.chamber, tot = state.results.totals;
+    var d = ch.not_up.D + tot.D, r = ch.not_up.R + tot.R;
+    var need = ch.needed_for_control;
+    var ctl = d >= need.D ? "Democrats have won control." : r >= need.R ? "Republicans have won control." : "Control is not yet decided.";
+    cnote.textContent = "Counting the " + (ch.not_up.D + ch.not_up.R) + " seats not up this year, Democrats have " + d +
+      " and Republicans " + r + (tot.uncalled ? ", with " + tot.uncalled + " race" + (tot.uncalled === 1 ? "" : "s") + " not yet called" : "") +
+      ". Control takes " + need.D + " for Democrats, " + need.R + " for Republicans with the Vice President's tiebreak. " + ctl;
+  }
+
+  function resultAsOf() {
+    var d = state.results && state.results.as_of && new Date(state.results.as_of);
+    if (!d || isNaN(d)) return "";
+    return d.toLocaleString("en-US", { timeZone: "America/New_York", month: "long", day: "numeric",
+      hour: "numeric", minute: "2-digit" }).replace(", ", " at ") + " ET";
+  }
+
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July",
                 "August", "September", "October", "November", "December"];
   function asOf() {
@@ -1091,11 +1384,36 @@
   /* ------------------------------------------------------------ controls */
 
   function setPressed(ids, on) { ids.forEach(function (id) { document.getElementById(id).setAttribute("aria-pressed", String(id === on)); }); }
-  var COLOR_IDS = { election: "cElection", cook: "cCook", flip: "cFlip" };
+  var COLOR_IDS = { election: "cElection", cook: "cCook", flip: "cFlip", result: "cResult" };
   function setColor(c) {
-    state.color = c; setPressed(["cElection", "cCook", "cFlip"], COLOR_IDS[c]);
+    state.color = c;
+    // The bands belong to the Cook scale, so a pick does not survive the tab.
+    state.rating = null; updateHint();
+    setPressed(["cElection", "cCook", "cFlip", "cResult"], COLOR_IDS[c]);
     updateLegend(); if (!state.hover) showReadout(null); render();
   }
+
+  function updateHint() {
+    var h = document.getElementById("hint");
+    if (!state.rating) { h.textContent = HINT; return; }
+    var bands = state.color === "result" ? RESULT_BANDS : COOK_BANDS;
+    var band = bands.filter(function (b) { return b.cat === state.rating; })[0];
+    h.textContent = (band ? band.label : state.rating) + " only \u2014 the rest of "
+      + "the field is still there, in grey. Click " + (state.color === "result" ? "it" : "the band")
+      + " again to bring it back.";
+  }
+
+  function setRating(cat) {
+    state.rating = state.rating === cat ? null : cat;
+    updateHint(); updateLegend(); if (!state.hover) showReadout(null); render();
+  }
+
+  // Delegated, because drawCookBar rewrites these buttons whenever the
+  // tally is redrawn; clicking the band a second time lets go.
+  document.getElementById("cookBar").addEventListener("click", function (e) {
+    var el = e.target.closest("[data-cat]");
+    if (el) setRating(el.getAttribute("data-cat"));
+  });
   function setSquares(on) {
     state.squares = on; setPressed(["kSquares", "kFill"], on ? "kSquares" : "kFill");
     updateLegend(); if (!state.hover) showReadout(null); render();
@@ -1103,6 +1421,11 @@
   document.getElementById("cElection").addEventListener("click", function () { setColor("election"); });
   document.getElementById("cCook").addEventListener("click", function () { setColor("cook"); });
   document.getElementById("cFlip").addEventListener("click", function () { setColor("flip"); });
+  document.getElementById("cResult").addEventListener("click", function () { setColor("result"); });
+  document.getElementById("swatches").addEventListener("click", function (e) {
+    var el = e.target.closest("[data-cat]");
+    if (el) setRating(el.getAttribute("data-cat"));
+  });
   document.getElementById("kSquares").addEventListener("click", function () { setSquares(true); });
   document.getElementById("kFill").addEventListener("click", function () { setSquares(false); });
 
@@ -1122,9 +1445,14 @@
   Promise.all([
     fetch(dataUrl("senate.json")).then(function (r) { if (!r.ok) throw new Error("senate.json"); return r.json(); }),
     fetch(dataUrl("senate_states.json")).then(function (r) { if (!r.ok) throw new Error("senate_states.json"); return r.json(); }),
-    fetch(dataUrl("basemap.json")).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+    fetch(dataUrl("basemap.json")).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }),
+    // Results are refreshed between builds, so they carry their own
+    // ten-minute stamp, Pages' cache lifetime.
+    fetch(dataUrl("senate_results.json") + "&t=" + Math.floor(Date.now() / 6e5))
+      .then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
   ]).then(function (res) {
     state.data = res[0];
+    state.results = res[3];
     state.states = topojson.feature(res[1], res[1].objects.states).features;
     if (res[2]) state.nation = topojson.feature(res[2], res[2].objects.nation);
     setStatus(null);
