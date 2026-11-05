@@ -347,6 +347,44 @@ def check_class_ii():
               % len(seen))
 
 
+def check_overrides():
+    """An overridden seat reads a 2026 margin, and 2026 is still being counted
+    in places. Same deal as the Class II literal: publish the dated figure, but
+    re-derive it every build so a count that has moved cannot pass silently."""
+    reg_path = os.path.join(MW, "registry", "races_2026.json")
+    if not ratings.OVERRIDE:
+        return
+    if not os.path.isfile(reg_path):
+        print("  overrides: no 2026 registry in magic-wall, not checked")
+        return
+    raw = json.load(open(reg_path))["races"]
+    reg = {r["race_id"]: r for r in raw} if isinstance(raw, list) else raw
+    for ab, ov in sorted(ratings.OVERRIDE.items()):
+        rid = "2026-sen-" + ab.lower()
+        res = os.path.join(MW, "results", rid + ".json")
+        if rid not in reg or not os.path.isfile(res):
+            print("  overrides: %s has no 2026 result to check against" % ab)
+            continue
+        votes = json.load(open(res)).get("statewide", {}).get("votes", {}) or {}
+        cands = {c["id"]: c for c in reg[rid].get("candidates", [])}
+        total = sum(votes.values())
+        if not total:
+            continue
+        side = {"dem": 0, "rep": 0}
+        for cid, v in votes.items():
+            party = cands.get(cid, {}).get("party")
+            if party in side:
+                side[party] += v
+        now = 100.0 * (side["rep"] - side["dem"]) / total
+        drift = abs(now - ov["margin"])
+        if drift > 0.25:
+            print("  overrides: %s SAYS %+.2f, the feed now says %+.2f "
+                  "-- update ratings.OVERRIDE" % (ab, ov["margin"], now))
+        else:
+            print("  overrides: %s %+.2f, the feed agrees to %.2f points"
+                  % (ab, ov["margin"], drift))
+
+
 def chamber(state_rows):
     """All 100 seats, so the map can say what the 2028 class walks into.
 
@@ -379,6 +417,7 @@ def chamber(state_rows):
     assert check["dem"] + check["rep"] + 2 == len(state_rows), "Class III mismatch"
 
     check_class_ii()
+    check_overrides()
 
     # ---- every seat, so the map can paint a delegation rather than a class
     PARTY = {"dem": "D", "rep": "R", "ind": "I"}
@@ -536,16 +575,18 @@ def main():
     for row in state_rows:
         row["pres24_minus_sen22_margin"] = round(
             row["pres24_margin_pct"] - row["sen22_margin_pct"], 2)
-        rating, lean, adj, basis = ratings.rate(
+        rating, lean, adj, basis, overridden = ratings.rate(
             row["abbr"], row["pres24_margin_pct"], row["sen22_margin_pct"],
             row["incumbent_party"])
         row["rating"] = rating
         row["rating_lean"] = lean
         row["rating_adjusted"] = adj
         row["rating_basis"] = basis
+        row["rating_overridden"] = 1 if overridden else 0
 
     cols = ["state", "abbr", "incumbent", "incumbent_party", "rating",
-            "rating_lean", "rating_adjusted", "in_office_since", "seat_path",
+            "rating_lean", "rating_adjusted", "rating_overridden",
+            "in_office_since", "seat_path",
             "sen22_winner", "sen22_winner_party",
             "sen22_top1", "sen22_top1_votes", "sen22_top1_pct",
             "sen22_top2", "sen22_top2_votes", "sen22_top2_pct",

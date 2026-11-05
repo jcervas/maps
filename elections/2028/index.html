@@ -237,6 +237,7 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 .control small { color: var(--muted); font-size: 11px; }
 .ratingbox { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; }
 .ratingbox i { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+.ovr { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 1px 4px; vertical-align: 2px; white-space: nowrap; }
 .ratingbox b { font-family: var(--f-display); font-stretch: 85%; font-size: 15px; font-weight: 750; }
 .ratingbox small { color: var(--muted); font-size: 11px; display: block; }
 .dtable { width: 100%; border-collapse: collapse; }
@@ -728,7 +729,8 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
         ' <span class="chip c-' + s.incumbent_party + '">' + s.incumbent_party +
         "</span></div></h4>" +
         '<div class="kv">' +
-        "<span>Rating</span><b>" + s.rating + "</b>" +
+        "<span>Rating</span><b>" + s.rating +
+          (s.rating_overridden ? " *" : "") + "</b>" +
         "<span>Lean</span><b>" + signed(s.rating_lean) + "</b>" +
         "<span>After hold</span><b>" + signed(s.rating_adjusted) + "</b>" +
         "<span>2024 president</span><b>" + signed(s.pres24_margin_pct) + "</b>" +
@@ -784,7 +786,7 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
         'margin, then four points toward the party holding the seat. Bands at 5, 10 and 20 ' +
         'points. Cook\'s category names, but the thresholds are mine, so these are not Cook\'s ' +
         'ratings of the same seats — and it is arithmetic on results already in, not a ' +
-        'forecast.</p></div>';
+        'forecast.</p>' + overrideNote() + "</div>";
 
   }
 
@@ -858,6 +860,22 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
       '<p class="note">' + pr.note + "</p>";
   }
 
+  // A seat whose 2022 race is not the race that filled it reads the later one
+  // instead. Same formula, one input swapped, and the page says which seat.
+  function overrideNote() {
+    var o = DATA.states.filter(function (s) { return s.rating_overridden; });
+    if (!o.length) return "";
+    var who = o.map(function (s) { return s.state; });
+    var list = who.length < 2 ? who[0]
+             : who.slice(0, -1).join(", ") + " and " + who[who.length - 1];
+    return '<p class="note">' +
+      (who.length === 1 ? "One seat is overridden: " + list + ", where the "
+                        : who.length + " seats are overridden: " + list +
+                          ", where the ") +
+      "2026 special that filled the seat stands in for the 2022 race. Open " +
+      "the seat for the number and the reason.</p>";
+  }
+
   function chamberRows() {
     var ch = DATA.chamber;
     if (!ch) return "";
@@ -921,7 +939,9 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
           s.in_office_since + "</div>" +
         '</div><button class="xbtn" id="clearsel">All seats</button></div>' +
         '<div class="ratingbox"><i style="background:' + ratingColor(s.rating) + '"></i>' +
-        "<div><b>" + s.rating + "</b><small>lean " + signed(s.rating_lean) +
+        "<div><b>" + s.rating + (s.rating_overridden
+          ? ' <span class="ovr">overridden</span>' : "") +
+        "</b><small>lean " + signed(s.rating_lean) +
         ", " + signed(s.rating_adjusted) + " after the hold</small></div></div>" +
         '<p class="note">' + s.rating_basis + "</p>" +
       "</div>" +
