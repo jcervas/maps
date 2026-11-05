@@ -11,6 +11,20 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>2026 Senate Results by Precinct</title>
 <meta name="description" content="Precinct-level results from the eleven 2026 U.S. Senate races the New York Times has mapped.">
+<script>
+  /* This page is served with layout: null, so the site's own theme script in
+     _layouts/default.html never runs on it. Without this, arriving here from a
+     site set to dark gives you one bright white page in the middle of the
+     walk. Same key and same precedence as the layout: a stored choice wins,
+     otherwise follow the OS. Inline and first so it lands before paint. */
+  (function () {
+    try {
+      var s = localStorage.getItem('theme');
+      document.documentElement.setAttribute('data-theme',
+        s || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+    } catch (e) {}
+  })();
+</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;600;700&display=swap">
 <style>
   /* Same palette as the other map pages on this site: the Washington Post's
@@ -35,6 +49,47 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
     --nodata: #bebcba;
     --baseline: #dcdcd8;
     --baseedge: #a8a8a3;
+    /* The canvas reads these three rather than carrying literals, because they
+       are the ones that have to invert. --ramp-mid is the pale centre of the
+       diverging scale: hard-code it light and a dark theme puts the ramp's
+       brightest colour at "even", which reads as the strongest result on the
+       map being the closest one. */
+    --ramp-mid: #f4f4f2;
+    --basefill: #f2f2ef;
+    --hairline: rgba(255,255,255,0.75);
+    --stateline: #8a8a85;
+    /* The tooltip is the one surface that runs opposite the page, so it needs
+       its own pair rather than reusing --ink/--paper and inverting by accident. */
+    --tip-bg: #2a2a2a; --tip-fg: #ffffff; --tip-muted: #bdbdbd;
+    --float: rgba(255,255,255,0.93);
+  }
+
+  /* Same two-rule shape as the other map pages here: the media query for the
+     OS preference, skipped when the site's toggle has explicitly asked for
+     light, and the attribute rule for when it has asked for dark. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --tip-bg: #f0f0f0; --tip-fg: #141414; --tip-muted: #5a5a5a;
+      --float: rgba(26,26,26,0.93);
+      --paper: #141414; --panel: #1f1f1f; --ink: #e7e7e7; --ink-soft: #a0a0a0;
+      --rule: #333333; --link: #4a9de2;
+      --dem: #5784c5; --rep: #d35f4f; --ind: #c79a3f;
+      --nodata: #4a4a4a; --baseline: #333333; --baseedge: #4d4d4d;
+      --ramp-mid: #1f1f1f; --basefill: #1a1a1a;
+      --hairline: rgba(255,255,255,0.20); --stateline: #6f6f6a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --tip-bg: #f0f0f0; --tip-fg: #141414; --tip-muted: #5a5a5a;
+    --float: rgba(26,26,26,0.93);
+    --paper: #141414; --panel: #1f1f1f; --ink: #e7e7e7; --ink-soft: #a0a0a0;
+    --rule: #333333; --link: #4a9de2;
+    --dem: #5784c5; --rep: #d35f4f; --ind: #c79a3f;
+    --nodata: #4a4a4a; --baseline: #333333; --baseedge: #4d4d4d;
+    --ramp-mid: #1f1f1f; --basefill: #1a1a1a;
+    --hairline: rgba(255,255,255,0.20); --stateline: #6f6f6a;
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
@@ -70,7 +125,7 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
     display: flex; align-items: center; gap: 7px;
   }
   .st:hover { border-color: var(--baseedge); }
-  .st[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .st[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
   /* A two-tone chip carrying the state's own margin, so the rail is a result
      table as well as a set of buttons. */
   .chip { width: 22px; height: 10px; border-radius: 1px; flex: none; display: flex; overflow: hidden; }
@@ -118,21 +173,21 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
 
   .readout {
     position: absolute; pointer-events: none; z-index: 5;
-    background: var(--ink); color: #fff;
+    background: var(--tip-bg); color: var(--tip-fg);
     border-radius: 3px; padding: 7px 9px;
     font-size: 12px; line-height: 1.4; max-width: 250px;
     opacity: 0; transition: opacity .08s;
   }
   .readout.on { opacity: 1; }
   .readout b { font-weight: 700; }
-  .readout .muted { color: #bdbdbd; }
+  .readout .muted { color: var(--tip-muted); }
   .readout .num { font-variant-numeric: tabular-nums; }
 
   .zoom-buttons { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; }
   .zb {
     width: 30px; height: 30px; cursor: pointer;
-    background: rgba(255,255,255,0.93); border: 1px solid var(--rule);
-    color: #6b6b6b; font: inherit; font-size: 16px; line-height: 1; padding: 0;
+    background: var(--float); border: 1px solid var(--rule);
+    color: var(--ink-soft); font: inherit; font-size: 16px; line-height: 1; padding: 0;
   }
   .zb:first-child { border-radius: 3px 3px 0 0; border-bottom: 0; }
   .zb:last-child { border-radius: 0 0 3px 3px; }
@@ -231,15 +286,22 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
   document.getElementById("build").textContent = "build " + BUILD;
   var bust = function (u) { return u + "?b=" + BUILD; };
 
-  var css = getComputedStyle(document.documentElement);
-  var COLOR = {
-    dem: css.getPropertyValue("--dem").trim(),
-    rep: css.getPropertyValue("--rep").trim(),
-    ind: css.getPropertyValue("--ind").trim(),
-    nodata: css.getPropertyValue("--nodata").trim(),
-    edge: css.getPropertyValue("--baseedge").trim(),
-    line: css.getPropertyValue("--baseline").trim()
-  };
+  // Read, not captured: the canvas cannot inherit a custom property, so every
+  // colour it paints has to be copied out of the stylesheet, and copied again
+  // whenever the theme changes. Reading once at load is what leaves a canvas
+  // showing light-mode colours on a dark page.
+  var COLOR = {};
+  function readTheme() {
+    var css = getComputedStyle(document.documentElement);
+    var get = function (n) { return css.getPropertyValue(n).trim(); };
+    COLOR = {
+      dem: get("--dem"), rep: get("--rep"), ind: get("--ind"),
+      nodata: get("--nodata"), edge: get("--baseedge"), line: get("--baseline"),
+      rampMid: get("--ramp-mid"), basefill: get("--basefill"),
+      hairline: get("--hairline"), stateline: get("--stateline")
+    };
+  }
+  readTheme();
   var PARTY_LABEL = { dem: "Dem.", rep: "Rep.", ind: "Ind.", lib: "Lib.", grn: "Grn.", oth: "Oth." };
 
   var cv = document.getElementById("map");
@@ -290,8 +352,8 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
   // in a race where both leaders share a party it collapses to one hue, which
   // is the honest picture of a race the general election did not decide.
   function ramp(a, b) {
-    var lo = d3.interpolateLab(COLOR[a] || COLOR.nodata, "#f4f4f2");
-    var hi = d3.interpolateLab("#f4f4f2", COLOR[b] || COLOR.nodata);
+    var lo = d3.interpolateLab(COLOR[a] || COLOR.nodata, COLOR.rampMid);
+    var hi = d3.interpolateLab(COLOR.rampMid, COLOR[b] || COLOR.nodata);
     return function (t) {                       // t in [-1, 1], negative = a
       return t < 0 ? lo(1 + t) : hi(t);
     };
@@ -357,7 +419,7 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
 
     var path = view.path.context(ctx);
     ctx.beginPath(); path(view.outline);
-    ctx.fillStyle = "#f2f2ef"; ctx.fill();
+    ctx.fillStyle = COLOR.basefill; ctx.fill();
 
     Object.keys(view.byCounty).forEach(function (fips) {
       featuresFor(fips).forEach(function (f) {
@@ -371,7 +433,7 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
     // make: at the state view a 1px line between 9,000 shapes is a grey wash.
     if (k >= 3) {
       ctx.lineWidth = 0.4 / k;
-      ctx.strokeStyle = "rgba(255,255,255,0.75)";
+      ctx.strokeStyle = COLOR.hairline;
       Object.keys(view.byCounty).forEach(function (fips) {
         featuresFor(fips).forEach(function (f) { ctx.beginPath(); path(f); ctx.stroke(); });
       });
@@ -382,7 +444,7 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
     ctx.beginPath(); path(view.counties); ctx.stroke();
 
     ctx.lineWidth = 1.1 / k;
-    ctx.strokeStyle = "#8a8a85";
+    ctx.strokeStyle = COLOR.stateline;
     ctx.beginPath(); path(view.outline); ctx.stroke();
 
     ctx.restore();
@@ -565,6 +627,50 @@ summary: "Every precinct the Times has returns for in eleven Senate races — th
     loadVisible();
   });
   d3.select(cv).call(zoom);
+
+  // Every painted colour has to be fetched again and every cached fill thrown
+  // away: the party swatches in the rail and the summary are inline styles, and
+  // the canvas fills are memoised on the features.
+  function onThemeChange() {
+    readTheme();
+    Array.prototype.forEach.call(document.querySelectorAll(".st"), function (b) {
+      var s = meta && meta.states[b.dataset.st];
+      if (!s) return;
+      var sw = b.querySelectorAll(".chip i");
+      s.candidates.slice(0, sw.length).forEach(function (c, i) {
+        sw[i].style.background = COLOR[c.party] || COLOR.nodata;
+      });
+    });
+    if (!view) return;
+    view.ramp = ramp(view.poles[0], view.poles[1]);
+    view.fc.features.forEach(function (f) { f.fill = null; });
+    Object.keys(detail).forEach(function (k) {
+      detail[k].forEach(function (f) { f.fill = fillFor(f.properties); });
+    });
+    paintSummary(meta.states[state]);
+    paintLegend(meta.states[state]);
+    draw();
+  }
+
+  // The bootstrap in <head> pins data-theme at load, so the attribute, not the
+  // media query, is what the stylesheet ends up obeying. Following the OS after
+  // that means moving the attribute, exactly as the site layout does -- and
+  // only when the reader has not made a choice of their own. The observer below
+  // then does the repainting, so this handler does not call it directly.
+  var mq = window.matchMedia("(prefers-color-scheme: dark)");
+  function onSystemTheme(e) {
+    var stored = null;
+    try { stored = localStorage.getItem("theme"); } catch (err) {}
+    if (stored) return;
+    document.documentElement.setAttribute("data-theme", e.matches ? "dark" : "light");
+  }
+  if (mq.addEventListener) mq.addEventListener("change", onSystemTheme);
+  else if (mq.addListener) mq.addListener(onSystemTheme);
+  // The site's own light/dark toggle sets data-theme on <html>; this page is
+  // served with layout: null and so never sees that script, but it can still
+  // watch the attribute and follow it.
+  new MutationObserver(onThemeChange).observe(document.documentElement,
+    { attributes: true, attributeFilter: ["data-theme"] });
 
   document.getElementById("sDensity").onclick = function () { setShading("density"); };
   document.getElementById("sFlat").onclick = function () { setShading("flat"); };
