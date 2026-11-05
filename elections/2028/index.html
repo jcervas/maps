@@ -1,0 +1,798 @@
+<title>The 2028 Senate Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a fixed masthead of totals, then a map that fills the width with its
+   reading panel docked to the right, then the full 34-seat table. */
+:root {
+  --ink:        #15181d;
+  --ink-2:      #4a5260;
+  --ink-3:      #767f8d;
+  --surface:    #fcfcfb;
+  --surface-2:  #f1f1ee;
+  --rule:       #dddcd6;
+  --brass:      #8a6d1f;
+  --dem:        #1a5d9e;
+  --rep:        #b03a2e;
+  --nodata:     #c9c9c3;
+
+  --d5: #0a3c72; --d4: #1a5d9e; --d3: #4a86c0; --d2: #8ab4d8; --d1: #cadeed;
+  --r1: #f5d4ce; --r2: #e39d90; --r3: #cf6a58; --r4: #b03a2e; --r5: #7c1d16;
+
+  --font-display: "Zilla Slab", Georgia, serif;
+  --font-body: "Source Sans 3", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #eceae4; --ink-2: #a8adb8; --ink-3: #787f8b;
+    --surface: #14161a; --surface-2: #1d2026; --rule: #30343c;
+    --brass: #d8b45c;
+    --dem: #4f8fcc; --rep: #d86a58; --nodata: #3a3e46;
+    --d5: #9fc6e6; --d4: #5f9bd0; --d3: #3f78ad; --d2: #2b5581; --d1: #1b3a58;
+    --r1: #4a1f1a; --r2: #6e2b22; --r3: #9c4033; --r4: #c6604e; --r5: #e89584;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #eceae4; --ink-2: #a8adb8; --ink-3: #787f8b;
+  --surface: #14161a; --surface-2: #1d2026; --rule: #30343c;
+  --brass: #d8b45c;
+  --dem: #4f8fcc; --rep: #d86a58; --nodata: #3a3e46;
+  --d5: #9fc6e6; --d4: #5f9bd0; --d3: #3f78ad; --d2: #2b5581; --d1: #1b3a58;
+  --r1: #4a1f1a; --r2: #6e2b22; --r3: #9c4033; --r4: #c6604e; --r5: #e89584;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+  font: 400 16px/1.55 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+h1 {
+  font: 700 clamp(28px, 5vw, 44px)/1.05 var(--font-display);
+  margin: 0;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.standfirst { color: var(--ink-2); max-width: 62ch; margin: 10px 0 0; }
+.eyebrow {
+  font: 600 11px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brass);
+  margin: 0 0 10px;
+}
+
+/* masthead count */
+.tally { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 0; }
+.tally div {
+  flex: 1 1 150px; min-width: 0;
+  border-top: 3px solid var(--rule);
+  padding-top: 8px;
+}
+.tally .n {
+  font: 600 30px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  display: block;
+}
+.tally .k { font-size: 12.5px; color: var(--ink-2); }
+.tally .dem-top { border-top-color: var(--dem); }
+.tally .rep-top { border-top-color: var(--rep); }
+
+/* controls */
+.modes { display: flex; flex-wrap: wrap; gap: 6px; margin: 26px 0 14px; }
+.modes button {
+  font: 600 12.5px/1 var(--font-body);
+  letter-spacing: 0.01em;
+  padding: 9px 13px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.modes button:hover { color: var(--ink); border-color: var(--ink-3); }
+.modes button[aria-pressed="true"] {
+  background: var(--ink); color: var(--surface); border-color: var(--ink);
+}
+button:focus-visible, a:focus-visible, th button:focus-visible {
+  outline: 2px solid var(--brass); outline-offset: 2px;
+}
+
+/* map + panel */
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+@media (max-width: 820px) { .stage { grid-template-columns: 1fr; } }
+.mapbox {
+  position: relative;
+  min-width: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.mapbox svg { display: block; width: 100%; height: auto; }
+.crumb {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 10px 12px; border-bottom: 1px solid var(--rule);
+  font: 600 12px/1.2 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.crumb button {
+  font: 600 12px/1.2 var(--font-mono);
+  letter-spacing: 0.06em; text-transform: uppercase;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--brass); border-bottom: 1px solid currentColor;
+}
+.crumb .here { color: var(--ink); }
+path.unit { stroke: var(--surface); stroke-width: 0.6; cursor: pointer; }
+path.unit.flat { cursor: default; }
+path.unit:hover { stroke: var(--ink); stroke-width: 1.4; }
+path.other { fill: var(--nodata); fill-opacity: 0.35; stroke: var(--surface); stroke-width: 0.6; }
+path.outline { fill: none; stroke: var(--ink-2); stroke-width: 0.9; pointer-events: none; }
+path.hatch { stroke: var(--surface); stroke-width: 0.6; }
+
+.tip {
+  position: absolute; pointer-events: none; z-index: 5;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--ink-3); border-radius: 2px;
+  padding: 8px 10px; max-width: 240px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  font-size: 13px; line-height: 1.4;
+}
+.tip strong { font: 700 14px/1.2 var(--font-display); display: block; margin-bottom: 3px; }
+.tip .row { display: flex; justify-content: space-between; gap: 14px; font-variant-numeric: tabular-nums; }
+.tip .row span:last-child { font-family: var(--font-mono); }
+.tip[hidden] { display: none !important; }
+
+/* legend */
+.legend { margin: 12px 0 0; }
+.legend .swatches { display: flex; gap: 2px; }
+.legend .swatches i { flex: 1; height: 13px; display: block; }
+.legend .ends {
+  display: flex; justify-content: space-between;
+  font: 400 11.5px/1.4 var(--font-mono); color: var(--ink-3); margin-top: 4px;
+}
+.legend .cap { font-size: 12.5px; color: var(--ink-2); margin-top: 6px; }
+.legend .nd { display: inline-flex; align-items: center; gap: 6px; }
+.legend .nd i { width: 14px; height: 13px; background: var(--nodata); display: inline-block; }
+
+/* panel */
+.panel {
+  min-width: 0;
+  border: 1px solid var(--rule); border-radius: 3px;
+  padding: 16px 16px 18px;
+}
+.panel h2 {
+  font: 700 24px/1.1 var(--font-display); margin: 0 0 2px; letter-spacing: -0.01em;
+}
+.panel .sub { font-size: 13px; color: var(--ink-3); margin: 0 0 14px; }
+.who { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.pill {
+  font: 600 11px/1 var(--font-mono); letter-spacing: 0.08em;
+  color: #fff; background: var(--ink-3);
+  padding: 4px 7px; border-radius: 2px; text-transform: uppercase;
+}
+.pill.D { background: var(--dem); }
+.pill.R { background: var(--rep); }
+.who .nm { font: 700 19px/1.2 var(--font-display); }
+.panel .meta { font-size: 13px; color: var(--ink-2); margin: 0 0 16px; }
+
+.race { margin: 0 0 16px; }
+.race h3 {
+  font: 600 11px/1 var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-3); margin: 0 0 9px;
+}
+.bar { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; margin-bottom: 9px; }
+.bar .lab { font-size: 13.5px; min-width: 0; }
+.bar .pc { font: 600 13.5px/1.3 var(--font-mono); font-variant-numeric: tabular-nums; }
+.bar .track { grid-column: 1 / -1; height: 9px; background: var(--surface-2); border-radius: 0 2px 2px 0; }
+.bar .fill { height: 9px; border-radius: 0 2px 2px 0; }
+.bar .fill.D { background: var(--dem); }
+.bar .fill.R { background: var(--rep); }
+.bar .fill.I { background: var(--ink-3); }
+.panel .votes { font: 400 12px/1.4 var(--font-mono); color: var(--ink-3); }
+
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; font-size: 13.5px; margin: 0 0 14px; }
+.kv dt { color: var(--ink-2); min-width: 0; }
+.kv dd { margin: 0; font: 600 13.5px/1.4 var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.note {
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-2);
+  border-left: 2px solid var(--brass); padding-left: 10px;
+}
+.extremes { margin-top: 16px; }
+.extremes table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.extremes td { padding: 3px 0; }
+.extremes td:last-child { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* table */
+.tablewrap { overflow-x: auto; margin-top: 40px; border-top: 3px solid var(--ink); }
+table.full { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.full th, table.full td { padding: 7px 9px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+table.full thead th { position: sticky; top: 0; background: var(--surface); }
+table.full th button {
+  font: 600 11px/1.2 var(--font-mono); letter-spacing: 0.07em; text-transform: uppercase;
+  background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink-2);
+}
+table.full th button:hover { color: var(--ink); }
+table.full td.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+table.full tbody tr:hover { background: var(--surface-2); }
+table.full tbody tr { cursor: pointer; }
+table.full td.st { font-weight: 600; }
+.margin-chip {
+  display: inline-block; min-width: 56px; text-align: right;
+  padding: 1px 5px; border-radius: 2px; font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums; font-size: 12.5px;
+}
+footer.src {
+  margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--rule);
+  font-size: 12.5px; color: var(--ink-3); max-width: 78ch;
+}
+footer.src p { margin: 0 0 7px; }
+footer.src code { font-family: var(--font-mono); font-size: 12px; }
+.loading { padding: 40px 0; color: var(--ink-3); font-family: var(--font-mono); font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) {
+  path.unit { transition: fill 180ms ease; }
+}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Class III &middot; on the ballot November 7, 2028</p>
+  <h1>The 2028 Senate Map</h1>
+  <p class="standfirst">Thirty-four seats come up in 2028 &mdash; the class last contested in
+    2022. Each one is shown with the vote that filled it, the 2024 presidential
+    result underneath it, and the senator who holds it now.</p>
+
+  <div class="tally" id="tally"></div>
+
+  <div class="modes" id="modes" role="group" aria-label="What the map shows"></div>
+
+  <div class="stage">
+    <div>
+      <div class="mapbox">
+        <div class="crumb" id="crumb"></div>
+        <div id="mapslot"><p class="loading">Loading geography and returns…</p></div>
+        <div class="tip" id="tip" hidden></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <div class="tablewrap">
+    <table class="full" id="full">
+      <thead><tr id="fullhead"></tr></thead>
+      <tbody id="fullbody"></tbody>
+    </table>
+  </div>
+
+  <footer class="src">
+    <p><strong>Sources.</strong> Class III roster from senate.gov, read November 4,
+      2026. County presidential returns for 2024 from the tonmcg county-results
+      compilation. The 2022 Senate returns are state election-office feeds, with
+      candidate parties from a 2022 race registry.</p>
+    <p>Margins are the Republican share minus the Democratic share, so a positive
+      number is a Republican lead. Ohio's incumbent reflects the November 3, 2026
+      special election, which Sherrod Brown (D) won over appointed Senator Jon
+      Husted (R); the 2022 column still shows JD Vance's win. Alaska reports both
+      races by state house district rather than by borough, so its forty rows are
+      districts. Nine states' 2022 county figures come straight from the state:
+      the canvasses of Idaho, Missouri and South Dakota, the election archives of
+      Connecticut, New York and Vermont, Indiana's historical results service,
+      New Hampshire's town returns and Alaska's precinct export.</p>
+    <p>Same figures as tables: <code>data/class3_states.csv</code>,
+      <code>data/class3_counties.csv</code>, <code>data/senate_2028_class3.xlsx</code>.</p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var MODES = [
+    { id: "party",  label: "Who holds the seat" },
+    { id: "pres24", label: "2024 president" },
+    { id: "sen22",  label: "2022 Senate" },
+    { id: "shift",  label: "Shift, 2022 to 2024" }
+  ];
+
+  // Diverging bins, Democratic lead on the left. Ten steps for the vote margins,
+  // eight for the smaller shift numbers.
+  var MARGIN_BINS = [-40, -20, -10, -5, 0, 5, 10, 20, 40];
+  var MARGIN_RAMP = ["--d5", "--d4", "--d3", "--d2", "--d1",
+                     "--r1", "--r2", "--r3", "--r4", "--r5"];
+  var SHIFT_BINS = [-10, -5, -2, 0, 2, 5, 10];
+  var SHIFT_RAMP = ["--d5", "--d4", "--d3", "--d1", "--r1", "--r3", "--r4", "--r5"];
+
+  var css = getComputedStyle(document.documentElement);
+  function token(name) { return css.getPropertyValue(name).trim(); }
+  function ramp(names) { return names.map(token); }
+
+  function binColor(v, bins, names) {
+    if (v === null || v === undefined || Number.isNaN(v)) return null;
+    var i = 0;
+    while (i < bins.length && v >= bins[i]) i++;
+    return names[i];
+  }
+
+  var fmtInt = function (n) {
+    return n === null || n === undefined ? "—" : d3.format(",")(n);
+  };
+  function margin(d, r) {
+    var t = d + r;
+    return t ? (r / t * 100) - (d / t * 100) : null;
+  }
+  function signed(v, digits) {
+    if (v === null || v === undefined || Number.isNaN(v)) return "—";
+    var s = v > 0 ? "R+" : v < 0 ? "D+" : "even ";
+    return s + Math.abs(v).toFixed(digits === undefined ? 1 : digits);
+  }
+
+  var state = { mode: "party", selected: null, sortKey: "state", sortDir: 1 };
+  var DATA = null, COUNTIES = null, STATES = null, STATE_FEATS = null;
+  var byAbbr = {};
+
+  var el = {
+    tally: document.getElementById("tally"),
+    modes: document.getElementById("modes"),
+    crumb: document.getElementById("crumb"),
+    mapslot: document.getElementById("mapslot"),
+    tip: document.getElementById("tip"),
+    panel: document.getElementById("panel"),
+    legend: document.getElementById("legend"),
+    fullhead: document.getElementById("fullhead"),
+    fullbody: document.getElementById("fullbody"),
+    mapbox: document.querySelector(".mapbox")
+  };
+
+  // ---------------------------------------------------------------- county math
+  function countyVals(fips) {
+    var c = DATA.counties[fips];
+    if (!c) return null;
+    var p24 = (c[2] === null || c[3] === null) ? null : margin(c[2], c[3]);
+    var s22 = (c[5] === null || c[6] === null || !c[7]) ? null : margin(c[5], c[6]);
+    return {
+      name: c[0], abbr: c[1],
+      p24dem: c[2], p24rep: c[3], p24tot: c[4],
+      s22dem: c[5], s22rep: c[6], s22tot: c[7],
+      pres24: p24, sen22: s22,
+      shift: (p24 === null || s22 === null) ? null : p24 - s22
+    };
+  }
+
+  function unitValue(key, mode) {
+    if (state.selected) {
+      var c = countyVals(key);
+      if (!c) return null;
+      return mode === "shift" ? c.shift : c[mode];
+    }
+    var s = byAbbr[key];
+    if (!s) return null;
+    if (mode === "pres24") return s.pres24_margin_pct;
+    if (mode === "sen22") return s.sen22_margin_pct;
+    if (mode === "shift") return s.pres24_minus_sen22_margin;
+    return null;
+  }
+
+  function fillFor(key, mode) {
+    if (mode === "party") {
+      if (state.selected) {
+        // Inside a state every county shares the senator, so shade the counties
+        // by the 2024 presidential margin and let the panel carry the party.
+        var v = unitValue(key, "pres24");
+        return binColor(v, MARGIN_BINS, ramp(MARGIN_RAMP)) || token("--nodata");
+      }
+      var s = byAbbr[key];
+      if (!s) return null;
+      return s.incumbent_party === "D" ? token("--dem") : token("--rep");
+    }
+    var val = unitValue(key, mode);
+    var bins = mode === "shift" ? SHIFT_BINS : MARGIN_BINS;
+    var names = mode === "shift" ? SHIFT_RAMP : MARGIN_RAMP;
+    return binColor(val, bins, ramp(names)) || token("--nodata");
+  }
+
+  // ------------------------------------------------------------------- masthead
+  function drawTally() {
+    var d = DATA.states.filter(function (s) { return s.incumbent_party === "D"; }).length;
+    var r = DATA.states.length - d;
+    var cells = [
+      ["dem-top", d, "seats held by Democrats"],
+      ["rep-top", r, "seats held by Republicans"],
+      ["", DATA.states.length, "seats on the ballot"],
+      ["", Object.keys(DATA.counties).length, "counties and equivalents"]
+    ];
+    el.tally.innerHTML = cells.map(function (c) {
+      return '<div class="' + c[0] + '"><span class="n">' + fmtInt(c[1]) +
+             '</span><span class="k">' + c[2] + "</span></div>";
+    }).join("");
+  }
+
+  function drawModes() {
+    el.modes.innerHTML = MODES.map(function (m) {
+      return '<button type="button" data-mode="' + m.id + '" aria-pressed="' +
+             (m.id === state.mode) + '">' + m.label + "</button>";
+    }).join("");
+    el.modes.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.mode = b.dataset.mode;
+        drawModes();
+        drawMap();
+        drawLegend();
+      });
+    });
+  }
+
+  // --------------------------------------------------------------------- legend
+  function drawLegend() {
+    if (state.mode === "party" && !state.selected) {
+      el.legend.innerHTML =
+        '<div class="swatches">' +
+          '<i style="background:' + token("--dem") + '"></i>' +
+          '<i style="background:' + token("--rep") + '"></i>' +
+        "</div>" +
+        '<div class="ends"><span>Democratic hold</span><span>Republican hold</span></div>' +
+        '<p class="cap">The party of the senator who holds the seat today. Click a ' +
+        "state for its counties.</p>";
+      return;
+    }
+    var shift = state.mode === "shift";
+    var bins = shift ? SHIFT_BINS : MARGIN_BINS;
+    var names = shift ? SHIFT_RAMP : MARGIN_RAMP;
+    var caption;
+    if (shift) {
+      caption = "How much the 2024 presidential margin differed from the 2022 " +
+                "Senate margin. Red means the seat ran more Republican for president.";
+    } else if (state.mode === "sen22") {
+      caption = "Margin in the 2022 Senate race, Republican share minus Democratic share.";
+    } else if (state.selected && state.mode === "party") {
+      caption = "Counties shaded by the 2024 presidential margin; the senator is in the panel above.";
+    } else {
+      caption = "Margin in the 2024 presidential race, Republican share minus Democratic share.";
+    }
+    var lo = bins[0], hi = bins[bins.length - 1];
+    el.legend.innerHTML =
+      '<div class="swatches">' + ramp(names).map(function (c) {
+        return '<i style="background:' + c + '"></i>';
+      }).join("") + "</div>" +
+      '<div class="ends"><span>D+' + Math.abs(lo) + " or more</span>" +
+      "<span>even</span><span>R+" + hi + " or more</span></div>" +
+      '<p class="cap">' + caption +
+      '</p>';
+  }
+
+  // ------------------------------------------------------------------ the map
+  function drawMap() {
+    var W = 920, H = 560;
+    if (state.selected) {
+      var bb = d3.geoBounds({
+        type: "FeatureCollection",
+        features: COUNTIES.filter(function (f) { return f.properties.state === state.selected; })
+      });
+      var lonSpan = (bb[1][0] - bb[0][0]) * Math.cos((bb[0][1] + bb[1][1]) / 2 * Math.PI / 180);
+      var latSpan = bb[1][1] - bb[0][1];
+      if (lonSpan > 0 && latSpan > 0) {
+        H = Math.round(Math.max(320, Math.min(640, W * (latSpan / lonSpan))));
+      }
+    }
+    var svg = d3.create("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("role", "img");
+
+    var proj = d3.geoAlbersUsa();
+    var path = d3.geoPath(proj);
+    var feats, others = null, outline = null;
+
+    if (state.selected) {
+      feats = COUNTIES.filter(function (f) { return f.properties.state === state.selected; });
+      var fc = { type: "FeatureCollection", features: feats };
+      proj.fitExtent([[18, 18], [W - 18, H - 18]], fc);
+      outline = STATE_FEATS.filter(function (f) { return f.properties.state === state.selected; });
+      svg.attr("aria-label", unitWord(state.selected, true) + " of "
+                                 + byAbbr[state.selected].state);
+    } else {
+      feats = STATE_FEATS.filter(function (f) { return byAbbr[f.properties.state]; });
+      others = STATE_FEATS.filter(function (f) { return !byAbbr[f.properties.state]; });
+      proj.fitExtent([[12, 12], [W - 12, H - 12]],
+                     { type: "FeatureCollection", features: STATE_FEATS });
+      svg.attr("aria-label", "The 34 states with a Senate seat on the ballot in 2028");
+    }
+
+    if (others) {
+      svg.append("g").selectAll("path").data(others).join("path")
+        .attr("class", "other").attr("d", path);
+    }
+
+    svg.append("g").selectAll("path").data(feats).join("path")
+      .attr("class", state.selected ? "unit flat" : "unit")
+      .attr("d", path)
+      .attr("fill", function (f) {
+        return fillFor(state.selected ? f.properties.id : f.properties.state, state.mode);
+      })
+      .on("pointerenter pointermove", function (ev, f) { showTip(ev, f); })
+      .on("pointerleave", hideTip)
+      .on("click", function (ev, f) {
+        if (state.selected) return;
+        select(f.properties.state);
+      });
+
+    if (outline) {
+      svg.append("g").selectAll("path").data(outline).join("path")
+        .attr("class", "outline").attr("d", path);
+    }
+
+    el.mapslot.innerHTML = "";
+    el.mapslot.appendChild(svg.node());
+    drawCrumb();
+  }
+
+  function unitWord(ab, plural) {
+    if (ab === "AK") return plural ? "House districts" : "house district";
+    if (ab === "CT") return plural ? "Planning regions" : "planning region";
+    return plural ? "Counties" : "county";
+  }
+
+  function drawCrumb() {
+    if (!state.selected) {
+      el.crumb.innerHTML = '<span class="here">34 states</span>' +
+        "<span>click one for its counties</span>";
+      return;
+    }
+    var s = byAbbr[state.selected];
+    el.crumb.innerHTML = '<button type="button" id="back">&larr; All 34 states</button>' +
+      '<span class="here">' + s.state + "</span>";
+    document.getElementById("back").addEventListener("click", function () { select(null); });
+  }
+
+  function showTip(ev, f) {
+    var html;
+    if (state.selected) {
+      var c = countyVals(f.properties.id);
+      if (!c) {
+        html = "<strong>" + f.properties.name + "</strong>No figures reported.";
+      } else {
+        html = "<strong>" + c.name + "</strong>" +
+          row("2024 president", signed(c.pres24)) +
+          row("Total 2024 votes", fmtInt(c.p24tot)) +
+          (c.sen22 === null ? row("2022 Senate", "not reported")
+                            : row("2022 Senate", signed(c.sen22))) +
+          (c.shift === null ? "" : row("Shift", signed(c.shift)));
+      }
+    } else {
+      var s = byAbbr[f.properties.state];
+      if (!s) { hideTip(); return; }
+      html = "<strong>" + s.state + "</strong>" +
+        row(s.incumbent, s.incumbent_party) +
+        row("2022", s.sen22_winner + " (" + s.sen22_winner_party + ")") +
+        row("2022 margin", signed(s.sen22_margin_pct)) +
+        row("2024 president", signed(s.pres24_margin_pct)) +
+        row("Shift", signed(s.pres24_minus_sen22_margin));
+    }
+    el.tip.innerHTML = html;
+    el.tip.hidden = false;
+    var box = el.mapbox.getBoundingClientRect();
+    var tw = el.tip.offsetWidth, th = el.tip.offsetHeight;
+    var x = ev.clientX - box.left + 14, y = ev.clientY - box.top - th - 10;
+    if (x + tw > box.width - 6) x = ev.clientX - box.left - tw - 14;
+    if (y < 6) y = ev.clientY - box.top + 18;
+    el.tip.style.left = Math.max(6, x) + "px";
+    el.tip.style.top = Math.max(6, y) + "px";
+  }
+  function row(k, v) {
+    return '<div class="row"><span>' + k + "</span><span>" + v + "</span></div>";
+  }
+  function hideTip() { el.tip.hidden = true; }
+
+  // ---------------------------------------------------------------- side panel
+  function drawPanel() {
+    var s = state.selected ? byAbbr[state.selected] : null;
+    if (!s) {
+      var redder = DATA.states.filter(function (x) {
+        return x.pres24_minus_sen22_margin > 0; }).length;
+      var closest = DATA.states.slice()
+        .sort(function (a, b) {
+          return Math.abs(a.sen22_margin_pct) - Math.abs(b.sen22_margin_pct);
+        }).slice(0, 5);
+      el.panel.innerHTML =
+        "<h2>What is up in 2028</h2>" +
+        '<p class="sub">Class III, last elected in 2022.</p>' +
+        "<dl class='kv'>" +
+          kv("Seats on the ballot", DATA.states.length) +
+          kv("Democratic-held", DATA.states.filter(function (x) {
+            return x.incumbent_party === "D"; }).length) +
+          kv("Republican-held", DATA.states.filter(function (x) {
+            return x.incumbent_party === "R"; }).length) +
+          kv("Ran redder for president", redder + " of " + DATA.states.length) +
+        "</dl>" +
+        '<div class="race"><h3>Closest 2022 races in this class</h3>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13.5px">' +
+        closest.map(function (x) {
+          return "<tr><td>" + x.state + "</td><td>" + x.sen22_winner +
+            ' (' + x.sen22_winner_party + ')</td><td style="text-align:right;' +
+            'font-family:var(--font-mono);font-variant-numeric:tabular-nums">' +
+            signed(x.sen22_margin_pct) + "</td></tr>";
+        }).join("") + "</table></div>" +
+        '<p class="note">Pick a state on the map or in the table to see its counties, ' +
+        "its 2022 result and its incumbent.</p>";
+      return;
+    }
+
+    var top1pct = s.sen22_top1_pct, top2pct = s.sen22_top2_pct;
+    var p1 = s.sen22_top1.match(/^(.*) \(([DRILG])\)$/) || [0, s.sen22_top1, "I"];
+    var p2 = s.sen22_top2.match(/^(.*) \(([DRILG])\)$/) || [0, s.sen22_top2, "I"];
+    var hTot = s.pres24_total_votes;
+
+    var ex = "";
+    if (state.selected) {
+      var rows = COUNTIES
+        .filter(function (f) { return f.properties.state === state.selected; })
+        .map(function (f) { return countyVals(f.properties.id); })
+        .filter(function (c) { return c && c.pres24 !== null; })
+        .sort(function (a, b) { return a.pres24 - b.pres24; });
+      if (rows.length > 3) {
+        var pick = [rows[0], rows[1], rows[rows.length - 2], rows[rows.length - 1]];
+        ex = '<div class="extremes race"><h3>Most and least Democratic ' +
+          unitWord(state.selected, true).toLowerCase() + ', 2024</h3>' +
+          "<table>" + pick.map(function (c) {
+            return "<tr><td>" + c.name + "</td><td>" + signed(c.pres24) + "</td></tr>";
+          }).join("") + "</table></div>";
+      }
+    }
+
+    el.panel.innerHTML =
+      "<h2>" + s.state + "</h2>" +
+      '<p class="sub">Seat up November 7, 2028</p>' +
+      '<div class="who"><span class="pill ' + s.incumbent_party + '">' +
+        s.incumbent_party + '</span><span class="nm">' + s.incumbent + "</span></div>" +
+      '<p class="meta">In office since ' + s.in_office_since + " &middot; " +
+        s.seat_path + "</p>" +
+      '<div class="race"><h3>2022 Senate result</h3>' +
+        barRow(p1[1], p1[2], top1pct, s.sen22_top1_votes) +
+        barRow(p2[1], p2[2], top2pct, s.sen22_top2_votes) +
+        '<p class="votes">Total ' + fmtInt(s.sen22_total_votes) + " votes &middot; margin " +
+        signed(s.sen22_margin_pct) + "</p></div>" +
+      "<dl class='kv'>" +
+        kv("2024 Harris", fmtInt(s.pres24_harris_votes) + " (" + s.pres24_harris_pct + "%)") +
+        kv("2024 Trump", fmtInt(s.pres24_trump_votes) + " (" + s.pres24_trump_pct + "%)") +
+        kv("2024 margin", signed(s.pres24_margin_pct)) +
+        kv("Shift from 2022", signed(s.pres24_minus_sen22_margin)) +
+        kv("2024 turnout", fmtInt(hTot)) +
+      "</dl>" + ex +
+      (s.note ? '<p class="note">' + s.note + "</p>" : "");
+  }
+  function kv(k, v) { return "<dt>" + k + "</dt><dd>" + v + "</dd>"; }
+  function barRow(name, party, pct, votes) {
+    var w = Math.max(1, Math.min(100, pct || 0));
+    return '<div class="bar"><span class="lab">' + name + " (" + party + ")</span>" +
+      '<span class="pc">' + (pct === null ? "—" : pct.toFixed(1) + "%") + "</span>" +
+      '<span class="track"><span class="fill ' + party + '" style="width:' + w +
+      '%"></span></span></div>';
+  }
+
+  // --------------------------------------------------------------- full table
+  // 2022 margins where Republican-minus-Democratic is not the real contest.
+  var CAVEAT = {
+    AK: "Ranked choice: both leading candidates were Republicans, so the two-party margin is meaningless.",
+    UT: "No Democrat ran; independent Evan McMullin was the challenger.",
+    GA: "November round only. Warnock won the December runoff 51.4 to 48.6.",
+    LA: "All-party primary; several Democrats split the Democratic vote."
+  };
+
+  var COLS = [
+    { k: "state", t: "State", cls: "st" },
+    { k: "incumbent", t: "Incumbent" },
+    { k: "incumbent_party", t: "Party" },
+    { k: "in_office_since", t: "Since", num: true, year: true },
+    { k: "sen22_winner", t: "Won in 2022" },
+    { k: "sen22_margin_pct", t: "2022 margin", num: true, chip: true },
+    { k: "pres24_margin_pct", t: "2024 pres. margin", num: true, chip: true },
+    { k: "pres24_minus_sen22_margin", t: "Shift", num: true, chip: true, shift: true },
+    { k: "pres24_total_votes", t: "2024 votes", num: true }
+  ];
+
+  function drawTable() {
+    el.fullhead.innerHTML = COLS.map(function (c) {
+      return "<th><button type='button' data-k='" + c.k + "'>" + c.t +
+        (state.sortKey === c.k ? (state.sortDir > 0 ? " &#9650;" : " &#9660;") : "") +
+        "</button></th>";
+    }).join("");
+    el.fullhead.querySelectorAll("button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (state.sortKey === b.dataset.k) state.sortDir *= -1;
+        else { state.sortKey = b.dataset.k; state.sortDir = 1; }
+        drawTable();
+      });
+    });
+
+    var rows = DATA.states.slice().sort(function (a, b) {
+      var x = a[state.sortKey], y = b[state.sortKey];
+      if (typeof x === "string") return state.sortDir * x.localeCompare(y);
+      return state.sortDir * ((x || 0) - (y || 0));
+    });
+
+    el.fullbody.innerHTML = rows.map(function (s) {
+      return '<tr data-ab="' + s.abbr + '">' + COLS.map(function (c) {
+        var v = s[c.k];
+        if (c.chip) {
+          var flag = (c.k === "sen22_margin_pct" && CAVEAT[s.abbr])
+            ? '<abbr title="' + CAVEAT[s.abbr] + '" style="text-decoration:none">\u2009\u2020</abbr>' : "";
+          var bins = c.shift ? SHIFT_BINS : MARGIN_BINS;
+          var names = c.shift ? SHIFT_RAMP : MARGIN_RAMP;
+          var bg = binColor(v, bins, ramp(names));
+          var light = (v !== null && Math.abs(v) < (c.shift ? 2 : 5));
+          return '<td class="num"><span class="margin-chip" style="background:' + bg +
+            ";color:" + (light ? token("--ink") : "#fff") + '">' + signed(v) +
+            "</span>" + flag + "</td>";
+        }
+        if (c.year) return '<td class="num">' + v + "</td>";
+        if (c.num) return '<td class="num">' + fmtInt(v) + "</td>";
+        if (c.k === "incumbent_party")
+          return '<td><span class="pill ' + v + '">' + v + "</span></td>";
+        return '<td class="' + (c.cls || "") + '">' + v + "</td>";
+      }).join("") + "</tr>";
+    }).join("");
+
+    el.fullbody.querySelectorAll("tr").forEach(function (tr) {
+      tr.addEventListener("click", function () { select(tr.dataset.ab); });
+    });
+  }
+
+  // ------------------------------------------------------------------- routing
+  function select(ab) {
+    state.selected = ab;
+    hideTip();
+    drawMap();
+    drawPanel();
+    drawLegend();
+    if (ab) {
+      try { history.replaceState(null, "", "#" + ab.toLowerCase()); } catch (e) {}
+      document.querySelector(".stage").scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  }
+
+  Promise.all([
+    fetch("data/senate2028.json").then(function (r) { return r.json(); }),
+    fetch("data/counties.topojson").then(function (r) { return r.json(); }),
+    fetch("data/states.topojson").then(function (r) { return r.json(); })
+  ]).then(function (res) {
+    DATA = res[0];
+    COUNTIES = topojson.feature(res[1], res[1].objects.counties).features;
+    STATES = res[2];
+    STATE_FEATS = topojson.feature(STATES, STATES.objects.states).features;
+    DATA.states.forEach(function (s) { byAbbr[s.abbr] = s; });
+
+    drawTally();
+    drawModes();
+    drawTable();
+
+    var h = (location.hash || "").replace("#", "").toUpperCase();
+    state.selected = byAbbr[h] ? h : null;
+    drawMap();
+    drawPanel();
+    drawLegend();
+  }).catch(function (err) {
+    el.mapslot.innerHTML = '<p class="loading">Could not load the data files: ' +
+      String(err.message || err) + "</p>";
+  });
+
+  window.addEventListener("resize", function () {
+    clearTimeout(window.__rz);
+    window.__rz = setTimeout(function () { if (DATA && STATE_FEATS) drawMap(); }, 160);
+  });
+})();
+</script>

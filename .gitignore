@@ -1,0 +1,8 @@
+# macOS and Google Drive leftovers
+.DS_Store
+.tmp.drive*
+*.download
+
+# Python
+__pycache__/
+*.pyc
