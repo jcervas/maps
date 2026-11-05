@@ -144,7 +144,10 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
    the ring around it was the same gold as the block underneath. */
 .hundred { display: grid; grid-template-columns: repeat(25, 1fr); gap: 2px; }
 .hundred i { height: 11px; border-radius: 2px; display: block; }
-.hundred i.open { box-shadow: inset 0 0 0 1px var(--ink); }
+/* An undecided seat is gold, ringed in the color of whoever holds it today.
+   The ring is the only thing on the grid that is about the present rather
+   than 2029, which is exactly what makes a toss-up worth looking at twice. */
+.hundred i.open { box-shadow: inset 0 0 0 2px currentColor; }
 .majrule { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 4px 0 3px; }
 .majrule::before, .majrule::after { content: ""; flex: 1; height: 2px; background: var(--accent); border-radius: 1px; }
 .majrule span { font-size: 9px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
@@ -792,8 +795,12 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 
     var seats = ch.all_seats.slice().sort(function (a, b) {
       function k(x) {
+        // Undecided seats sit in the middle, and within that band they run
+        // Democratic-held to Republican-held, the same direction as the grid
+        // either side of them -- otherwise the rings come out scattered and
+        // there is nothing to read in them.
+        if (seatSide(x) === null) return x.held_by === "D" ? -0.5 : 0.5;
         if (x.cls === 3) return RATING_RANK[x.rating];
-        if (!x.settled) return 0;
         return x.caucus === "D" ? -1000 : 1000;
       }
       return (k(a) - k(b)) || (a.abbr < b.abbr ? -1 : 1);
@@ -808,14 +815,25 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
                           : x.settled ? "holds to " + x.next : "still counting") +
                  (i === 50 ? ". The 51st seat, counting from the Democratic end"
                            : "");
+      var held = x.held_by;
+      if (side === null && held) {
+        what += ". Held now by " + (x.holder || "") +
+                " (" + held + ")";
+      }
       return '<i title="' + what + '"' + (side === null ? ' class="open"' : "") +
-             ' style="background:' + fill + '"></i>';
+             ' style="background:' + fill +
+             (side === null && held ? ";color:" + token("--p" + held) : "") +
+             '"></i>';
     });
     // Fifty blocks above the rule, fifty below: a party holds the chamber when
     // its run of blocks crosses it.
     blocks.splice(50, 0, '<div class="majrule"><span>51 for a majority' +
                          "</span></div>");
     var grid = blocks.join("");
+
+    var held = seats.filter(function (x) { return seatSide(x) === null; });
+    var heldD = held.filter(function (x) { return x.held_by === "D"; }).length;
+    var heldR = held.length - heldD;
 
     var hi = pr.ceiling_dem, lo = pr.floor_dem;
     return '<div class="range"><b class="f-D">' + lo + "–" + hi +
@@ -824,6 +842,9 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
       '<div class="hundred">' + grid + "</div>" +
       '<div class="majline"><span>Democratic</span>' +
         "<span>Republican</span></div>" +
+      '<p class="note">The ' + pr.open + " gold blocks are the seats nobody " +
+        "can assign yet, ringed in the color of the party holding each one " +
+        "today: " + heldD + " Democratic, " + heldR + " Republican.</p>" +
       '<div class="stats">' +
         '<div><span>Already held</span><b>' + pr.settled_dem + "–" +
           pr.settled_rep + '</b><small>Class I and II, settled</small></div>' +

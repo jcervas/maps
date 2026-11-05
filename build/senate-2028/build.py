@@ -61,7 +61,7 @@ OUT = os.path.join(REPO, "elections", "2028", "data")
 sys.path.insert(0, HERE)
 from incumbents import (CLASS_III, SEAT_NOTES, NAME_FIXES,  # noqa: E402
                         CHAMBER_CONTROL, CLASS_II, CLASS_II_NOTES,
-                        CLASS_II_SOURCE)
+                        CLASS_II_SOURCE, CLASS_II_HELD_BY)
 import ratings  # noqa: E402
 
 ABBRS = [r[1] for r in CLASS_III]
@@ -435,6 +435,14 @@ def chamber(state_rows):
                 "margin": marg}
         if ab in CLASS_II_NOTES:
             seat["note"] = CLASS_II_NOTES[ab]
+        # An uncounted seat is still somebody's until January, and it is not
+        # the person leading: Sullivan and Hyde-Smith hold these two while
+        # Peltola and Colom lead them.
+        if not called:
+            held = CLASS_II_HELD_BY.get(ab)
+            assert held, "no current holder recorded for uncalled %s" % ab
+            seat["held_by"] = held[1]
+            seat["holder"] = held[0]
         seats.append(seat)
     for r in state_rows:
         seats.append({
@@ -442,6 +450,9 @@ def chamber(state_rows):
             "party": r["incumbent_party"], "caucus": r["incumbent_party"],
             "next": 2028, "settled": False, "rating": r["rating"],
             "on_ballot": True,
+            # A Class III seat is held by its incumbent until the 2028 winner
+            # is sworn in, so the holder and the party are the same here.
+            "held_by": r["incumbent_party"], "holder": r["incumbent"],
         })
 
     # Every state holds two of the three classes, so Class II and Class III

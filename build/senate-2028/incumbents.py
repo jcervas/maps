@@ -202,6 +202,19 @@ CLASS_II_NOTES = {
     "MT": "Alme beat the independent Seth Bodnar, not a Democrat.",
 }
 
+# Who sits in the two uncounted seats today. The CLASS_II rows above carry the
+# candidate leading, which for Mississippi and Alaska is not the same person --
+# both are Republican-held and both have a Democrat narrowly ahead. The map
+# outlines an undecided seat in the color of whoever holds it now, so it needs
+# the holder, not the leader.
+#
+# From magic-wall data/reference/races_2026_seed.csv, which took them from the
+# senate.gov roster.
+CLASS_II_HELD_BY = {
+    "AK": ("Dan Sullivan", "R"),
+    "MS": ("Cindy Hyde-Smith", "R"),
+}
+
 CLASS_II_SOURCE = ("AP county returns as carried in magic-wall results/, read "
                    "November 5, 2026; which races are settled from the AP, NBC "
                    "News, CBS News and CNN the same day.")
