@@ -137,15 +137,28 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 .f-D { color: var(--pD); } .f-R { color: var(--pR); }
 .totals { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
 
-.balance { display: grid; grid-template-columns: repeat(34, 1fr); gap: 2px; }
-.balance i { height: 16px; border-radius: 2px; display: block; }
+/* One row, so the majority mark can be a vertical rule between two seats.
+   A class has no majority of its own -- 51 is a fact about the chamber -- so
+   the rule sits where this class's seats carry a party to 51. */
+.balance { display: flex; gap: 2px; align-items: center; }
+.balance i { flex: 1; min-width: 0; height: 16px; border-radius: 2px; display: block; }
+/* Ink, and taller than the blocks it sits between. In the accent gold it
+   disappeared against the toss-up blocks, which are gold; standing proud of
+   the strip it reads against all seven rating colors. */
+.balance .cut { flex: none; width: 2px; height: 26px; border-radius: 1px; background: var(--ink); }
 
-/* the whole chamber as 100 blocks, Democratic end to Republican end */
+/* The whole chamber as 100 blocks, Democratic end to Republican end. Twenty
+   five to a row means two rows are exactly fifty seats, so the majority line
+   is a real rule across the grid rather than a mark on one block -- which is
+   what it was, and it was invisible, because the 51st seat is a toss-up and
+   the ring around it was the same gold as the block underneath. */
 .hundred { display: grid; grid-template-columns: repeat(25, 1fr); gap: 2px; }
 .hundred i { height: 11px; border-radius: 2px; display: block; }
 .hundred i.open { box-shadow: inset 0 0 0 1px var(--ink); }
-.hundred i.maj { box-shadow: inset 0 0 0 2px var(--accent); }
-.majline { display: flex; justify-content: space-between; font-family: var(--f-data); font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+.majrule { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 4px 0 3px; }
+.majrule::before, .majrule::after { content: ""; flex: 1; height: 2px; background: var(--accent); border-radius: 1px; }
+.majrule span { font-size: 9px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+.majline { display: flex; justify-content: space-between; font-family: var(--f-data); font-size: 9.5px; color: var(--muted); margin-top: 3px; }
 .range { display: flex; align-items: baseline; gap: 7px; }
 .range b { font-family: var(--f-display); font-stretch: 85%; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
 .range span { font-size: 11px; color: var(--muted); }
@@ -258,7 +271,7 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   .panel { overflow: visible; }
   .legend .ramp i { width: 17px; }
   .status { max-width: 75%; }
-  .balance { grid-template-columns: repeat(17, 1fr); }
+  .balance i { height: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -754,11 +767,35 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   function renderLeft() {
     var d = DATA.states.filter(function (s) { return s.incumbent_party === "D"; }).length;
 
+    // Sorted safest Democratic to safest Republican, with a rule at each
+    // party's road to 51. They do not meet: the Democrats need 13 of these 34
+    // and the Republicans 25, which is 38 seats between them, so there is a
+    // band in the middle where this class settles nothing and Mississippi and
+    // Alaska decide the chamber. The band is the point of drawing both.
+    var pr = (DATA.chamber || {}).projection;
+    var maj = (DATA.chamber || {}).majority || 51;
+    var nAll = DATA.states.length;
+    var needD = pr ? maj - pr.settled_dem : 0;
+    var needR = pr ? maj - pr.settled_rep : 0;
+    var cutD = needD, cutR = nAll - needR;   // the block each rule follows
+    function cut(n) {
+      if (n <= 0 || n >= nAll) return "";
+      var mine = n === cutD;
+      return '<b class="cut" title="' + (mine
+        ? "The Democrats reach " + maj + " by taking every seat left of here, " +
+          needD + " of them"
+        : "The Republicans reach " + maj + " by taking every seat right of " +
+          "here, " + needR + " of them") + '"></b>';
+    }
     var bal = DATA.states.slice().sort(function (a, b) {
       return a.rating_adjusted - b.rating_adjusted;
-    }).map(function (s) {
-      return '<i title="' + s.state + '" style="background:' + ratingColor(s.rating) + '"></i>';
+    }).map(function (s, i) {
+      return '<i title="' + s.state + " · " + s.rating + '" style="background:' +
+             ratingColor(s.rating) + '"></i>' +
+             (i + 1 === cutR ? cut(cutR) : "") +
+             (i + 1 === cutD ? cut(cutD) : "");
     }).join("");
+    var gap = cutD - cutR - 1;
 
     el.leftInner.innerHTML =
       '<div class="sec"><h2>Who holds these 34 seats now</h2>' +
@@ -767,7 +804,14 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
           '<div><span>Republican</span><b>' + (34 - d) + '</b><small>of 34 seats</small></div>' +
         "</div>" +
         '<div class="balance">' + bal + "</div>" +
-        '<p class="note">Each block is a seat, safest Democratic to safest Republican.</p>' +
+        '<p class="note">Each block is a seat, safest Democratic to safest ' +
+          "Republican. The two rules are the majority: the " + needD +
+          " seats left of the right-hand one put the Democrats at " + maj +
+          ", the " + needR + " right of the left-hand one put the Republicans " +
+          "there. Land in the " + gap + " between and this class settles " +
+          "nothing — " +
+          (pr ? pr.pending.map(function (x) { return x.state; }).join(" and ")
+              : "the 2026 races still counting") + " decide it.</p>" +
       "</div>" +
       '<div class="sec"><h3>What 2029 looks like</h3>' + projection() + "</div>" +
       '<div class="sec"><h3>The whole chamber</h3>' + chamberRows() +
@@ -804,21 +848,24 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
       }
       return (k(a) - k(b)) || (a.abbr < b.abbr ? -1 : 1);
     });
-    var grid = seats.map(function (x, i) {
+    var blocks = seats.map(function (x, i) {
       var side = seatSide(x);
       var fill = side === null ? token("--cook-toss")
                : x.cls === 3 ? ratingColor(x.rating)
                : token(side === "D" ? "--pD" : "--pR");
       var what = x.senator + " (" + x.abbr + "), Class " + CLASS_LABEL[x.cls] +
                  " — " + (x.cls === 3 ? x.rating
-                          : x.settled ? "holds to " + x.next : "still counting");
-      // The 51st block counting from the Democratic end is the seat that makes
-      // a majority, and marking it is the point of drawing a hundred blocks.
-      var cls = i === 50 ? "maj" : side === null ? "open" : "";
-      return '<i title="' + what + (i === 50 ? " — the 51st seat" : "") + '"' +
-             (cls ? ' class="' + cls + '"' : "") +
+                          : x.settled ? "holds to " + x.next : "still counting") +
+                 (i === 50 ? ". The 51st seat, counting from the Democratic end"
+                           : "");
+      return '<i title="' + what + '"' + (side === null ? ' class="open"' : "") +
              ' style="background:' + fill + '"></i>';
-    }).join("");
+    });
+    // Fifty blocks above the rule, fifty below: a party holds the chamber when
+    // its run of blocks crosses it.
+    blocks.splice(50, 0, '<div class="majrule"><span>51 for a majority' +
+                         "</span></div>");
+    var grid = blocks.join("");
 
     var hi = pr.ceiling_dem, lo = pr.floor_dem;
     return '<div class="range"><b class="f-D">' + lo + "–" + hi +
@@ -826,7 +873,7 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
         'them all</span></div>' +
       '<div class="hundred">' + grid + "</div>" +
       '<div class="majline"><span>Democratic</span>' +
-        '<span>the 51st seat is ringed</span><span>Republican</span></div>' +
+        "<span>Republican</span></div>" +
       '<div class="stats">' +
         '<div><span>Already held</span><b>' + pr.settled_dem + "–" +
           pr.settled_rep + '</b><small>Class I and II, settled</small></div>' +
