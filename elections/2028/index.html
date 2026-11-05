@@ -137,16 +137,6 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 .f-D { color: var(--pD); } .f-R { color: var(--pR); }
 .totals { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
 
-/* One row, so the majority mark can be a vertical rule between two seats.
-   A class has no majority of its own -- 51 is a fact about the chamber -- so
-   the rule sits where this class's seats carry a party to 51. */
-.balance { display: flex; gap: 2px; align-items: center; }
-.balance i { flex: 1; min-width: 0; height: 16px; border-radius: 2px; display: block; }
-/* Ink, and taller than the blocks it sits between. In the accent gold it
-   disappeared against the toss-up blocks, which are gold; standing proud of
-   the strip it reads against all seven rating colors. */
-.balance .cut { flex: none; width: 2px; height: 26px; border-radius: 1px; background: var(--ink); }
-
 /* The whole chamber as 100 blocks, Democratic end to Republican end. Twenty
    five to a row means two rows are exactly fifty seats, so the majority line
    is a real rule across the grid rather than a mark on one block -- which is
@@ -271,7 +261,6 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   .panel { overflow: visible; }
   .legend .ramp i { width: 17px; }
   .status { max-width: 75%; }
-  .balance i { height: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -767,51 +756,12 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   function renderLeft() {
     var d = DATA.states.filter(function (s) { return s.incumbent_party === "D"; }).length;
 
-    // Sorted safest Democratic to safest Republican, with a rule at each
-    // party's road to 51. They do not meet: the Democrats need 13 of these 34
-    // and the Republicans 25, which is 38 seats between them, so there is a
-    // band in the middle where this class settles nothing and Mississippi and
-    // Alaska decide the chamber. The band is the point of drawing both.
-    var pr = (DATA.chamber || {}).projection;
-    var maj = (DATA.chamber || {}).majority || 51;
-    var nAll = DATA.states.length;
-    var needD = pr ? maj - pr.settled_dem : 0;
-    var needR = pr ? maj - pr.settled_rep : 0;
-    var cutD = needD, cutR = nAll - needR;   // the block each rule follows
-    function cut(n) {
-      if (n <= 0 || n >= nAll) return "";
-      var mine = n === cutD;
-      return '<b class="cut" title="' + (mine
-        ? "The Democrats reach " + maj + " by taking every seat left of here, " +
-          needD + " of them"
-        : "The Republicans reach " + maj + " by taking every seat right of " +
-          "here, " + needR + " of them") + '"></b>';
-    }
-    var bal = DATA.states.slice().sort(function (a, b) {
-      return a.rating_adjusted - b.rating_adjusted;
-    }).map(function (s, i) {
-      return '<i title="' + s.state + " · " + s.rating + '" style="background:' +
-             ratingColor(s.rating) + '"></i>' +
-             (i + 1 === cutR ? cut(cutR) : "") +
-             (i + 1 === cutD ? cut(cutD) : "");
-    }).join("");
-    var gap = cutD - cutR - 1;
-
     el.leftInner.innerHTML =
       '<div class="sec"><h2>Who holds these 34 seats now</h2>' +
         '<div class="stats">' +
           '<div><span>Democratic</span><b>' + d + '</b><small>of 34 seats</small></div>' +
           '<div><span>Republican</span><b>' + (34 - d) + '</b><small>of 34 seats</small></div>' +
         "</div>" +
-        '<div class="balance">' + bal + "</div>" +
-        '<p class="note">Each block is a seat, safest Democratic to safest ' +
-          "Republican. The two rules are the majority: the " + needD +
-          " seats left of the right-hand one put the Democrats at " + maj +
-          ", the " + needR + " right of the left-hand one put the Republicans " +
-          "there. Land in the " + gap + " between and this class settles " +
-          "nothing — " +
-          (pr ? pr.pending.map(function (x) { return x.state; }).join(" and ")
-              : "the 2026 races still counting") + " decide it.</p>" +
       "</div>" +
       '<div class="sec"><h3>What 2029 looks like</h3>' + projection() + "</div>" +
       '<div class="sec"><h3>The whole chamber</h3>' + chamberRows() +
