@@ -46,6 +46,7 @@ OUT = os.path.join(REPO, "elections", "2028", "data")
 
 sys.path.insert(0, HERE)
 from incumbents import CLASS_III, SEAT_NOTES, NAME_FIXES  # noqa: E402
+import ratings  # noqa: E402
 
 ABBRS = [r[1] for r in CLASS_III]
 STATE_NAME = {r[1]: r[0] for r in CLASS_III}
@@ -333,8 +334,16 @@ def main():
     for row in state_rows:
         row["pres24_minus_sen22_margin"] = round(
             row["pres24_margin_pct"] - row["sen22_margin_pct"], 2)
+        rating, lean, adj, basis = ratings.rate(
+            row["abbr"], row["pres24_margin_pct"], row["sen22_margin_pct"],
+            row["incumbent_party"])
+        row["rating"] = rating
+        row["rating_lean"] = lean
+        row["rating_adjusted"] = adj
+        row["rating_basis"] = basis
 
-    cols = ["state", "abbr", "incumbent", "incumbent_party", "in_office_since", "seat_path",
+    cols = ["state", "abbr", "incumbent", "incumbent_party", "rating",
+            "rating_lean", "rating_adjusted", "in_office_since", "seat_path",
             "sen22_winner", "sen22_winner_party",
             "sen22_top1", "sen22_top1_votes", "sen22_top1_pct",
             "sen22_top2", "sen22_top2_votes", "sen22_top2_pct",
@@ -344,7 +353,7 @@ def main():
             "pres24_harris_pct", "pres24_trump_pct", "pres24_margin_pct",
             "pres24_minus_sen22_margin", "counties_with_sen22",
             "sen22_county_coverage_pct", "sen22_unit_tier",
-            "sen22_county_source", "note"]
+            "sen22_county_source", "rating_basis", "note"]
     with open(os.path.join(OUT, "class3_states.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
@@ -403,6 +412,8 @@ def main():
         "generated": "2026-11-04",
         "fields": ["name", "state", "p24_dem", "p24_rep", "p24_total",
                    "s22_dem", "s22_rep", "s22_total"],
+        "rating_order": ratings.ORDER,
+        "rating_short": ratings.SHORT,
         "states": state_rows,
         "counties": counties_json,
     }

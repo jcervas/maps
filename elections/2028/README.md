@@ -20,8 +20,28 @@ Built by `build/senate-2028/`:
     python3 build/senate-2028/build.py
     python3 build/senate-2028/make_xlsx.py
 
-`incumbents.py` holds the roster and the per-state caveats by hand; the other
-three are mechanical.
+`incumbents.py` holds the roster and the per-state caveats by hand, and
+`ratings.py` holds the rating rule; the other three are mechanical.
+
+## Ratings
+
+Each seat gets a lean in margin points, positive Republican:
+
+    lean = 0.65 * (2024 presidential margin) + 0.35 * (2022 Senate margin)
+
+then four points toward the party that holds it, with bands at 5, 10 and 20.
+The categories are Cook's — Solid / Likely / Lean / Toss Up — so the map reads
+against the others on this site, and the colours are the same palette
+`redrawn-districts-2026` uses. **The thresholds are mine**, so a rating here is
+not Cook's rating of that seat.
+
+Four seats use the presidential margin alone, because their 2022 Senate margin
+is not a two-party margin: Alaska (ranked choice, two Republicans leading),
+Utah (no Democrat), Georgia (November round only) and Louisiana (all-party
+primary). Ohio and Florida were contested again in the 2026 specials, which is
+better evidence than anything the rule uses; both are flagged in
+`rating_basis`, and Ohio in particular comes out redder than a hand-written
+rating would. It is arithmetic on results already in, not a forecast.
 
 ## Sources
 
