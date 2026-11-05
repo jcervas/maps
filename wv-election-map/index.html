@@ -115,6 +115,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 
 /* seats */
 .seats { display: grid; grid-template-columns: repeat(17, 1fr); gap: 3px; }
+.seats button.small { font-size: 0; }
 .seats button { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 3px; cursor: pointer; padding: 0; font-size: 9px; font-weight: 700; color: #fff; }
 .seats button.on { outline: 2px solid var(--accent); outline-offset: 1px; }
 .seatline { font-size: 12.5px; }
@@ -126,6 +127,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 .rank .row:hover .rl, .rank .row.on .rl { font-weight: 700; fill: var(--accent); }
 .rank text { font-size: 11px; fill: var(--ink); }
 .rank .rv { font-family: var(--f-data); font-size: 10.5px; fill: var(--muted); }
+.rank svg.dense text { font-size: 7.5px; }
 
 /* ---------- map ---------- */
 .mapwrap { position: relative; min-height: 0; border-radius: 10px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); }
@@ -290,6 +292,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
           <div class="seg" id="lines" role="group" aria-label="District lines">
           <button data-l="now" title="Senate districts used since 2022">Current</button>
           <button data-l="old" title="Senate districts used 2012–2020">2012–2020</button>
+          <button data-l="hod" title="House of Delegates districts">House</button>
           <button data-l="off">Off</button>
           </div>
         </div>
@@ -330,93 +333,163 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   const oldFC = topojson.feature(base, base.objects.old);
   const oldFeat = new Map(oldFC.features.map(f => [f.properties.d, f]));
   const isOld = e => e.plan === 'old';
-  const planFC = () => isOld(cur()) ? oldFC : districtsFC;
-  const featOf = (d, plan) => ((plan || linesPlan()) === 'old' ? oldFeat : distFeat).get(d);
-  const elecPlan = () => isOld(cur()) ? 'old' : 'now';
+  // District maps: today's senate districts ('now'), the 2012–2020 senate districts ('old')
+  // and the House of Delegates districts ('hod', for live House races)
+  const FCS = { now: districtsFC, old: oldFC, hod: null }, FEATS = { now: distFeat, old: oldFeat, hod: new Map() };
+  const planOf = e => (e && e.plan) || 'now';
+  const otherPlan = e => planOf(e) !== 'now';
+  const planFC = () => FCS[planOf(cur())] || districtsFC;
+  const featOf = (d, plan) => (FEATS[plan || linesPlan()] || distFeat).get(d);
+  const elecPlan = () => planOf(cur());
+  const distName = (e, d) => planOf(e) === 'hod' ? `House District ${d}` : isOld(e) ? `District ${d} (2011 map)` : `District ${d}`;
   const OLDNOTE = 'Held under the 2011 senate districts (2012–2020)';
   const E = data.elections, byId = new Map(E.map(e => [e.id, e]));
   const isSU = e => e.office === 'State Senate';
   const layerGeo = {}, layerLoading = {};
-  const DN = d3.range(1, 18);
+  const DN = d3.range(1, 18), DNH = d3.range(1, 101);
+  const dnOf = e => planOf(e) === 'hod' ? DNH : DN;
   const ideal = d3.sum(DN, d => data.districts[d].pop) / 17;
 
-  // ---------- live results: State Senate District 13, November 3, 2026 ----------
+  // ---------- live results, November 3, 2026 ----------
   // The page reads the WV Secretary of State's election-night feed (Clarity ENR) straight
   // from the browser; the feed allows that from any site. live.json names the statewide
-  // Clarity election; the county feeds for Monongalia and Marion come from its settings.
-  const LIVE = { district: 13, counties: ['Monongalia', 'Marion'], every: 60000,
-                 contest: /STATE SENATOR,\s*13th Senatorial District/i,
-                 base: 'https://results.enr.clarityelections.com/WV' };
+  // Clarity election. Each county's results are re-read only when that county posts a new
+  // version, so a visitor makes two small requests a minute once the page has loaded.
+  const LIVE = { every: 60000, base: 'https://results.enr.clarityelections.com/WV', conc: 6 };
+  const LIVE_RACES = [
+    { id: 'uss26', office: 'U.S. Senate', re: /^U\.S\. SENATOR$/i, kind: 'state' },
+    { id: 'hse26', office: 'U.S. House', re: /^U\.S\. HOUSE OF REPRESENTATIVES,\s*(\d+)\w*\s+Congressional District$/i, kind: 'cd' },
+    { id: 'su26', office: 'State Senate', re: /^STATE SENATOR,\s*(\d+)\w*\s+Senatorial District$/i, kind: 'sd' },
+    { id: 'su26u', office: 'State Senate, unexpired term', re: /^STATE SENATOR,\s*(\d+)\w*\s+Senatorial District\s*-\s*UNEXPIRED TERM$/i, kind: 'sd' },
+    { id: 'hod26', office: 'House of Delegates', re: /^HOUSE OF DELEGATES,\s*(\d+)\w*\s+District$/i, kind: 'hd' },
+  ];
+  const byDistrict = k => k === 'sd' || k === 'hd';       // results come per district contest
   const liveCfg = await fetch('live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
   const liveExtra = await fetch('wv_live.json').then(r => r.ok ? r.json() : null).catch(() => null);
-  const liveE = liveCfg && liveCfg.eid ? {
-    id: 'su26', year: 2026, office: 'State Senate', label: 'State Senate 2026 · District 13', layer: 'p2024',
-    multi: true, live: true, cands: [], prec: [], dist: Object.fromEntries(DN.map(d => [String(d), []])), state: [],
-    src: 'Unofficial results, WV Secretary of State (county clerks via Clarity ENR)',
-    feed: { eid: liveCfg.eid, label: liveCfg.label || '', test: !!liveCfg.test, at: null, err: null, reporting: null, counties: [], unplaced: [] }
-  } : null;
-  if (liveE) { E.unshift(liveE); byId.set(liveE.id, liveE); }
-  // Precincts on the 2026 ballot that the 2024 map lacks (Marion 32) join the 2024 layer
-  const p24 = data.precincts.p2024, extraStart = p24.length;
-  if (liveE && liveExtra) liveExtra.precincts.forEach(x => p24.push({ n: x.n, c: x.c, d: x.d, only26: true, geometry: x.geometry }));
-  const pkey = (county, name) => county.toUpperCase() + '|' + name.toUpperCase().replace(/^(VOTING\s+)?PRECINCT\s*/, '').replace(/[\s-]/g, '');
+  const hodTopo = liveCfg && liveCfg.eid ? await fetch('wv_hod.json').then(r => r.ok ? r.json() : null).catch(() => null) : null;
+  if (hodTopo) { FCS.hod = topojson.feature(hodTopo, hodTopo.objects.hod); FCS.hod.features.forEach(f => FEATS.hod.set(f.properties.d, f)); }
+  const liveOn = !!(liveCfg && liveCfg.eid);
+  const LF = { eid: liveOn ? liveCfg.eid : null, label: liveCfg && liveCfg.label || '', test: !!(liveCfg && liveCfg.test),
+               at: null, err: null, busy: false, counties: new Map(), unplaced: [] };
+  const liveEs = liveOn ? LIVE_RACES.filter(r => r.kind !== 'hd' || FCS.hod).map(r => ({
+    id: r.id, year: 2026, office: r.office, label: `${r.office} 2026`, layer: 'p2024', multi: r.kind !== 'state', live: true, race: r,
+    plan: r.kind === 'hd' ? 'hod' : undefined,
+    cands: [], prec: [], dist: Object.fromEntries((r.kind === 'hd' ? DNH : DN).map(d => [String(d), []])), state: [], rep: { all: null, byD: {} },
+    src: 'Unofficial results, WV Secretary of State (county clerks via Clarity ENR)', feed: LF
+  })) : [];
+  E.unshift(...liveEs); liveEs.forEach(x => byId.set(x.id, x));
+  // Precincts on the 2026 ballot that the 2024 map lacks join the 2024 layer (none right now)
+  const p24 = data.precincts.p2024;
+  if (liveOn && liveExtra) liveExtra.precincts.forEach(x => p24.push({ n: x.n, c: x.c, d: x.d, only26: true, geometry: x.geometry }));
+  const pkey = (county, name) => county.toUpperCase() + '|' + name.toUpperCase().replace(/^(VOTING\s+)?(PRECINCT|PCT\.?)\s*#?\s*/, '').replace(/[\s-]/g, '').replace(/^0+(\d)/, '$1');
   const p24ix = new Map(p24.map((p, i) => [pkey(data.counties[p.c] || '', p.n), i]));
-  const placeLive = (county, name) => {
+  // Map precincts split into parts (Ohio 13A and 13B) when the feed reports them as one
+  const p24parts = new Map();
+  for (const [k, i] of p24ix) { const b = k.replace(/(\d+)[A-Z]$/, '$1'); if (b !== k) p24parts.set(b, [...(p24parts.get(b) || []), i]); }
+  const placeLive = (county, name) => {        // -> list of map precincts, or null
     const k = pkey(county, name);
-    if (p24ix.has(k)) return p24ix.get(k);
-    return p24ix.get(k.replace(/(\d+)[A-Z]+$/, '$1'));     // 2A and 2B report separately; the map has 2
+    if (p24ix.has(k)) return [p24ix.get(k)];
+    const b = k.replace(/(\d+)[A-Z]+$/, '$1');   // e.g. 2A and 2B report separately; the map has 2
+    if (p24ix.has(b)) return [p24ix.get(b)];
+    return p24parts.get(k) || null;
   };
   const titleName = s => s.toLowerCase().replace(/\b([a-z])/g, m => m.toUpperCase()).replace(/\bMc([a-z])/g, (m, c) => 'Mc' + c.toUpperCase()).replace(/\b(Ii|Iii|Iv)\b/g, m => m.toUpperCase());
   const LPARTY = { REP: 'R', DEM: 'D', LBN: 'L', LIB: 'L', MTN: 'M', CST: 'C', IND: 'I', NPA: 'I' };
-  async function getJSON(u) { const r = await fetch(u, { cache: 'no-store' }); if (!r.ok) throw new Error(`${r.status} for ${u.replace(LIVE.base, 'ENR')}`); return r.json(); }
-  async function pollLive() {
-    if (!liveE || document.hidden) return;
-    const f = liveE.feed;
-    try {
-      const v = (await (await fetch(`${LIVE.base}/${f.eid}/current_ver.txt?t=${Date.now()}`, { cache: 'no-store' })).text()).trim();
-      if (!/^\d+$/.test(v)) throw new Error('the results feed is not up yet');
-      const es = await getJSON(`${LIVE.base}/${f.eid}/${v}/json/en/electionsettings.json`);
-      const rows = (es.settings.electiondetails.participatingcounties || []).map(x => x.split('|'));
-      const cands = [], ckey = new Map(), dist = [], prec = p24.map(() => null), counties = [], unplaced = [];
-      let tp = 0, pr = 0;
-      for (const cname of LIVE.counties) {
-        const row = rows.find(r => r[0] === cname);
-        if (!row) continue;
-        const cb = `${LIVE.base}/${cname}/${row[1]}/${row[2]}`;
-        const [sum, all] = await Promise.all([getJSON(`${cb}/json/en/summary.json`), getJSON(`${cb}/json/ALL.json`)]);
-        const cs = sum.filter(c => LIVE.contest.test(c.C));
-        const cnt = { name: cname, updated: row[3], votes: [], tp: 0, pr: 0 };
-        for (const c of cs) {
-          const idx = c.CH.map((nm, j) => {
-            const k = nm.toUpperCase().replace(/[^A-Z ]/g, '').trim();
-            if (!ckey.has(k)) { ckey.set(k, cands.length); cands.push({ f: k, name: titleName(nm), p: LPARTY[c.P[j]] || 'O', d: LIVE.district }); dist.push(0); }
-            return ckey.get(k);
-          });
-          c.V.forEach((x, j) => { dist[idx[j]] += x; cnt.votes[idx[j]] = (cnt.votes[idx[j]] || 0) + x; });
-          cnt.tp = Math.max(cnt.tp, c.TP); cnt.pr = Math.max(cnt.pr, c.PR);
-          for (const pc of all.Contests) {
-            const at = pc.C.indexOf(c.K);
-            if (at < 0 || pc.A === '-1') continue;      // '-1' holds votes not tied to a precinct
-            const i = placeLive(cname, pc.A);
-            if (i == null) { unplaced.push(`${cname} ${pc.A}`); continue; }
-            prec[i] = prec[i] || [];
-            pc.V[at].forEach((x, j) => { prec[i][idx[j]] = (prec[i][idx[j]] || 0) + x; });
+  // Clarity drops some requests on a busy night, so each one gets three tries before it counts as failed
+  async function enr(u, opt) {
+    for (let k = 0; ; k++) {
+      try { const r = await fetch(u, opt); if (r.ok) return r; throw new Error(`${r.status} for ${u.replace(LIVE.base, 'ENR')}`); }
+      catch (err) { if (k >= 2) throw err; await new Promise(res => setTimeout(res, 1500 * (k + 1))); }
+    }
+  }
+  async function getJSON(u) { return (await enr(u)).json(); }
+  // One county: its contests for the live races and each precinct's votes in them
+  async function loadCounty(name, ceid, cver) {
+    const cb = `${LIVE.base}/${name}/${ceid}/${cver}`;
+    const [sum, all] = await Promise.all([getJSON(`${cb}/json/en/summary.json`), getJSON(`${cb}/json/ALL.json`)]);
+    const contests = [];
+    for (const c of sum) for (const r of LIVE_RACES) {
+      const m = r.re.exec((c.C || '').trim());
+      if (m) contests.push({ race: r.id, kind: r.kind, d: m[1] ? +m[1] : 0, K: c.K, CH: c.CH, P: c.P, V: c.V, TP: c.TP, PR: c.PR });
+    }
+    const keys = new Set(contests.map(c => c.K)), precs = [];
+    for (const pc of all.Contests) {
+      if (pc.A === '-1') continue;                     // votes not tied to a precinct
+      const votes = {};
+      pc.C.forEach((k, j) => { if (keys.has(k)) votes[k] = pc.V[j]; });
+      if (Object.keys(votes).length) precs.push({ A: pc.A, i: placeLive(name, pc.A), votes });
+    }
+    return { ver: cver, contests, precs };
+  }
+  function aggregate() {
+    const unplaced = new Set();
+    for (const e of liveEs) {
+      const cands = [], ck = new Map(), dist = {}, prec = p24.map(() => null), state = [], byD = {}, all = { pr: 0, tp: 0 };
+      const idxOf = (c, d) => c.CH.map((nm, j) => {
+        const k = d + '|' + nm.toUpperCase().replace(/[^A-Z ]/g, '').trim();
+        if (!ck.has(k)) {
+          ck.set(k, cands.length); state.push(0);
+          const cd = { f: k, name: titleName(nm), p: LPARTY[c.P[j]] || 'O' };
+          if (byDistrict(e.race.kind)) cd.d = d; if (e.race.kind === 'cd') cd.cd = d;
+          cands.push(cd);
+        }
+        return ck.get(k);
+      });
+      for (const cty of LF.counties.values()) {
+        for (const c of cty.contests.filter(x => x.race === e.id)) {
+          const ix = idxOf(c, c.d);
+          c.V.forEach((v, j) => { state[ix[j]] += v; });
+          all.pr += c.PR; all.tp += c.TP;
+          if (byDistrict(e.race.kind)) {
+            const dv = dist[c.d] = dist[c.d] || [];
+            c.V.forEach((v, j) => { dv[ix[j]] = (dv[ix[j]] || 0) + v; });
+            const r = byD[c.d] = byD[c.d] || { pr: 0, tp: 0 }; r.pr += c.PR; r.tp += c.TP;
+          }
+          for (const pr of cty.precs) {
+            const vv = pr.votes[c.K];
+            if (!vv) continue;
+            if (!pr.i) { unplaced.add(`${cty.name} ${pr.A}`); continue; }
+            for (const ii of pr.i) {                 // every map part shows the whole precinct's votes
+              const row = prec[ii] = prec[ii] || [];
+              vv.forEach((v, j) => { row[ix[j]] = (row[ix[j]] || 0) + v; });
+            }
+            if (!byDistrict(e.race.kind)) for (const [sd, sh] of Object.entries(p24[pr.i[0]].d)) {
+              const dv = dist[sd] = dist[sd] || [];
+              vv.forEach((v, j) => { dv[ix[j]] = (dv[ix[j]] || 0) + v * sh; });
+            }
           }
         }
-        tp += cnt.tp; pr += cnt.pr; counties.push(cnt);
       }
-      const n = cands.length;
-      liveE.cands = cands;
-      liveE.prec = prec.map(x => x ? Array.from({ length: n }, (_, k) => x[k] || 0) : null);
-      liveE.dist = Object.fromEntries(DN.map(d => [String(d), d === LIVE.district ? dist.slice() : []]));
-      liveE.state = dist.slice();
-      counties.forEach(c => { c.votes = Array.from({ length: n }, (_, k) => c.votes[k] || 0); });
-      Object.assign(f, { at: new Date(), err: null, reporting: { pr, tp }, counties, unplaced: [...new Set(unplaced)], name: es.settings.electiondetails.internalname });
-    } catch (err) {
-      f.err = err.message; f.at = new Date();
+      const n = cands.length, full = a => Array.from({ length: n }, (_, k) => (a && a[k]) || 0);
+      Object.assign(e, { cands, state, prec: prec.map(x => x ? full(x) : null),
+        dist: Object.fromEntries(dnOf(e).map(d => [String(d), dist[d] ? full(dist[d]) : []])), rep: { all, byD } });
     }
-    for (const k of [...distCache.keys()]) if (k.startsWith('su26:')) distCache.delete(k);
-    if (cur() === liveE || S.cmp === 'su26') renderAll(); else renderControls();
+    LF.unplaced = [...unplaced];
+  }
+  async function pollLive() {
+    if (!liveOn || LF.busy || document.hidden) return;
+    LF.busy = true;
+    try {
+      const v = (await (await enr(`${LIVE.base}/${LF.eid}/current_ver.txt?t=${Date.now()}`, { cache: 'no-store' })).text()).trim();
+      if (!/^\d+$/.test(v)) throw new Error('the results feed is not up yet');
+      const es = await getJSON(`${LIVE.base}/${LF.eid}/${v}/json/en/electionsettings.json`);
+      const rows = (es.settings.electiondetails.participatingcounties || []).map(x => x.split('|'));
+      const todo = rows.filter(r => !LF.counties.has(r[0]) || LF.counties.get(r[0]).ver !== r[2]);
+      for (let i = 0; i < todo.length; i += LIVE.conc) {
+        await Promise.all(todo.slice(i, i + LIVE.conc).map(async r => {
+          try { LF.counties.set(r[0], { name: r[0], updated: r[3], ...(await loadCounty(r[0], r[1], r[2])) }); }
+          catch (err) { console.warn('county', r[0], err.message); }
+        }));
+      }
+      aggregate();
+      Object.assign(LF, { at: new Date(), err: null, name: es.settings.electiondetails.internalname, ncounties: rows.length });
+    } catch (err) {
+      LF.err = err.message; LF.at = new Date();
+    }
+    LF.busy = false;
+    if (LF.err) setTimeout(pollLive, 15000);           // after a failure, try again sooner than the next minute
+    for (const k of [...distCache.keys()]) if (/^(uss26|hse26|su26|su26u|hod26):/.test(k)) distCache.delete(k);
+    if (cur().live || (baseE() && baseE().live)) renderAll(); else renderControls();
   }
 
 
@@ -454,9 +527,9 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   // Which district lines are drawn: the election's own map, unless the viewer picked
   // other lines in precinct view (for example today's lines over 2020 precincts)
   const precView = () => S.mode === 'precinct' && !!cur().layer;
-  const linesPlan = () => precView() && S.lines ? S.lines : (isOld(cur()) ? 'old' : 'now');
-  const linesFC = () => ({ now: districtsFC, old: oldFC, off: null })[linesPlan()];
-  const canSelect = () => !isOld(cur()) || linesPlan() !== 'old';
+  const linesPlan = () => precView() && S.lines ? S.lines : planOf(cur());
+  const linesFC = () => linesPlan() === 'off' ? null : FCS[linesPlan()] || districtsFC;
+  const canSelect = () => !otherPlan(cur()) || linesPlan() === 'now';
 
   // ---------- swing ----------
   // Change in the Democratic share of the two-party vote from an earlier statewide race.
@@ -465,12 +538,12 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   const SBINS = [-.2, -.15, -.1, -.05, -.02, 0, .02, .05, .1, .15, .2];
   const swingColor = v => RAMP[d3.bisectRight(SBINS, v)];
   const swingLabel = v => v == null ? '—' : Math.abs(v) < .0005 ? 'No change' : (v > 0 ? 'D+' : 'R+') + Math.abs(v * 100).toFixed(1);
-  const statewideRace = e => !e.multi && !isOld(e) && stateTally(e).two != null;
+  const statewideRace = e => !e.multi && !otherPlan(e) && stateTally(e).two != null;
   // Statewide races compare with each other; State Senate and U.S. House races compare with
   // races for the same office on the same district map (two-party swing where both years
   // had a Democrat and a Republican)
   const comparable = (a, b) => a && b && a.id !== b.id &&
-    (statewideRace(a) ? statewideRace(b) : a.multi && b.multi && a.office === b.office && isOld(a) === isOld(b));
+    (statewideRace(a) ? statewideRace(b) : a.multi && b.multi && a.office === b.office && planOf(a) === planOf(b));
   const swingOn = () => !!S.cmp && comparable(cur(), baseE());
   const baseE = () => byId.get(S.cmp);
   const xData = {}, xLoading = {};
@@ -493,7 +566,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
     const e = cur(), b = baseE();
     if (!e.multi) { const a = stateTally(e).two, c = stateTally(b).two; return { a, b: c, v: a - c, n: null }; }
     let aD = 0, aR = 0, bD = 0, bR = 0, n = 0;
-    for (const d of DN) {
+    for (const d of dnOf(e)) {
       const x = distTally(e, d), y = distTally(b, d);
       if (x.contested && y.contested) { n++; aD += x.D; aR += x.R; bD += y.D; bR += y.R; }
     }
@@ -535,7 +608,8 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
     cp.innerHTML = opts.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
     cp.value = ok && comparable(e, byId.get(S.cmp)) ? S.cmp : ''; cp.disabled = !ok;
     cp.title = ok ? 'Color the map by the change in the Democratic two-party share since another race' : 'No other race for this office on the same district map';
-    d3.selectAll('#lines button').attr('aria-pressed', function () { return this.dataset.l === linesPlan(); });
+    d3.selectAll('#lines button').attr('aria-pressed', function () { return this.dataset.l === linesPlan(); })
+      .property('hidden', function () { return this.dataset.l === 'hod' && !FCS.hod; });
   }
   d3.selectAll('#modes button').on('click', function () { setMode(this.dataset.mode); });
   d3.selectAll('#lines button').on('click', function () { setLines(this.dataset.l); });
@@ -583,7 +657,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
       gDist.selectAll('path').data(fc.features, f => f.properties.d).join('path').attr('class', 'dist-fill').attr('d', path)
         .on('pointermove', (ev, f) => { if (!precView()) { showTip(ev, distTip(f.properties.d)); hover(f.properties.d, elecPlan()); } })
         .on('pointerleave', () => { hideTip(); hover(null); })
-        .on('click', (ev, f) => { if (!isOld(cur())) select(S.sel === f.properties.d ? null : f.properties.d); });
+        .on('click', (ev, f) => { if (!otherPlan(cur())) select(S.sel === f.properties.d ? null : f.properties.d); });
     }
     const lc = linesFC();
     if (drawnLines !== lc) {
@@ -641,9 +715,9 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 
   // The senate district a precinct votes in: from the race itself for old-map races
   function precDist(e, f, plan) {
-    plan = plan || (isOld(e) ? 'old' : 'now');
-    if (plan === 'old') {
-      if (!isOld(e)) return null;       // no 2012–2020 assignment for other races' precincts
+    plan = plan || planOf(e);
+    if (plan === 'old' || plan === 'hod') {
+      if (planOf(e) !== plan) return null;   // only a race on that map says which of its districts a precinct is in
       const v = e.prec[f.properties.i];
       const k = v ? v.findIndex(x => x > 0) : -1;
       return k >= 0 ? e.cands[k].d : null;
@@ -739,10 +813,10 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
     const pm = S.mode === 'precinct' && e.layer;
     let s = `<b>${esc(e.label)}</b> · `;
     if (e.live && !swingOn()) {
-      const f = e.feed, t = f.at ? f.at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+      const f = e.feed, t = f.at ? f.at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '', rp = e.rep.all;
       s = `<span class="livedot"></span><b>${f.test ? 'Test feed' : 'Live'} · unofficial</b> · ${esc(e.label)}`;
-      if (f.err) s += `<br><span style="color:var(--muted)">Results could not load (${esc(f.err)}). Trying again every minute${location.hostname.endsWith('claude.ai') || location.protocol === 'blob:' ? '; live results load on jonathancervas.com, not in this preview' : ''}.</span>`;
-      else if (f.reporting) s += ` · ${f.reporting.pr} of ${f.reporting.tp} precincts reporting · checked ${t}${f.test ? `<br><span style="color:var(--muted)">Showing ${esc(f.label || f.name || 'a test feed')} until the November 3 feed is set.</span>` : ''}`;
+      if (f.err) s += `<br><span style="color:var(--muted)">Results could not load (${esc(f.err)}). Trying again in a few seconds${location.hostname.endsWith('claude.ai') || location.protocol === 'blob:' ? '; live results load on jonathancervas.com, not in this preview' : ''}.</span>`;
+      else if (rp) s += ` · ${fmt(rp.pr)} of ${fmt(rp.tp)} precincts reporting · checked ${t}${f.test ? `<br><span style="color:var(--muted)">Showing ${esc(f.label || f.name || 'a test feed')}.</span>` : ''}`;
       else s += ' · loading…';
       el.innerHTML = s; return;
     }
@@ -825,17 +899,18 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
       : `<span class="mchip" style="background:${chipColor(t)}">${t.rows.length === 1 ? 'Unopposed' : 'No ' + (t.winner === 'D' ? 'Republican' : 'Democrat')}</span>`) : '';
 
   function distTip(d) {
-    const e = cur(), t = distTally(e, d), st = stateTally(e), info = isOld(e) ? null : data.districts[d];
-    const ranked = DN.filter(x => distTally(e, x).two != null).sort((a, b) => distTally(e, b).two - distTally(e, a).two);
+    const e = cur(), t = distTally(e, d), st = stateTally(e), info = otherPlan(e) ? null : data.districts[d];
+    const ranked = dnOf(e).filter(x => distTally(e, x).two != null).sort((a, b) => distTally(e, b).two - distTally(e, a).two);
     const rank = ranked.indexOf(d) + 1;
     const diff = t.contested && st.margin != null && !isSU(e) ? (t.margin - st.margin) : null;
-    return `<div><h4>District ${d}${info ? '' : ' (2011 map)'} ${mchip(t)}</h4><div class="sub">${esc(e.label)} · ${info ? info.counties.map(c => esc(c.n)).join(', ') : OLDNOTE}</div></div>
+    return `<div><h4>${distName(e, d)} ${mchip(t)}</h4><div class="sub">${esc(e.label)} · ${info ? info.counties.map(c => esc(c.n)).join(', ') : isOld(e) ? OLDNOTE : 'House of Delegates district'}</div></div>
       ${resultRows(t)}
       <div class="kv">
         <span>Total votes</span><b>${fmt(Math.round(t.total))}</b>
         <span>Two-party Dem.</span><b>${pct(t.two)}</b>
         ${rank ? `<span>Rank (most Dem.)</span><b>${rank} of ${ranked.length}</b>` : ''}
         ${diff != null ? `<span>vs. statewide</span><b>${Math.abs(diff) < .0005 ? 'Same' : (Math.abs(diff * 100).toFixed(1) + ' pts more ' + (diff > 0 ? 'Dem.' : 'Rep.'))}</b>` : ''}
+        ${e.live && e.rep.byD[d] ? `<span>Precincts reporting</span><b>${e.rep.byD[d].pr} of ${e.rep.byD[d].tp}</b>` : ''}
         ${info ? `<span>Population</span><b>${fmt(info.pop)}</b>` : ''}
         ${swingOn() ? `<span>${esc(baseE().label)}</span><b>${pct(twoOf(baseE(), d))}</b><span>Swing</span><b>${swingChip(distSwing(d))}</b>` : ''}
       </div>`;
@@ -843,11 +918,11 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 
   function precTip(f) {
     const e = cur(), m = f.properties.meta, t = tally(e, e.prec[f.properties.i]);
-    const od = isOld(e) ? precDist(e, f) : null;
-    const ds = isOld(e) ? (od ? [[String(od), 1]] : []) : Object.entries(m.d);
+    const od = otherPlan(e) ? precDist(e, f) : null;
+    const ds = otherPlan(e) ? (od ? [[String(od), 1]] : []) : Object.entries(m.d);
     if (!ds.length) return `<div><h4>${esc(m.n)}</h4><div class="sub">${esc(data.counties[m.c] || '')} County · ${esc(e.label)}</div></div><p class="hint">No results could be matched to this precinct.</p>`;
     const dt = distTally(e, +ds[0][0]);
-    const dname = isOld(e) ? '2011 District' : 'District';
+    const dname = isOld(e) ? '2011 District' : planOf(e) === 'hod' ? 'House District' : 'District';
     const share = isSU(e) ? null : (dt.total ? t.total / dt.total : null);
     if (t.nomatch) return `<div><h4>${esc(m.n)}</h4><div class="sub">${esc(data.counties[m.c] || '')} County · District ${ds.map(x => x[0]).join(' / ')} · ${esc(e.label)}</div></div>
       <p class="hint">${e.live ? 'No results reported for this precinct yet.' : e.year === 2022 ? 'No 2022 precinct with this name in the same senate district. Precincts were renamed or redrawn between 2022 and 2024; this area’s 2022 votes are still in the district totals.' : 'No precinct in the results file matched this one by name.'}</p>`;
@@ -858,7 +933,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
         <span>Total votes</span><b>${fmt(t.total)}</b>
         <span>Two-party Dem.</span><b>${pct(t.two)}</b>
         <span>${dname} ${ds[0][0]} result</span><b>${marginLabel(dt.contested ? dt.margin : null)}</b>
-        ${isOld(e) ? `<span>Today’s district</span><b>${Object.entries(m.d).map(([d, sh]) => Object.keys(m.d).length > 1 ? `${d} (${pct(sh, 0)})` : d).join(', ') || '—'}</b>` : ''}
+        ${otherPlan(e) ? `<span>${planOf(e) === 'hod' ? 'Senate district' : 'Today’s district'}</span><b>${Object.entries(m.d).map(([d, sh]) => Object.keys(m.d).length > 1 ? `${d} (${pct(sh, 0)})` : d).join(', ') || '—'}</b>` : ''}
         ${share != null && ds.length === 1 ? `<span>Share of district vote</span><b>${pct(share, 2)}</b>` : ''}
         ${swingOn() ? (sw => sw ? `<span>${esc(baseE().label)}${sw.est ? '*' : ''}</span><b>${pct(sw.b)}</b><span>Swing</span><b>${swingChip(sw.v)}</b>` : `<span>Swing</span><b>—</b>`)(precSwing(e.layer, f.properties.i)) : ''}
       </div>
@@ -878,47 +953,32 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   }
 
   function renderLeft() {
-    const e = cur(), st = e.live ? tally(e, e.state, LIVE.district) : stateTally(e);
-    const tallies = DN.map(d => ({ d, t: distTally(e, d) }));
+    const e = cur(), st = stateTally(e);
+    const tallies = dnOf(e).map(d => ({ d, t: distTally(e, d) }));
     const dWins = tallies.filter(x => x.t.winner === 'D').length, rWins = tallies.filter(x => x.t.winner === 'R').length;
-    const other = 17 - dWins - rWins;
+    const other = tallies.filter(x => x.t.total && x.t.winner !== 'D' && x.t.winner !== 'R').length;
     const sorted = [...tallies].sort((a, b) => (b.t.two ?? (b.t.winner === 'D' ? 2 : -1)) - (a.t.two ?? (a.t.winner === 'D' ? 2 : -1)));
     const unc = tallies.filter(x => x.t.total && !x.t.contested).length;
 
-    if (e.live) {
-      const f = e.feed, rp = f.reporting;
-      document.getElementById('leftInner').innerHTML = `<section class="sec">
-        <h3>${f.test ? 'Test feed · ' : ''}Unofficial results</h3>
-        <h2>${esc(e.label)}</h2>
-        ${st.total ? candBlock(st) : '<p class="hint">No votes reported yet. County clerks start posting results after polls close at 7:30 p.m.</p>'}
-        <div class="totals"><span>${fmt(Math.round(st.total))} votes</span><span>Margin <b class="num">${marginLabel(st.margin)}</b></span></div>
-        ${rp ? `<div class="cand"><div class="who"><b>Precincts reporting</b></div><span class="num">${rp.pr} of ${rp.tp}</span>
-          <div class="bar"><i style="width:${rp.tp ? 100 * rp.pr / rp.tp : 0}%;background:var(--accent)"></i></div></div>` : ''}
-      </section>
-      ${f.counties.length ? `<section class="sec"><h3>By county</h3>
-        <table class="ctable"><thead><tr><th>County</th>${st.rows.map(r => `<th>${esc(r.c.name.split(' ').slice(-1)[0])}</th>`).join('')}<th>Reporting</th></tr></thead><tbody>
-        ${f.counties.map(c => { const tot = d3.sum(c.votes); return `<tr><td>${esc(c.name)}</td>${st.rows.map(r => { const k = e.cands.indexOf(r.c); return `<td class="num">${fmt(c.votes[k] || 0)}${tot ? ` <span style="color:var(--muted)">${pct((c.votes[k] || 0) / tot, 0)}</span>` : ''}</td>`; }).join('')}<td class="num">${c.pr}/${c.tp}</td></tr>`; }).join('')}
-        </tbody></table></section>` : ''}
-      <section class="sec"><h3>Earlier District 13 races</h3>
-        ${['su24', 'su22'].map(id => { const x = byId.get(id), t = distTally(x, LIVE.district); return `<div class="totals" style="border:0;padding:0"><span><a href="#" data-id="${id}" class="elink">${esc(x.label)}</a>: ${esc(t.rows[0].c.name)} ${pct(t.rows[0].v / t.total)}</span><span>${mchip(t)}</span></div>`; }).join('')}
-        <p class="note">Pick one of these in “Swing since” to map the change precinct by precinct.</p>
-      </section>
-      <section class="sec"><p class="note">Results are unofficial and come from the county clerks through the WV Secretary of State’s election-night site, checked every minute. Precincts: 2024 map (RDH); Marion precinct 32 from the WV GIS Technical Center, since the 2024 map folds it into precinct 31. Votes not tied to a precinct (absentee and early votes in some counties) count in the totals but not on the map.${f.unplaced.length ? ` Not on the map: ${esc(f.unplaced.join(', '))}.` : ''}</p></section>`;
-      d3.selectAll('#leftInner .elink').on('click', function (ev) { ev.preventDefault(); S.cmp = this.dataset.id; renderAll(); });
-      return;
-    }
-    let html = `<section class="sec">
-        <h3>${isSU(e) ? `Statewide, all ${new Set(e.cands.map(c => c.d)).size} contests` : e.multi ? `Statewide, all ${new Set(e.cands.map(c => c.cd)).size} districts` : 'Statewide result'}</h3>
+    const rp = e.live && e.rep.all;
+    let html = `${e.live ? `<section class="sec">
+        <h3><span class="livedot"></span>${e.feed.test ? 'Test feed · ' : ''}Live · unofficial</h3>
+        ${rp && rp.tp ? `<div class="cand"><div class="who"><b>Precincts reporting</b></div><span class="num">${fmt(rp.pr)} of ${fmt(rp.tp)}</span>
+          <div class="bar"><i style="width:${100 * rp.pr / rp.tp}%;background:var(--accent)"></i></div></div>` : '<p class="hint">Loading results…</p>'}
+        ${rp && !st.total ? '<p class="hint">No votes reported yet. County clerks start posting results after polls close at 7:30 p.m.</p>' : ''}
+        <p class="note">Unofficial results from the county clerks through the WV Secretary of State’s election-night site, checked every minute. Votes not tied to a precinct (absentee and early votes in some counties) count in statewide totals but not on the map${byDistrict(e.race.kind) ? '' : ' or in senate-district totals'}.${e.feed.unplaced.length ? ` Not on the map (no matching precinct shape): ${esc(e.feed.unplaced.join(', '))}.` : ''}</p>
+      </section>` : ''}<section class="sec">
+        <h3>${e.cands.length && e.cands[0].d ? `Statewide, all ${new Set(e.cands.map(c => c.d)).size} contests` : e.multi ? `Statewide, all ${new Set(e.cands.map(c => c.cd)).size} districts` : 'Statewide result'}</h3>
         <h2>${esc(e.label)}</h2>
         ${candBlock(st)}
         <div class="totals"><span>${fmt(Math.round(st.total))} votes</span><span>Margin <b class="num">${marginLabel(st.margin)}</b></span></div>
         ${isOld(e) ? `<p class="note">${OLDNOTE}. Districts below are the old ones, numbered 1–17 like today’s but with different lines.</p>` : !e.layer ? '<p class="note">From DRA’s block-level data; precinct results are not available for this election.</p>' : ''}
       </section>
       <section class="sec">
-        <h3>${isOld(e) ? '2011 districts carried' : 'Senate districts carried'}</h3>
+        <h3>${isOld(e) ? '2011 districts carried' : planOf(e) === 'hod' ? 'House districts carried' : 'Senate districts carried'}</h3>
         <div class="seatline"><b class="f-D">${dWins}</b> Democratic · <b class="f-R">${rWins}</b> Republican${other ? ` · <b>${other}</b> other` : ''}
           ${st.two != null ? `<span style="color:var(--muted)"> with ${pct(st.two)} of the two-party vote</span>` : ''}</div>
-        <div class="seats">${sorted.map(x => `<button data-d="${x.d}" class="${S.sel === x.d ? 'on' : ''}" style="background:${chipColor(x.t)}" title="District ${x.d}: ${marginLabel(x.t.contested ? x.t.margin : null)}">${x.d}</button>`).join('')}</div>
+        <div class="seats">${sorted.map(x => `<button data-d="${x.d}" class="${S.sel === x.d ? 'on' : ''}${sorted.length > 20 ? ' small' : ''}" style="background:${chipColor(x.t)}" title="District ${x.d}: ${marginLabel(x.t.contested ? x.t.margin : null)}">${x.d}</button>`).join('')}</div>
         ${unc ? `<p class="note">${unc} ${unc === 1 ? 'district had' : 'districts had'} no contest between a Democrat and a Republican.</p>` : ''}
       </section>
       ${swingOn() ? (() => { const b = baseE(), ss = stateSwing(); return `<section class="sec">
@@ -936,7 +996,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
         <p class="note">Map: DRA official plan “WV 2022 State Senate”. Precinct results: VEST (2016–2020) and Redistricting Data Hub (2024), from the WV Secretary of State; OpenElections for 2022, U.S. House 2018–2020 and State Senate 2014–2020 (the older senate races on DRA’s 2011 district map). U.S. House 2018–2020 votes are allotted to senate districts by each precinct’s voting-age population. District totals add up block-level results, so split precincts are divided the way DRA divides them. President 2008 and 2012: DRA. Demographics: 2020 Census via DRA.</p>
       </section>`;
     document.getElementById('leftInner').innerHTML = html;
-    d3.selectAll('#leftInner .seats button').on('click', function () { const d = +this.dataset.d; if (!isOld(cur())) select(S.sel === d ? null : d); })
+    d3.selectAll('#leftInner .seats button').on('click', function () { const d = +this.dataset.d; if (!otherPlan(cur())) select(S.sel === d ? null : d); })
       .on('mouseenter', function () { hover(+this.dataset.d, elecPlan()); }).on('mouseleave', () => hover(null));
     drawRank(sorted, st);
     if (swingOn()) drawSwing();
@@ -944,14 +1004,14 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 
   function drawSwing() {
     const el = document.getElementById('swingChart');
-    const rows = DN.map(d => ({ d, v: distSwing(d) })).filter(r => r.v != null).sort((a, b) => b.v - a.v);
+    const rows = dnOf(cur()).map(d => ({ d, v: distSwing(d) })).filter(r => r.v != null).sort((a, b) => b.v - a.v);
     const w = el.clientWidth || 260, rowH = 17, lw = 26, rw = 52;
     const m = Math.max(.02, d3.max(rows, r => Math.abs(r.v)));
     const x = d3.scaleLinear([-m, m], [lw, w - rw]);
     const s = d3.select(el).append('svg').attr('viewBox', [0, 0, w, rowH * rows.length + 4]);
     const g = s.selectAll('g').data(rows).join('g').attr('class', r => 'row' + (S.sel === r.d ? ' on' : ''))
       .attr('transform', (r, i) => `translate(0,${2 + i * rowH})`)
-      .on('click', (ev, r) => { if (!isOld(cur())) select(S.sel === r.d ? null : r.d); })
+      .on('click', (ev, r) => { if (!otherPlan(cur())) select(S.sel === r.d ? null : r.d); })
       .on('mouseenter', (ev, r) => hover(r.d, elecPlan())).on('mouseleave', () => hover(null));
     g.append('rect').attr('width', w).attr('height', rowH).attr('fill', 'transparent');
     g.append('text').attr('class', 'rl').attr('x', lw - 6).attr('y', rowH / 2).attr('text-anchor', 'end').attr('dominant-baseline', 'central').text(r => r.d);
@@ -963,12 +1023,12 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 
   function drawRank(sorted, st) {
     const el = document.getElementById('rankChart');
-    const w = el.clientWidth || 260, rowH = 17, top = 4, lw = 26, rw = 46;
+    const n = sorted.length, rowH = n > 20 ? 9 : 17, w = el.clientWidth || 260, top = 4, lw = 26, rw = 46;
     const x = d3.scaleLinear([0, 1], [lw, w - rw]);
-    const s = d3.select(el).append('svg').attr('viewBox', [0, 0, w, top + rowH * 17 + 4]);
+    const s = d3.select(el).append('svg').attr('viewBox', [0, 0, w, top + rowH * n + 4]).classed('dense', n > 20);
     const rows = s.selectAll('g').data(sorted).join('g').attr('class', d => 'row' + (S.sel === d.d ? ' on' : ''))
       .attr('transform', (d, i) => `translate(0,${top + i * rowH})`)
-      .on('click', (ev, d) => { if (!isOld(cur())) select(S.sel === d.d ? null : d.d); })
+      .on('click', (ev, d) => { if (!otherPlan(cur())) select(S.sel === d.d ? null : d.d); })
       .on('mouseenter', (ev, d) => hover(d.d, elecPlan())).on('mouseleave', () => hover(null));
     rows.append('rect').attr('x', 0).attr('width', w).attr('height', rowH).attr('fill', 'transparent');
     rows.append('text').attr('class', 'rl').attr('x', lw - 6).attr('y', rowH / 2).attr('text-anchor', 'end').attr('dominant-baseline', 'central').text(d => d.d);
@@ -984,26 +1044,26 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
       r.append('text').attr('class', 'rv').attr('x', w - rw + 6).attr('y', rowH / 2).attr('dominant-baseline', 'central')
         .text(t.contested ? pct(t.two) : 'unc.');
     });
-    s.append('line').attr('x1', x(.5)).attr('x2', x(.5)).attr('y1', 0).attr('y2', top + rowH * 17).attr('stroke', 'var(--ink)').attr('stroke-dasharray', '2 2').attr('stroke-opacity', .7);
-    if (st.two != null && !isSU(cur())) s.append('line').attr('x1', x(st.two)).attr('x2', x(st.two)).attr('y1', 0).attr('y2', top + rowH * 17).attr('stroke', 'var(--accent)').attr('stroke-width', 2);
+    s.append('line').attr('x1', x(.5)).attr('x2', x(.5)).attr('y1', 0).attr('y2', top + rowH * n).attr('stroke', 'var(--ink)').attr('stroke-dasharray', '2 2').attr('stroke-opacity', .7);
+    if (st.two != null && !isSU(cur())) s.append('line').attr('x1', x(st.two)).attr('x2', x(st.two)).attr('y1', 0).attr('y2', top + rowH * n).attr('stroke', 'var(--accent)').attr('stroke-width', 2);
   }
 
   // ---------- right panel: district table or district detail ----------
   function renderRight() {
     const e = cur(), el = document.getElementById('rightInner');
     if (!S.sel) {
-      el.innerHTML = `<section class="sec"><h3>${esc(e.label)} by ${isOld(e) ? '2011 ' : ''}district</h3>
-        <p class="hint">${isOld(e) ? (e.layer ? 'This race used the 2012–2020 districts. To see its precincts inside one of today’s districts, switch to Precinct view, set District lines to Current, and click a district.' : 'This race used the 2012–2020 districts and has no precinct results, so it can’t be shown inside today’s districts.') : 'Click a district on the map, in a list, or pick one at the top to see its statistics.'}</p>
+      el.innerHTML = `<section class="sec"><h3>${esc(e.label)} by ${isOld(e) ? '2011 ' : planOf(e) === 'hod' ? 'House ' : ''}district</h3>
+        <p class="hint">${planOf(e) === 'hod' ? 'House of Delegates districts. To see the House races inside a senate district, switch to Precinct view, set District lines to Current, and click a district.' : isOld(e) ? (e.layer ? 'This race used the 2012–2020 districts. To see its precincts inside one of today’s districts, switch to Precinct view, set District lines to Current, and click a district.' : 'This race used the 2012–2020 districts and has no precinct results, so it can’t be shown inside today’s districts.') : 'Click a district on the map, in a list, or pick one at the top to see its statistics.'}</p>
         <table class="dtable"><thead><tr><th>Dist.</th><th>Dem.</th><th>Rep.</th><th>Votes</th><th>Margin</th>${swingOn() ? '<th>Swing</th>' : ''}</tr></thead><tbody>
-        ${DN.map(d => { const t = distTally(e, d); return `<tr class="r" data-d="${d}"><td>${d}</td>
+        ${dnOf(e).map(d => { const t = distTally(e, d); return `<tr class="r" data-d="${d}"><td>${d}</td>
           <td class="num">${t.total ? pct(t.D / t.total) : '—'}</td><td class="num">${t.total ? pct(t.R / t.total) : '—'}</td>
           <td class="num">${fmt(Math.round(t.total))}</td><td>${mchip(t)}</td>${swingOn() ? `<td>${swingChip(distSwing(d))}</td>` : ''}</tr>`; }).join('')}
         </tbody></table></section>`;
-      d3.selectAll('#rightInner tr.r').on('click', function () { if (!isOld(cur())) select(+this.dataset.d); })
+      d3.selectAll('#rightInner tr.r').on('click', function () { if (!otherPlan(cur())) select(+this.dataset.d); })
         .on('mouseenter', function () { hover(+this.dataset.d, elecPlan()); }).on('mouseleave', () => hover(null));
       return;
     }
-    const d = S.sel, info = data.districts[d], t = isOld(e) ? null : distTally(e, d);
+    const d = S.sel, info = data.districts[d], t = otherPlan(e) ? null : distTally(e, d);
     const layer = e.layer || 'p2024', ps = data.precincts[layer];
     const inD = ps.filter(p => p.d[d]), split = inD.filter(p => Object.keys(p.d).length > 1).length;
     const statewide = E.filter(x => !x.multi).map(x => distTally(x, d)).filter(x => x.contested);
@@ -1015,7 +1075,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
       <div class="dhead"><div><h2>District ${d}</h2>
         <div class="counties">${info.counties.map(c => esc(c.n) + (info.counties.length > 1 ? ` <span class="num">${pct(c.s, 0)}</span>` : '')).join(' · ')}</div></div>
         <button class="xbtn" id="clearSel">All districts</button></div>
-      ${isOld(e) ? areaBlock(e, d) : `<section class="sec">
+      ${otherPlan(e) ? areaBlock(e, d) : `<section class="sec">
         <h3>${esc(e.label)} in District ${d}</h3>
         ${candBlock(t)}
         <div class="totals"><span>${fmt(Math.round(t.total))} votes</span><span>${mchip(t)}</span></div>
@@ -1064,10 +1124,10 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
       .sort((a, b) => b.t.total - a.t.total);
     const all = d3.sum(groups, g => g.t.total);
     return `<section class="sec">
-      <h3>${esc(e.label)} inside today’s District ${d}</h3>
-      <p class="hint">This race used the 2012–2020 districts. Today’s District ${d} takes in ${n} of its precincts, from ${groups.length} old ${groups.length === 1 ? 'district' : 'districts'}. Votes add up those precincts; split precincts count by their share of voting-age population.</p>
+      <h3>${esc(e.label)} inside ${planOf(e) === 'hod' ? 'Senate' : 'today’s'} District ${d}</h3>
+      <p class="hint">${planOf(e) === 'hod' ? `Senate District ${d} takes in ${n} precincts from ${groups.length} House ${groups.length === 1 ? 'district' : 'districts'}.` : `This race used the 2012–2020 districts. Today’s District ${d} takes in ${n} of its precincts, from ${groups.length} old ${groups.length === 1 ? 'district' : 'districts'}.`} Votes add up those precincts; split precincts count by their share of voting-age population.</p>
       ${groups.map(g => `<div class="sec" style="gap:6px">
-        <div class="totals" style="border:0;padding:0"><b style="color:var(--ink)">2012–2020 District ${g.od}</b><span>${fmt(Math.round(g.t.total))} votes here (${pct(g.t.total / all, 0)})</span></div>
+        <div class="totals" style="border:0;padding:0"><b style="color:var(--ink)">${planOf(e) === 'hod' ? 'House' : '2012–2020'} District ${g.od}</b><span>${fmt(Math.round(g.t.total))} votes here (${pct(g.t.total / all, 0)})</span></div>
         ${candBlock(g.t, { max: 3 })}
         <div class="totals"><span>In this area</span><span>${mchip(g.t)}</span></div></div>`).join('')}
     </section>`;
@@ -1076,7 +1136,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   function drawHistory(d) {
     const el = document.getElementById('hist');
     let lastYear = null, html = '';
-    for (const e of E.filter(x => !isOld(x))) {
+    for (const e of E.filter(x => !otherPlan(x))) {
       if (e.year !== lastYear) { html += `<div class="yearhd">${e.year}</div>`; lastYear = e.year; }
       const t = distTally(e, d), st = stateTally(e);
       html += `<button class="hrow${e.id === S.eid ? ' on' : ''}" data-id="${e.id}">
@@ -1100,8 +1160,6 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   function dropSelIfNeeded() { if (S.sel && !canSelect()) { S.sel = null; zoomTo(null); } }
   function setElection(id) {
     S.eid = id;
-    if (cur().live && S.eid !== S.prevLive) { S.mode = 'precinct'; S.sel = LIVE.district; zoomTo(LIVE.district); }
-    S.prevLive = cur().live ? S.eid : null;
     if (!cur().layer && S.mode === 'precinct') S.mode = 'district';
     dropSelIfNeeded();
     renderAll();
@@ -1119,8 +1177,8 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.sel) select(null); });
   new ResizeObserver(() => { size(); renderLeft(); }).observe(document.getElementById('mapwrap'));
   size();
-  if (liveE && liveCfg.default) setElection('su26'); else renderAll();
-  if (liveE) { pollLive(); setInterval(pollLive, LIVE.every); document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); }); }
+  if (liveOn && liveCfg.default) setElection(liveCfg.default === true ? 'su26' : liveCfg.default); else renderAll();
+  if (liveOn) { pollLive(); setInterval(pollLive, LIVE.every); document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); }); }
 })().catch(err => {
   document.getElementById('loading').hidden = false;
   document.getElementById('loading').textContent = 'The map data could not load: ' + err.message + '. Reload the page to try again.';
