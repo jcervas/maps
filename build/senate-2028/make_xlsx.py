@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Pack the two CSVs into one workbook: States, Counties, Notes."""
+"""Pack the data into one workbook: States, Counties, Chamber, Notes."""
 import csv
+import json
 import os
 import sys
 
@@ -70,6 +71,75 @@ def write_sheet(ws, path, freeze="C2", widths=None):
     ws.auto_filter.ref = ws.dimensions
 
 
+def chamber_sheet(wb):
+    """All 100 seats, so the workbook answers the question the map answers: what
+    the 2028 class walks into. Class I and the settled Class II seats are
+    holdovers; Class III enters at its rating; the seven nobody can assign are
+    marked as such rather than quietly handed to a side."""
+    ch = json.load(open(os.path.join(DATA, "senate2028.json")))["chamber"]
+    names = ch["state_names"]
+    ws = wb.create_sheet("Chamber")
+    ws.append(["state", "abbr", "class", "senator", "party", "caucus",
+               "next_election", "status", "counts_for", "detail"])
+    order = {1: 0, 2: 1, 3: 2}
+    rows = sorted(ch["all_seats"],
+                  key=lambda x: (x["abbr"], order[x["cls"]]))
+    for x in rows:
+        if x["cls"] == 3:
+            status = "on the 2028 ballot"
+            side = ("" if x["rating"] == "Toss Up"
+                    else "D" if x["rating"].endswith("Democrat") else "R")
+            detail = x["rating"]
+        elif x["settled"]:
+            status = "holdover"
+            side = x["caucus"]
+            detail = "won 2024" if x["cls"] == 1 else "won 2026"
+        else:
+            status = "2026 race still counting"
+            side = ""
+            detail = x.get("note", "")
+        ws.append([names.get(x["abbr"], x["abbr"]), x["abbr"],
+                   {1: "I", 2: "II", 3: "III"}[x["cls"]], x["senator"],
+                   x["party"], x["caucus"], x["next"], status,
+                   side or "undecided", detail])
+    for i in range(1, 11):
+        c = ws.cell(row=1, column=i)
+        c.fill, c.font = HEAD, HEAD_FONT
+    for col, w in {"A": 16, "D": 22, "H": 24, "I": 11, "J": 56}.items():
+        ws.column_dimensions[col].width = w
+    ws.freeze_panes = "C2"
+    ws.auto_filter.ref = ws.dimensions
+
+    pr = ch["projection"]
+    ws2 = wb.create_sheet("Projection")
+    ws2["A1"] = "The 2029 Senate, counted from this data set"
+    ws2["A1"].font = Font(bold=True, size=13)
+    for row in [
+        [],
+        ["Settled holdovers (Class I + called Class II)",
+         pr["settled_dem"], pr["settled_rep"]],
+        ["Class III seats with a rating", pr["rated_dem"], pr["rated_rep"]],
+        ["Subtotal", pr["floor_dem"], pr["floor_rep"]],
+        [],
+        ["Undecided", pr["open"]],
+        ["  Class III toss-ups", len(pr["tossup"]), ", ".join(pr["tossup"])],
+        ["  2026 races still counting", len(pr["pending"]),
+         ", ".join(x["abbr"] for x in pr["pending"])],
+        [],
+        ["Democratic range", pr["floor_dem"], pr["ceiling_dem"]],
+        ["Republican range", pr["floor_rep"], pr["ceiling_rep"]],
+        [],
+        ["Note", pr["note"]],
+        ["Source", ch["source"]],
+    ]:
+        ws2.append(row)
+    ws2.column_dimensions["A"].width = 44
+    ws2.column_dimensions["B"].width = 100
+    for r in range(1, ws2.max_row + 1):
+        ws2.cell(row=r, column=2).alignment = Alignment(wrap_text=True,
+                                                        vertical="top")
+
+
 def main():
     wb = Workbook()
     ws = wb.active
@@ -82,6 +152,8 @@ def main():
     ws2 = wb.create_sheet("Counties")
     write_sheet(ws2, os.path.join(DATA, "class3_counties.csv"), freeze="E2",
                 widths={"county": 26, "state": 16})
+
+    chamber_sheet(wb)
 
     ws3 = wb.create_sheet("Notes")
     ws3.append(["Senate seats on the ballot in November 2028 (Class III)"])
@@ -106,6 +178,11 @@ def main():
         "with candidate parties from its 2022 race registry.",
         "  Ohio's incumbent reflects the November 3, 2026 special election "
         "(Sherrod Brown, D, defeated appointed Senator Jon Husted, R).",
+        "  Class I: magic-wall data/reference/holdovers_2026.json, checked "
+        "against the senate.gov roster.",
+        "  Class II: the November 3, 2026 result, from AP county returns read "
+        "November 5, 2026. Mississippi and Alaska were still being counted and "
+        "are left out of every split on the Projection sheet.",
         "",
         "State notes",
     ]

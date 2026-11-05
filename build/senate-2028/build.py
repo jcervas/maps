@@ -60,7 +60,8 @@ OUT = os.path.join(REPO, "elections", "2028", "data")
 
 sys.path.insert(0, HERE)
 from incumbents import (CLASS_III, SEAT_NOTES, NAME_FIXES,  # noqa: E402
-                        CHAMBER_CONTROL)
+                        CHAMBER_CONTROL, CLASS_II, CLASS_II_NOTES,
+                        CLASS_II_SOURCE)
 import ratings  # noqa: E402
 
 ABBRS = [r[1] for r in CLASS_III]
@@ -306,15 +307,58 @@ def requantize(arc, src, dst):
     return out
 
 
-def chamber(state_rows):
-    """The other two thirds of the Senate, so the map says what is and is not in
-    play. Class I comes from magic-wall's holdovers file, which is checked
-    against the senate.gov roster; Class III is counted from our own rows, and
-    the two agree on the 32 Class III seats the holdovers file also lists.
+def check_class_ii():
+    """Re-derive Class II from magic-wall's AP tree and complain if the literal
+    in incumbents.py no longer matches it.
 
-    Class II was elected on November 3, 2026 and is still being counted, so it
-    carries no numbers here. Guessing at the split from a two-day-old count is
-    exactly the sort of figure that is wrong by morning."""
+    The literal is what gets published, on purpose: magic-wall's results are a
+    live feed the election-night wall keeps refreshing, and a page that quietly
+    changes its chamber arithmetic every time that feed moves is worse than one
+    carrying a dated figure. But a dated figure that has silently gone wrong is
+    worse than both, so the build checks and says so."""
+    reg_path = os.path.join(MW, "registry", "races_2026.json")
+    if not os.path.isfile(reg_path):
+        print("  class II: no 2026 registry in magic-wall, literal not checked")
+        return
+    raw = json.load(open(reg_path))["races"]
+    reg = {r["race_id"]: r for r in raw} if isinstance(raw, list) else raw
+    want = {ab: pty for _, ab, _, pty, _, _ in CLASS_II}
+    seen, bad = set(), []
+    for ab in sorted(want):
+        rid = "2026-sen-" + ab.lower()
+        res = os.path.join(MW, "results", rid + ".json")
+        if rid not in reg or not os.path.isfile(res):
+            continue
+        votes = json.load(open(res)).get("statewide", {}).get("votes", {}) or {}
+        if not votes:
+            continue
+        cands = {c["id"]: c for c in reg[rid].get("candidates", [])}
+        lead = max(votes.items(), key=lambda kv: kv[1])[0]
+        pty = {"dem": "D", "rep": "R"}.get(cands.get(lead, {}).get("party"), "I")
+        seen.add(ab)
+        if pty != want[ab]:
+            bad.append("%s: literal says %s, the feed now leads %s" % (ab, want[ab], pty))
+    if bad:
+        print("  class II: THE FEED HAS MOVED -- update incumbents.CLASS_II")
+        for b in bad:
+            print("    " + b)
+    else:
+        print("  class II: %d of 33 seats re-checked against the AP tree, all agree"
+              % len(seen))
+
+
+def chamber(state_rows):
+    """All 100 seats, so the map can say what the 2028 class walks into.
+
+    Class I comes from magic-wall's holdovers file, which is checked against the
+    senate.gov roster. Class II is the November 3, 2026 result, hand-entered in
+    incumbents.py and re-checked here against the AP tree. Class III is counted
+    from our own rows.
+
+    Two counts come out of this and they are not the same number. The settled
+    count leaves out Mississippi and Alaska, which are still being counted; the
+    full count puts them with whoever leads. The page prints the settled one and
+    names the other two, because a seat that is 43 votes apart is not a seat."""
     path = os.path.join(MW, "data", "reference", "holdovers_2026.json")
     sen = json.load(open(path))["senate"]
     c1 = [h for h in sen["holdovers"] if h.get("class") == 1]
@@ -334,21 +378,118 @@ def chamber(state_rows):
     check = tally(c3_file, "party")
     assert check["dem"] + check["rep"] + 2 == len(state_rows), "Class III mismatch"
 
+    check_class_ii()
+
+    # ---- every seat, so the map can paint a delegation rather than a class
+    PARTY = {"dem": "D", "rep": "R", "ind": "I"}
+    seats = []
+    for h in c1:
+        seats.append({
+            "cls": 1, "abbr": h["state"], "senator": h["senator"],
+            "party": PARTY.get(h.get("party"), "I"),
+            "caucus": PARTY.get(h.get("caucus"), "I"),
+            "next": 2030, "settled": True,
+        })
+    for name, ab, who, pty, called, marg in CLASS_II:
+        seat = {"cls": 2, "abbr": ab, "senator": who, "party": pty,
+                "caucus": pty, "next": 2032, "settled": bool(called),
+                "margin": marg}
+        if ab in CLASS_II_NOTES:
+            seat["note"] = CLASS_II_NOTES[ab]
+        seats.append(seat)
+    for r in state_rows:
+        seats.append({
+            "cls": 3, "abbr": r["abbr"], "senator": r["incumbent"],
+            "party": r["incumbent_party"], "caucus": r["incumbent_party"],
+            "next": 2028, "settled": False, "rating": r["rating"],
+            "on_ballot": True,
+        })
+
+    # Every state holds two of the three classes, so Class II and Class III
+    # between them name all fifty -- the map needs the name of a state whether
+    # or not it is on the 2028 ballot.
+    names = {}
+    for name, ab, _, _, _, _ in CLASS_II:
+        names[ab] = name
+    for r in state_rows:
+        names[r["abbr"]] = r["state"]
+    assert len(names) == 50, "expected 50 state names, got %d" % len(names)
+
+    assert len(seats) == 100, "expected 100 seats, got %d" % len(seats)
+    per_state = {}
+    for s in seats:
+        per_state.setdefault(s["abbr"], []).append(s["cls"])
+    odd = {k: v for k, v in per_state.items() if len(v) != 2}
+    assert not odd, "states without exactly two seats: %r" % odd
+
+    # ---- the 2029 arithmetic
+    def side(rating):
+        if rating == "Toss Up":
+            return None
+        return "D" if rating.endswith("Democrat") else "R"
+
+    held = {"D": 0, "R": 0}
+    for s in seats:
+        if s["cls"] in (1, 2) and s["settled"]:
+            held[s["caucus"]] = held.get(s["caucus"], 0) + 1
+
+    rated = {"D": 0, "R": 0}
+    toss = []
+    for r in state_rows:
+        who = side(r["rating"])
+        if who is None:
+            toss.append(r["abbr"])
+        else:
+            rated[who] += 1
+
+    pending = [{"abbr": ab, "state": name, "leader": who, "party": pty,
+                "margin": marg, "note": CLASS_II_NOTES.get(ab, "")}
+               for name, ab, who, pty, called, marg in CLASS_II if not called]
+
+    floor_d = held["D"] + rated["D"]
+    open_seats = len(toss) + len(pending)
+    lean_d = floor_d + sum(1 for p in pending if p["party"] == "D")
+
+    projection = {
+        "settled_dem": held["D"], "settled_rep": held["R"],
+        "rated_dem": rated["D"], "rated_rep": rated["R"],
+        "tossup": toss, "pending": pending,
+        "open": open_seats,
+        "floor_dem": floor_d, "ceiling_dem": floor_d + open_seats,
+        "floor_rep": held["R"] + rated["R"],
+        "ceiling_rep": held["R"] + rated["R"] + open_seats,
+        "lean_dem": lean_d, "lean_rep": 100 - lean_d - len(toss),
+        "note": ("Class I and the settled Class II seats are holdovers: nobody "
+                 "votes on them in 2028. Class III is on the ballot, so its "
+                 "seats enter at their rating, and the five toss-ups enter "
+                 "nowhere. Mississippi and Alaska are 2026 races still being "
+                 "counted, so they are open here too."),
+    }
+
     return {
         "seats": sen["seats"], "majority": sen["majority"],
         "control": CHAMBER_CONTROL,
+        "all_seats": seats,
+        "state_names": names,
+        "projection": projection,
         "classes": [
             {"name": "Class I", "seats": len(c1), "elected": 2024, "next": 2030,
              "dem": party["dem"], "rep": party["rep"], "ind": party["ind"],
              "caucus_dem": caucus["dem"], "caucus_rep": caucus["rep"]},
-            {"name": "Class II", "seats": 33, "elected": 2026, "next": 2032,
-             "pending": "Elected November 3, 2026. Still being counted."},
+            {"name": "Class II", "seats": len(CLASS_II), "elected": 2026, "next": 2032,
+             "dem": sum(1 for r in CLASS_II if r[3] == "D" and r[4]),
+             "rep": sum(1 for r in CLASS_II if r[3] == "R" and r[4]),
+             "ind": 0,
+             "caucus_dem": sum(1 for r in CLASS_II if r[3] == "D" and r[4]),
+             "caucus_rep": sum(1 for r in CLASS_II if r[3] == "R" and r[4]),
+             "counting": len(pending)},
             {"name": "Class III", "seats": len(state_rows), "elected": 2022, "next": 2028,
              "dem": d3, "rep": len(state_rows) - d3, "ind": 0,
              "caucus_dem": d3, "caucus_rep": len(state_rows) - d3, "this_map": True},
         ],
         "source": "magic-wall data/reference/holdovers_2026.json, checked against "
-                  "the senate.gov roster; Class III counted from this data set.",
+                  "the senate.gov roster; Class II from " + CLASS_II_SOURCE +
+                  " Class III counted from this data set.",
     }
 
 

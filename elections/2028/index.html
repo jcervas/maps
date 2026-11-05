@@ -2,7 +2,7 @@
 layout: null
 title: "2028 Senate Ratings"
 description: "The 34 Class III Senate seats on the ballot in 2028, rated from the 2024 presidential and 2022 Senate results, with county-level returns for both."
-summary: "Every seat up in 2028, with the race that filled it, the presidential vote underneath it county by county, and a first mechanical rating you can argue with."
+summary: "Every seat up in 2028, with the race that filled it, the presidential vote underneath it county by county, a first mechanical rating you can argue with, and the Class I and Class II holdovers switched on beside them to show what the 2029 Senate would look like."
 ---
 <!doctype html>
 <html lang="en">
@@ -108,6 +108,8 @@ button { font: inherit; color: inherit; }
 .seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 2px; gap: 2px; flex-wrap: wrap; }
 .seg button { border: 0; background: transparent; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: 550; font-size: 12.5px; white-space: nowrap; }
 .seg button:hover:not(:disabled) { background: var(--land); }
+.seg button:disabled { opacity: .38; cursor: not-allowed; }
+.seg.classes button[aria-pressed="true"] { background: var(--accent); color: var(--panel); }
 .seg button[aria-pressed="true"], .seg button[aria-pressed="true"]:hover { background: var(--ink); color: var(--panel); }
 select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 28px 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
 .spacer { flex: 1; }
@@ -144,6 +146,16 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 .rung .v { font-family: var(--f-data); font-size: 12px; color: var(--muted); }
 .balance { display: grid; grid-template-columns: repeat(34, 1fr); gap: 2px; }
 .balance i { height: 16px; border-radius: 2px; display: block; }
+
+/* the whole chamber as 100 blocks, Democratic end to Republican end */
+.hundred { display: grid; grid-template-columns: repeat(25, 1fr); gap: 2px; }
+.hundred i { height: 11px; border-radius: 2px; display: block; }
+.hundred i.open { box-shadow: inset 0 0 0 1px var(--ink); }
+.hundred i.maj { box-shadow: inset 0 0 0 2px var(--accent); }
+.majline { display: flex; justify-content: space-between; font-family: var(--f-data); font-size: 9.5px; color: var(--muted); margin-top: 2px; }
+.range { display: flex; align-items: baseline; gap: 7px; }
+.range b { font-family: var(--f-display); font-stretch: 85%; font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.range span { font-size: 11px; color: var(--muted); }
 
 /* seat list */
 .seatlist { display: flex; flex-direction: column; gap: 6px; }
@@ -185,6 +197,8 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 .legend .keys { display: flex; flex-wrap: wrap; gap: 4px 11px; font-size: 11px; color: var(--muted); align-items: center; }
 .legend .keys span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 .legend .sw { display: inline-block; width: 13px; height: 11px; border-radius: 2px; }
+/* The same stripes the map draws, so the key looks like the thing it names. */
+.legend .sw.striped { background: var(--land); background-image: repeating-linear-gradient(45deg, var(--cook-toss) 0 2.6px, transparent 2.6px 7px); }
 
 /* Cook bar: the tally is also the filter, as on redrawn-districts-2026. */
 .cookbar { min-width: 320px; }
@@ -260,6 +274,9 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
     <div class="ctl"><label>Color the map by</label>
       <div class="seg" id="views" role="group" aria-label="Map view"></div>
     </div>
+    <div class="ctl"><label>Seats on the map</label>
+      <div class="seg classes" id="classes" role="group" aria-label="Which Senate classes to show"></div>
+    </div>
     <div class="spacer"></div>
     <div class="ctl"><label for="statepick">Seat</label>
       <select id="statepick" class="pick"><option value="">All 34 seats</option></select>
@@ -308,10 +325,16 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   var css = getComputedStyle(document.documentElement);
   function token(n) { return css.getPropertyValue(n).trim(); }
 
-  var S = { view: "rating", sel: null, filter: null };
-  var DATA = null, COUNTIES = null, STATE_FEATS = null, byAbbr = {};
+  // Which classes are drawn. Class III alone is the page's own subject and the
+  // default; turning either holdover class on switches the map to a delegation
+  // paint, because a state has two senators and only one of them is Class III.
+  var S = { view: "rating", sel: null, filter: null, cls: { 1: false, 2: false, 3: true } };
+  var CLASS_LABEL = { 1: "I", 2: "II", 3: "III" };
+  var NET_TOKEN = { "-2": "--cook-solidD", "-1": "--cook-leanD", "0": "--nodata",
+                    "1": "--cook-leanR", "2": "--cook-solidR" };
+  var DATA = null, COUNTIES = null, STATE_FEATS = null, byAbbr = {}, SEATS = {};
   var el = {};
-  ["views", "statepick", "map", "mapwrap", "status", "legend", "loading",
+  ["views", "classes", "statepick", "map", "mapwrap", "status", "legend", "loading",
    "leftInner", "rightInner", "tip", "zreset"].forEach(function (k) {
     el[k] = document.getElementById(k);
   });
@@ -338,6 +361,45 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   }
   function ratingColor(r) { return token(RATING_TOKEN[r] || "--nodata"); }
 
+  // ---------------------------------------------------------- the delegation
+  // Which side a seat is on for counting purposes. A holdover is whoever sits
+  // in it; a Class III seat is whichever way its rating points, and a toss-up
+  // points nowhere. A 2026 race still being counted also points nowhere, which
+  // is the whole reason Mississippi and Alaska are treated apart.
+  function seatSide(seat) {
+    if (seat.cls === 3) {
+      if (seat.rating === "Toss Up") return null;
+      return seat.rating.slice(-8) === "Democrat" ? "D" : "R";
+    }
+    return seat.settled ? seat.caucus : null;
+  }
+  function soloIII() { return S.cls[3] && !S.cls[1] && !S.cls[2]; }
+  function stateName(ab) {
+    return ((DATA.chamber || {}).state_names || {})[ab] ||
+           (byAbbr[ab] || {}).state || ab;
+  }
+  function shown() { return [1, 2, 3].filter(function (c) { return S.cls[c]; }); }
+  // "I and II and III" is not English; "I, II and III" is.
+  function shownWords() {
+    var n = shown().map(function (c) { return CLASS_LABEL[c]; });
+    if (n.length < 2) return n.join("");
+    return n.slice(0, -1).join(", ") + " and " + n[n.length - 1];
+  }
+  function seatsOf(ab) {
+    return (SEATS[ab] || []).filter(function (x) { return S.cls[x.cls]; });
+  }
+  // net is Republican minus Democratic over the seats on show, so it runs the
+  // same direction as every margin on the page: negative is Democratic.
+  function delegation(ab) {
+    var list = seatsOf(ab), net = 0, open = 0;
+    list.forEach(function (x) {
+      var side = seatSide(x);
+      if (side === null) open++;
+      else net += side === "R" ? 1 : -1;
+    });
+    return { seats: list, net: net, open: open };
+  }
+
   // ------------------------------------------------------------- unit values
   function county(fips) {
     var c = DATA.counties[fips];
@@ -359,6 +421,11 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
       if (S.view === "rating") return heat(c.pres24, SCALE_MAX.pres24);
       return heat(S.view === "shift" ? c.shift : c[S.view], SCALE_MAX[S.view]);
     }
+    if (!soloIII()) {
+      var dg = delegation(key);
+      if (!dg.seats.length) return null;
+      return token(NET_TOKEN[String(dg.net)] || "--nodata");
+    }
     var s = byAbbr[key];
     if (!s) return null;
     if (S.view === "rating") return ratingColor(s.rating);
@@ -369,12 +436,28 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 
   // ------------------------------------------------------------- top controls
   function renderControls() {
+    // The four margin views describe one Class III seat each, so they only
+    // apply while Class III is the only thing drawn. With a holdover class on,
+    // the map is a delegation count and there is nothing for them to color.
+    var solo = soloIII() || !!S.sel;
     el.views.innerHTML = VIEWS.map(function (v) {
-      return '<button data-v="' + v.id + '" aria-pressed="' + (v.id === S.view) + '">' +
+      return '<button data-v="' + v.id + '" aria-pressed="' +
+             (solo && v.id === S.view) + '"' + (solo ? "" : " disabled") + ">" +
              v.label + "</button>";
     }).join("");
     el.views.querySelectorAll("button").forEach(function (b) {
       b.onclick = function () { setView(b.dataset.v); };
+    });
+    el.classes.innerHTML = [1, 2, 3].map(function (c) {
+      var ch = DATA.chamber, info = ch ? ch.classes[c - 1] : null;
+      var t = "Class " + CLASS_LABEL[c] + ", " + (info ? info.seats : "") +
+              " seats, next up " + (info ? info.next : "");
+      return '<button data-c="' + c + '" aria-pressed="' + !!S.cls[c] +
+             '" title="' + t + '" aria-label="' + t + '">' +
+             CLASS_LABEL[c] + "</button>";
+    }).join("");
+    el.classes.querySelectorAll("button").forEach(function (b) {
+      b.onclick = function () { toggleClass(+b.dataset.c); };
     });
     el.statepick.innerHTML = '<option value="">All 34 seats</option>' +
       DATA.states.map(function (s) {
@@ -384,7 +467,22 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
     el.statepick.onchange = function () { select(el.statepick.value || null); };
     el.zreset.onclick = function () { select(null); };
   }
-  function setView(v) { S.view = v; renderControls(); renderMap(); renderLegend(); renderStatus(); }
+  function setView(v) {
+    if (!soloIII() && !S.sel) return;
+    S.view = v; renderControls(); renderMap(); renderLegend(); renderStatus();
+  }
+  function toggleClass(c) {
+    S.cls[c] = !S.cls[c];
+    // Something has to be on the map. Turning the last class off would leave a
+    // blank country, so the click is refused instead.
+    if (!shown().length) { S.cls[c] = true; return; }
+    // The rating filter is a Class III device; it has no meaning over a
+    // delegation count, so it comes off with the switch.
+    if (!soloIII()) S.filter = null;
+    if (S.sel && !byAbbr[S.sel]) S.sel = null;
+    renderControls(); renderMap(); renderLegend(); renderStatus();
+    renderLeft(); renderRight();
+  }
 
   // ------------------------------------------------------------------ the map
   function renderMap() {
@@ -401,11 +499,29 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
       proj.fitExtent([[24, 24], [W - 24, H - 24]], { type: "FeatureCollection", features: feats });
       outline = STATE_FEATS.filter(function (f) { return f.properties.state === S.sel; });
     } else {
-      feats = STATE_FEATS.filter(function (f) { return byAbbr[f.properties.state]; });
-      off = STATE_FEATS.filter(function (f) { return !byAbbr[f.properties.state]; });
+      // A state is on stage when it holds a seat in one of the classes shown.
+      // With Class III alone that is the 34 on the ballot; with a holdover
+      // class on it is everywhere that class reaches.
+      var onStage = function (f) {
+        return soloIII() ? !!byAbbr[f.properties.state]
+                         : seatsOf(f.properties.state).length > 0;
+      };
+      feats = STATE_FEATS.filter(onStage);
+      off = STATE_FEATS.filter(function (f) { return !onStage(f); });
       proj.fitExtent([[14, 14], [W - 14, H - 14]],
                      { type: "FeatureCollection", features: STATE_FEATS });
     }
+
+    // Diagonal stripes for a state holding a seat nobody can assign yet: a
+    // Class III toss-up, or a 2026 race still being counted. Without it a
+    // one-each delegation and a single undecided seat would both read as the
+    // same flat grey.
+    svg.append("defs").append("pattern")
+      .attr("id", "undec").attr("width", 7).attr("height", 7)
+      .attr("patternUnits", "userSpaceOnUse")
+      .attr("patternTransform", "rotate(45)")
+      .append("line").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", 7)
+      .attr("stroke", token("--cook-toss")).attr("stroke-width", 2.6);
 
     if (off) svg.append("g").selectAll("path").data(off).join("path")
       .attr("class", "offstage").attr("d", path);
@@ -425,7 +541,20 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
       })
       .on("pointerenter pointermove", showTip)
       .on("pointerleave", hideTip)
-      .on("click", function (ev, f) { if (!S.sel) select(f.properties.state); });
+      .on("click", function (ev, f) {
+        // In a delegation view most states have no county data behind them, so
+        // a click there should do nothing rather than reset the page.
+        if (!S.sel && byAbbr[f.properties.state]) select(f.properties.state);
+      });
+
+    if (!S.sel && !soloIII()) {
+      var undec = feats.filter(function (f) {
+        return delegation(f.properties.state).open > 0;
+      });
+      svg.append("g").attr("pointer-events", "none").selectAll("path")
+        .data(undec).join("path")
+        .attr("d", path).attr("fill", "url(#undec)").attr("opacity", .62);
+    }
 
     if (outline) svg.append("g").selectAll("path").data(outline).join("path")
       .attr("class", "outline").attr("d", path);
@@ -435,7 +564,17 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 
   function renderStatus() {
     var v = VIEWS.filter(function (x) { return x.id === S.view; })[0];
-    if (!S.sel) {
+    if (!S.sel && !soloIII()) {
+      var tot = 0, states = 0;
+      STATE_FEATS.forEach(function (f) {
+        var k = seatsOf(f.properties.state).length;
+        tot += k; if (k) states++;
+      });
+      el.status.innerHTML = "<b>" + tot + " seat" + (tot === 1 ? "" : "s") +
+        "</b> across " + states + " states, in Class " + shownWords() +
+        ". Each state is shaded by how its seats on show divide; stripes mark " +
+        "one nobody can call yet.";
+    } else if (!S.sel) {
       el.status.innerHTML = "<b>34 seats</b> colored by " + v.phrase +
         ". Click a state for its counties, or pick one at the top right.";
     } else {
@@ -447,6 +586,10 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 
   // ------------------------------------------------------------------ legend
   function renderLegend() {
+    if (!S.sel && !soloIII()) {
+      renderDelegationKey();
+      return;
+    }
     if (!S.sel && S.view === "rating") {
       renderCookBar();
       return;
@@ -465,6 +608,24 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
         ? "How much more Republican the 2024 presidential margin ran than the 2022 Senate margin."
         : (view === "sen22" ? "2022 Senate margin" : "2024 presidential margin") +
           ", Republican share minus Democratic share.") + "</p>";
+  }
+
+  // ------------------------------------------------------- delegation key
+  function renderDelegationKey() {
+    var keys = [["-2", "both Democratic"], ["-1", "one Democratic"],
+                ["0", "one each, or none decided"], ["1", "one Republican"],
+                ["2", "both Republican"]];
+    var pr = (DATA.chamber || {}).projection || {};
+    el.legend.innerHTML =
+      '<div class="keys">' + keys.map(function (k) {
+        return '<span><i class="sw" style="background:' +
+          token(NET_TOKEN[k[0]]) + '"></i>' + k[1] + "</span>";
+      }).join("") +
+      '<span><i class="sw striped"></i>holds an undecided seat</span></div>' +
+      '<p class="cap">Class ' + shownWords() + " on the map. " +
+      (S.cls[3] ? "A Class III seat counts for whichever way its rating points, " +
+        "so the " + (pr.tossup || []).length + " toss-ups count for neither. " : "") +
+      "Shading is the balance of the seats on show, not of the whole delegation.</p>";
   }
 
   // ---------------------------------------------------------------- Cook bar
@@ -535,6 +696,31 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
         "<span>2024 votes</span><b>" + num(c.p24tot) + "</b>" +
         "<span>2022 Senate</span><b>" + signed(c.sen22) + "</b>" +
         "<span>Shift</span><b>" + signed(c.shift) + "</b></div>";
+    } else if (!soloIII()) {
+      var ab = f.properties.state, dg = delegation(ab);
+      if (!dg.seats.length) { hideTip(); return; }
+      var nm = stateName(ab);
+      html = "<h4>" + nm + '<div class="sub">' +
+        (dg.seats.length === 2 ? "both of its seats"
+                               : "one of its two seats") + "</div></h4>" +
+        '<div class="kv">' + dg.seats.map(function (x) {
+          var side = seatSide(x);
+          // An independent is drawn and counted with the party they caucus
+          // with, so the tooltip has to say which that is rather than let a
+          // blue Maine sit next to a senator labelled "I".
+          var who = x.party + (x.party !== x.caucus && x.caucus !== "I"
+                               ? ", caucuses " + x.caucus : "");
+          var what = x.cls === 3
+            ? x.rating
+            : (x.settled ? who + ", holds to " + x.next
+                         : who + " leading, still counting");
+          return "<span>Class " + CLASS_LABEL[x.cls] + " · " + x.senator +
+            "</span><b" + (side ? ' class="f-' + side + '"' : "") + ">" +
+            what + "</b>";
+        }).join("") + "</div>" +
+        (dg.open ? '<p class="note">' + dg.open + " seat" +
+          (dg.open === 1 ? " here is" : "s here are") + " not assigned to " +
+          "either side.</p>" : "");
     } else {
       var s = byAbbr[f.properties.state];
       if (!s) { hideTip(); return; }
@@ -588,9 +774,11 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
             '<span class="l">' + r + '</span><span class="v">' + counts[r] + "</span></div>";
         }).join("") +
         '<p class="note">The bar under the map filters by rating.</p></div>' +
+      '<div class="sec"><h3>What 2029 looks like</h3>' + projection() + "</div>" +
       '<div class="sec"><h3>The whole chamber</h3>' + chamberRows() +
-        '<p class="note">Only Class III is on the 2028 ballot. Control of the ' +
-        'chamber turns on Class II, which this map does not show.</p></div>' +
+        '<p class="note">Class I and Class II are holdovers: nobody votes on ' +
+        'them in 2028. The I / II / III buttons at the top put them on the ' +
+        'map beside the class that is.</p></div>' +
       '<div class="sec"><h3>How these are made</h3>' +
         '<p class="hint">Two thirds the 2024 presidential margin, one third the 2022 Senate ' +
         'margin, then four points toward the party holding the seat. Bands at 5, 10 and 20 ' +
@@ -598,6 +786,76 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
         'ratings of the same seats — and it is arithmetic on results already in, not a ' +
         'forecast.</p></div>';
 
+  }
+
+  // ------------------------------------------------- the 2029 arithmetic
+  // The holdovers are known, the Class III seats enter at their rating, and
+  // the seats nobody can assign -- five toss-ups and two 2026 races still
+  // being counted -- are left out of both totals and shown as a range.
+  var RATING_RANK = {
+    "Solid Democrat": -3, "Likely Democrat": -2, "Lean Democrat": -1,
+    "Toss Up": 0, "Lean Republican": 1, "Likely Republican": 2,
+    "Solid Republican": 3
+  };
+  function projection() {
+    var ch = DATA.chamber, pr = ch && ch.projection;
+    if (!pr) return "";
+
+    var seats = ch.all_seats.slice().sort(function (a, b) {
+      function k(x) {
+        if (x.cls === 3) return RATING_RANK[x.rating];
+        if (!x.settled) return 0;
+        return x.caucus === "D" ? -1000 : 1000;
+      }
+      return (k(a) - k(b)) || (a.abbr < b.abbr ? -1 : 1);
+    });
+    var grid = seats.map(function (x, i) {
+      var side = seatSide(x);
+      var fill = side === null ? token("--cook-toss")
+               : x.cls === 3 ? ratingColor(x.rating)
+               : token(side === "D" ? "--pD" : "--pR");
+      var what = x.senator + " (" + x.abbr + "), Class " + CLASS_LABEL[x.cls] +
+                 " — " + (x.cls === 3 ? x.rating
+                          : x.settled ? "holds to " + x.next : "still counting");
+      // The 51st block counting from the Democratic end is the seat that makes
+      // a majority, and marking it is the point of drawing a hundred blocks.
+      var cls = i === 50 ? "maj" : side === null ? "open" : "";
+      return '<i title="' + what + (i === 50 ? " — the 51st seat" : "") + '"' +
+             (cls ? ' class="' + cls + '"' : "") +
+             ' style="background:' + fill + '"></i>';
+    }).join("");
+
+    var hi = pr.ceiling_dem, lo = pr.floor_dem;
+    return '<div class="range"><b class="f-D">' + lo + "–" + hi +
+        '</b><span>Democratic seats, from losing every open seat to winning ' +
+        'them all</span></div>' +
+      '<div class="hundred">' + grid + "</div>" +
+      '<div class="majline"><span>Democratic</span>' +
+        '<span>the 51st seat is ringed</span><span>Republican</span></div>' +
+      '<div class="stats">' +
+        '<div><span>Already held</span><b>' + pr.settled_dem + "–" +
+          pr.settled_rep + '</b><small>Class I and II, settled</small></div>' +
+        '<div><span>Plus the ratings</span><b>' +
+          (pr.settled_dem + pr.rated_dem) + "–" +
+          (pr.settled_rep + pr.rated_rep) + '</b><small>' +
+          (pr.rated_dem + pr.rated_rep) + ' Class III seats</small></div>' +
+        '<div><span>Still open</span><b>' + pr.open +
+          '</b><small>' + pr.tossup.length + " toss-ups, " +
+          pr.pending.length + " counting</small></div>" +
+        '<div><span>Republican ceiling</span><b class="f-R">' +
+          pr.ceiling_rep + '</b><small>only by sweeping all ' + pr.open +
+          "</small></div>" +
+      "</div>" +
+      '<p class="hint">The ' + pr.open + " undecided seats are the " +
+        pr.tossup.length + " Class III toss-ups (" + pr.tossup.join(", ") +
+        ") and the " + pr.pending.length + " Class II races still being " +
+        "counted (" + pr.pending.map(function (x) { return x.abbr; }).join(", ") +
+        "), both of which currently lead Democratic. Democrats start at " +
+        pr.floor_dem + " without any of them, so " + (51 - pr.floor_dem) +
+        " of the " + pr.open + " makes a majority; Republicans reach " +
+        pr.ceiling_rep + ", a majority of one, only by taking all " +
+        pr.open + ".</p>" +
+      '<p class="note">' + pr.note + "</p>";
   }
 
   function chamberRows() {
@@ -620,14 +878,17 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
           ? '<span class="f-muted">counting</span>'
           : '<span class="f-D">' + c.caucus_dem + "</span>–" +
             '<span class="f-R">' + c.caucus_rep + "</span>" +
-            (c.ind ? ' <span class="note">(' + c.ind + " ind.)</span>" : "");
+            (c.ind ? ' <span class="note">(' + c.ind + " ind.)</span>" : "") +
+            (c.counting ? ' <span class="f-muted">+' + c.counting +
+                          "</span>" : "");
         return "<tr" + (c.this_map ? ' class="ismap"' : "") + "><td>" + c.name +
           '</td><td class="n">' + c.seats + '</td><td class="n">' + c.next +
           '</td><td class="n">' + split + "</td></tr>";
       }).join("") + "</tbody></table>" +
       '<p class="note">' + (ctl ? ctl.note + " " : "") +
       "Caucus totals, so Maine's and Vermont's independents count with the " +
-      "Democrats.</p>";
+      "Democrats. Class II's \u201c+2\u201d is Mississippi and Alaska, left " +
+      "out of its split until they are called.</p>";
   }
 
   // -------------------------------------------------------------- right panel
@@ -732,6 +993,12 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
     COUNTIES = topojson.feature(r[1], r[1].objects.counties).features;
     STATE_FEATS = topojson.feature(r[2], r[2].objects.states).features;
     DATA.states.forEach(function (s) { byAbbr[s.abbr] = s; });
+    ((DATA.chamber || {}).all_seats || []).forEach(function (x) {
+      (SEATS[x.abbr] = SEATS[x.abbr] || []).push(x);
+    });
+    Object.keys(SEATS).forEach(function (ab) {
+      SEATS[ab].sort(function (a, b) { return a.cls - b.cls; });
+    });
     var h = (location.hash || "").replace("#", "").toUpperCase();
     S.sel = byAbbr[h] ? h : null;
     renderControls(); renderMap(); renderLegend(); renderStatus();
