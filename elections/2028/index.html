@@ -269,11 +269,14 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 (function () {
   "use strict";
 
+  // `phrase` is the label as it reads mid-sentence in the status line. It is
+  // written out rather than lower-cased, which turned "2022 Senate" into
+  // "2022 senate".
   var VIEWS = [
-    { id: "rating", label: "Rating" },
-    { id: "pres24", label: "2024 president" },
-    { id: "sen22", label: "2022 Senate" },
-    { id: "shift", label: "Shift 22 → 24" }
+    { id: "rating", label: "Rating", phrase: "rating" },
+    { id: "pres24", label: "2024 president", phrase: "the 2024 presidential margin" },
+    { id: "sen22", label: "2022 Senate", phrase: "the 2022 Senate margin" },
+    { id: "shift", label: "Shift 22 → 24", phrase: "the shift from 2022 to 2024" }
   ];
   var RATING_TOKEN = {
     "Solid Democrat": "--cook-solidD", "Likely Democrat": "--cook-likelyD",
@@ -414,12 +417,12 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
   function renderStatus() {
     var v = VIEWS.filter(function (x) { return x.id === S.view; })[0];
     if (!S.sel) {
-      el.status.innerHTML = "<b>34 seats</b> colored by " + v.label.toLowerCase() +
-        ". Click a state for its " + "counties, or pick one at the top right.";
+      el.status.innerHTML = "<b>34 seats</b> colored by " + v.phrase +
+        ". Click a state for its counties, or pick one at the top right.";
     } else {
       var s = byAbbr[S.sel];
       el.status.innerHTML = "<b>" + s.state + "</b> · " + unitWord(S.sel, true) +
-        " by " + (S.view === "rating" ? "2024 presidential margin" : v.label.toLowerCase());
+        " by " + (S.view === "rating" ? "the 2024 presidential margin" : v.phrase);
     }
   }
 
