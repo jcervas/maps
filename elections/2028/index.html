@@ -34,7 +34,7 @@ summary: "Every seat up in 2028, with the race that filled it, the presidential 
 .backlink:hover { color: var(--accent); text-decoration: underline; }
 
 /* Layout: the atlas shape the other map pages use. Top bar for the view,
-   national summary and the rating ladder on the left, map in the middle,
+   national summary and the 2029 count on the left, map in the middle,
    seat detail on the right. Stacks to one column on narrow screens. */
 :root {
   --bg: #eef0ec;
@@ -137,13 +137,6 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 .f-D { color: var(--pD); } .f-R { color: var(--pR); }
 .totals { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
 
-/* rating ladder, left panel */
-.ladder { display: flex; flex-direction: column; gap: 3px; }
-.rung { display: grid; grid-template-columns: 11px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 4px 5px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; text-align: left; }
-.rung.on { background: var(--accent-soft); }
-.rung i { width: 11px; height: 11px; border-radius: 3px; display: block; }
-.rung .l { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rung .v { font-family: var(--f-data); font-size: 12px; color: var(--muted); }
 .balance { display: grid; grid-template-columns: repeat(34, 1fr); gap: 2px; }
 .balance i { height: 16px; border-radius: 2px; display: block; }
 
@@ -189,7 +182,9 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 .zoom { margin-left: auto; display: flex; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; box-shadow: var(--shadow); }
 .zoom button { border: 0; background: transparent; padding: 6px 11px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap; }
 .zoom button:hover { background: var(--land); }
-.legend { position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; max-width: 420px; }
+/* Wide enough for the seven rating keys on one line where there is room,
+   and never wider than the map it sits on top of. */
+.legend { position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; max-width: min(540px, calc(100% - 24px)); }
 .legend .ramp { display: flex; }
 .legend .ramp i { width: 24px; height: 11px; display: block; }
 .legend .ends { display: flex; justify-content: space-between; font-family: var(--f-data); font-size: 9.5px; color: var(--muted); }
@@ -200,22 +195,27 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 /* The same stripes the map draws, so the key looks like the thing it names. */
 .legend .sw.striped { background: var(--land); background-image: repeating-linear-gradient(45deg, var(--cook-toss) 0 2.6px, transparent 2.6px 7px); }
 
-/* Cook bar: the tally is also the filter, as on redrawn-districts-2026. */
-.cookbar { min-width: 320px; }
+/* Cook bar: the tally is also the filter, as on redrawn-districts-2026.
+   One strip, all seven bands. A second strip zoomed to the competitive seats
+   reads well until you ask what the whole chamber looks like, which is the
+   question this page is for; the names live in the key underneath instead,
+   where a one-seat band still has room for its own label. */
+/* 320px is what the bar wants; on a phone the legend is narrower than that,
+   and the floor was pushing the Republican end off the edge. */
+.cookbar { min-width: min(320px, 100%); }
 .cb-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; margin-bottom: 3px; }
 .cb-head .d { color: var(--pD); } .cb-head .r { color: var(--pR); }
-.cb-all { display: flex; height: 9px; margin-bottom: 5px; }
-.cb-all .cb-seg { min-width: 2px; }
-.cb-track { display: flex; height: 19px; }
+.cb-track { display: flex; height: 21px; border-radius: 3px; overflow: hidden; }
 .cb-seg { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 15px; box-sizing: border-box; }
-button.cb-seg, button.cb-lab { appearance: none; -webkit-appearance: none; border: 0; padding: 0; margin: 0; font: inherit; cursor: pointer; }
+button.cb-seg, button.cb-key { appearance: none; -webkit-appearance: none; border: 0; padding: 0; margin: 0; font: inherit; cursor: pointer; }
 button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 .cb-seg.on { box-shadow: inset 0 0 0 2px var(--ink); }
-.cb-lab.on { color: var(--ink); font-weight: 700; }
-.cb-seg:focus-visible, .cb-lab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.cb-foot { display: flex; margin-top: 3px; }
-.cb-foot button { font-size: 9.75px; color: var(--muted); text-align: center; overflow: hidden; white-space: nowrap; min-width: 0; background: none; }
-.cb-sum { margin-top: 5px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cb-seg:focus-visible, .cb-key:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cb-keys { display: flex; flex-wrap: wrap; gap: 3px 9px; margin-top: 6px; }
+.cb-key { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); background: none; white-space: nowrap; border-radius: 4px; padding: 1px 3px; }
+.cb-key i { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+.cb-key.on { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.cb-sum { margin-top: 6px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; pointer-events: none; }
 
 /* ---------- tooltip ---------- */
@@ -631,46 +631,49 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 
   // ---------------------------------------------------------------- Cook bar
   // Every band is a button, so the tally doubles as the filter -- the same
-  // arrangement redrawn-districts-2026 uses. The top strip is all 34 seats in
-  // proportion; the second shows only the sixteen that are not Solid, which is
-  // the part anybody is actually reading.
+  // arrangement redrawn-districts-2026 uses. One strip holds all 34 seats in
+  // proportion, Solid bands included; the key under it carries the names,
+  // which a one-seat band has no room for inside the bar.
+  //
+  // Dark text on the three pale bands, white on the four that are not.
+  var CB_DARK = { "Lean Democrat": 1, "Toss Up": 1, "Lean Republican": 1 };
   function renderCookBar() {
     var counts = DATA.rating_order.map(function (r) {
       return DATA.states.filter(function (s) { return s.rating === r; }).length;
     });
     var short = DATA.rating_short || {};
-    function seg(r, n, text, fg) {
-      var on = S.filter === r;
-      var what = (short[r] || r) + ", " + n + " seat" + (n === 1 ? "" : "s");
-      return '<button type="button" class="cb-seg' + (on ? " on" : "") +
-        '" data-cat="' + r + '" aria-pressed="' + on + '" title="' + what +
-        '" aria-label="' + what + '" style="flex:' + n + ";background:" +
-        ratingColor(r) + (fg ? ";color:" + fg : "") + '">' + (text || "") + "</button>";
+    function label(r, n) {
+      return (short[r] || r) + ", " + n + " seat" + (n === 1 ? "" : "s");
     }
-    var mid = DATA.rating_order.filter(function (r) { return r.indexOf("Solid") !== 0; });
-    var midCounts = mid.map(function (r) { return counts[DATA.rating_order.indexOf(r)]; });
-    var watch = midCounts.reduce(function (a, b) { return a + b; }, 0);
+    function seg(r, n) {
+      var on = S.filter === r;
+      return '<button type="button" class="cb-seg' + (on ? " on" : "") +
+        '" data-cat="' + r + '" aria-pressed="' + on + '" title="' + label(r, n) +
+        '" aria-label="' + label(r, n) + '" style="flex:' + n + ";background:" +
+        ratingColor(r) + ";color:" + (CB_DARK[r] ? "#222222" : "#ffffff") +
+        '">' + n + "</button>";
+    }
+    function key(r, n) {
+      var on = S.filter === r;
+      return '<button type="button" class="cb-key' + (on ? " on" : "") +
+        '" data-cat="' + r + '" aria-pressed="' + on + '" title="' + label(r, n) +
+        '"><i style="background:' + ratingColor(r) + '"></i>' +
+        (short[r] || r) + "</button>";
+    }
     var solidD = counts[DATA.rating_order.indexOf("Solid Democrat")];
     var solidR = counts[DATA.rating_order.indexOf("Solid Republican")];
     var solid = solidD + solidR;
+    var watch = counts.reduce(function (a, b) { return a + b; }, 0) - solid;
 
     el.legend.innerHTML =
       '<div class="cookbar">' +
         '<div class="cb-head"><span class="d">Democratic</span>' +
           '<span class="r">Republican</span></div>' +
-        '<div class="cb-all">' + DATA.rating_order.map(function (r, i) {
-          return counts[i] ? seg(r, counts[i], "", "") : "";
+        '<div class="cb-track">' + DATA.rating_order.map(function (r, i) {
+          return counts[i] ? seg(r, counts[i]) : "";
         }).join("") + "</div>" +
-        '<div class="cb-track">' + mid.map(function (r, i) {
-          if (!midCounts[i]) return "";
-          var pale = r !== "Likely Democrat" && r !== "Likely Republican";
-          return seg(r, midCounts[i], String(midCounts[i]), pale ? "#222222" : "#ffffff");
-        }).join("") + "</div>" +
-        '<div class="cb-foot">' + mid.map(function (r, i) {
-          if (!midCounts[i]) return "";
-          return '<button type="button" class="cb-lab' + (S.filter === r ? " on" : "") +
-            '" data-cat="' + r + '" aria-pressed="' + (S.filter === r) +
-            '" style="flex:' + midCounts[i] + '">' + (short[r] || r) + "</button>";
+        '<div class="cb-keys">' + DATA.rating_order.map(function (r, i) {
+          return counts[i] ? key(r, counts[i]) : "";
         }).join("") + "</div>" +
         '<div class="cb-sum">' + solid + " Solid (" + solidD + " D, " + solidR +
           " R) · " + watch + " short of it" +
@@ -749,9 +752,6 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
 
   // --------------------------------------------------------------- left panel
   function renderLeft() {
-    var counts = {};
-    DATA.rating_order.forEach(function (r) { counts[r] = 0; });
-    DATA.states.forEach(function (s) { counts[s.rating]++; });
     var d = DATA.states.filter(function (s) { return s.incumbent_party === "D"; }).length;
 
     var bal = DATA.states.slice().sort(function (a, b) {
@@ -769,13 +769,6 @@ button.cb-seg + button.cb-seg { border-left: 1px solid var(--panel); }
         '<div class="balance">' + bal + "</div>" +
         '<p class="note">Each block is a seat, safest Democratic to safest Republican.</p>' +
       "</div>" +
-      '<div class="sec"><h3>Ratings</h3>' +
-        DATA.rating_order.map(function (r) {
-          return '<div class="rung' + (S.filter === r ? " on" : "") + '">' +
-            '<i style="background:' + ratingColor(r) + '"></i>' +
-            '<span class="l">' + r + '</span><span class="v">' + counts[r] + "</span></div>";
-        }).join("") +
-        '<p class="note">The bar under the map filters by rating.</p></div>' +
       '<div class="sec"><h3>What 2029 looks like</h3>' + projection() + "</div>" +
       '<div class="sec"><h3>The whole chamber</h3>' + chamberRows() +
         '<p class="note">Class I and Class II are holdovers: nobody votes on ' +

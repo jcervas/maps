@@ -498,11 +498,16 @@ def chamber(state_rows):
         "floor_rep": held["R"] + rated["R"],
         "ceiling_rep": held["R"] + rated["R"] + open_seats,
         "lean_dem": lean_d, "lean_rep": 100 - lean_d - len(toss),
+        # Spelled from the counts rather than written out: an override that
+        # moves a seat into or out of Toss Up would otherwise leave this
+        # sentence quietly wrong.
         "note": ("Class I and the settled Class II seats are holdovers: nobody "
                  "votes on them in 2028. Class III is on the ballot, so its "
-                 "seats enter at their rating, and the five toss-ups enter "
-                 "nowhere. Mississippi and Alaska are 2026 races still being "
-                 "counted, so they are open here too."),
+                 "seats enter at their rating, and the %d toss-ups enter "
+                 "nowhere. %s are 2026 races still being counted, so they are "
+                 "open here too." % (
+                     len(toss),
+                     " and ".join(p["state"] for p in pending) or "No seats")),
     }
 
     return {
