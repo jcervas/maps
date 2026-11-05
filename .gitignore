@@ -14,3 +14,9 @@ build/scraper/raw/
 build/scraper/out/
 build/scraper/counties.json
 build/scraper/ak_house.json
+
+# Jekyll's own output and cache. .jekyll-cache is caught by the global
+# gitignore on this machine, which a clone elsewhere will not have, and _site
+# is ~115 MB of built copy that nobody should commit.
+_site/
+.jekyll-cache/
