@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Senate Races Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;600;700&display=swap">
+<style>
+  /* Layout: a control rail, a flexible map canvas, and the legend as a band
+     beneath it. The page scrolls where that does not fit. */
+  :root {
+    /* Washington Post election palette, sampled from their 2024 results
+       pages: #1366b3 Democratic and #be2c25 Republican, with the Post's own
+       mid and light tints, over their neutrals. The diverging ramp is exposed
+       as --ramp0..--ramp6 so the canvas can read it and follow the theme
+       instead of hard-coding a scheme that only works in light mode. */
+    --paper: #ffffff;
+    --panel: #f7f7f7;
+    --ink: #2a2a2a;
+    --ink-soft: #595959;
+    --rule: #e9e9e9;
+    --accent: #2a2a2a;
+    --accent-soft: #f0f0f0;
+    --link: #0088cc;
+    --dem: #1366b3;
+    --rep: #be2c25;
+    --water: #ffffff;
+    /* path.region in the Post's own choropleth CSS: the fill for a shape with
+       no value. Darker and warmer than a default grey, and it matters here
+       because 7.8% of precincts have no reported result. */
+    --nodata: #bebcba;
+    --zoom-glyph: #6b6b6b;
+    /* The page color. States carry no fill of their own: their outlines do
+       the work, the way the Post's do, and the only fill on the map is a
+       value somebody is meant to read. */
+    --basefill: #ffffff;
+    --baseline: #dcdcd8;
+    --baseedge: #b9b9b4;
+    --ramp0: #be2c25; --ramp1: #d35f4f; --ramp2: #f9dddb; --ramp3: #f7f7f7;
+    --ramp4: #d3e7fa; --ramp5: #5784c5; --ramp6: #1366b3;
+    /* The Post's own Cook scale, which is not the election ramp: toss-ups get
+       a gold of their own rather than a pale red or blue, because a toss-up is
+       not a weak lean -- it is a different statement. Solid and likely sit on
+       the election blues and reds so the two modes still agree about which end
+       of the map is which. */
+    --cook-solidD:  #1366b3; --cook-likelyD: #5784c5; --cook-leanD: #a9c6e8;
+    --cook-toss:    #e0a63a;
+    --cook-leanR:   #eb9c92; --cook-likelyR: #d35f4f; --cook-solidR: #be2c25;
+    /* Behind the squares the nine states stay nearly as light as the rest of
+       the country: the squares are the subject, and the district lines are
+       cue enough that these are the states in scope. */
+    --chicfill: #e8e8e4;
+    /* The Post sets its charts in ITC Franklin Std, which is licensed and
+       served from their own CDN, so it cannot be loaded here. Libre Franklin
+       is a Franklin Gothic revival and the closest face on Google Fonts, which
+       is the only font host this page may use. */
+    --display: "Libre Franklin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --body: "Libre Franklin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "Libre Franklin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #141414; --panel: #1f1f1f; --ink: #e7e7e7; --ink-soft: #a0a0a0;
+      --rule: #333333; --accent: #e7e7e7; --accent-soft: #242424;
+      --link: #4a9de2;
+      --dem: #5784c5; --rep: #d35f4f; --water: #141414; --nodata: #4a4a4a;
+      --zoom-glyph: #a0a0a0;
+      --basefill: #141414; --baseline: #333333; --baseedge: #4d4d4d;
+      --ramp0: #be2c25; --ramp1: #a8453d; --ramp2: #6b3a37; --ramp3: #1f1f1f;
+      --ramp4: #2f4c70; --ramp5: #5784c5; --ramp6: #8fbcea;
+      --cook-solidD:  #1f5fa8; --cook-likelyD: #2f6fc0; --cook-leanD: #7ea7d8;
+      --cook-toss:    #c08f2c;
+      --cook-leanR:   #d4877c; --cook-likelyR: #b93b32; --cook-solidR: #9e2a24;
+      --chicfill: #262626;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #141414; --panel: #1f1f1f; --ink: #e7e7e7; --ink-soft: #a0a0a0;
+    --rule: #333333; --accent: #e7e7e7; --accent-soft: #242424;
+    --link: #4a9de2;
+    --dem: #5784c5; --rep: #d35f4f; --water: #141414; --nodata: #4a4a4a;
+    --zoom-glyph: #a0a0a0;
+    --basefill: #141414; --baseline: #333333; --baseedge: #4d4d4d;
+    --ramp0: #be2c25; --ramp1: #a8453d; --ramp2: #6b3a37; --ramp3: #1f1f1f;
+    --ramp4: #2f4c70; --ramp5: #5784c5; --ramp6: #8fbcea;
+    --cook-solidD:  #1f5fa8; --cook-likelyD: #2f6fc0; --cook-leanD: #7ea7d8;
+    --cook-toss:    #c08f2c;
+    --cook-leanR:   #d4877c; --cook-likelyR: #b93b32; --cook-solidR: #9e2a24;
+    --chicfill: #262626;
+    color-scheme: dark;
+  }
+
+  /* The artifact host's skeleton supplies this, a plain file does not, and
+     .ctl{display:flex} would otherwise beat the default [hidden] rule. Declaring
+     it here keeps the local page and the published one behaving identically. */
+  [hidden] { display: none !important; }
+  /* The page is a page, not an app pinned to the viewport. html keeps a
+     height so body's percentage minimum has something to resolve against;
+     body takes a minimum rather than a height, so a short screen scrolls
+     instead of squeezing everything into one. */
+  html { height: 100%; }
+  body {
+    min-height: 100%;
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 14px; line-height: 1.5;
+    display: flex; flex-direction: column;
+    /* The document scrolls, not the body: body was its own scroll container
+       back when it had a fixed height, and leaving that in place would hide
+       the page's overflow inside an element the browser does not treat as
+       the page. */
+    overflow-x: hidden;
+  }
+  .gutter {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  header { border-bottom: 1px solid var(--rule); padding-block: 0.8rem 0.7rem; flex: none; }
+  .hrow { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+  /* The Post's chart type scale: title 19.25/23.1 bold, notes 12.25/14.7,
+     small labels 10.5 uppercase, 14px base. */
+  h1 {
+    font-family: var(--display); font-size: 19.25px; line-height: 23.1px;
+    font-weight: 700; margin: 0; white-space: nowrap;
+  }
+  .sub { color: var(--ink-soft); font-size: 12.25px; line-height: 14.7px; margin: 0; }
+
+  .controls {
+    background: var(--panel);
+    padding-block: 0.7rem 0; flex: none;
+    display: flex; gap: 1.4rem 1.75rem; flex-wrap: wrap; align-items: flex-end;
+  }
+  /* The hint sits below the controls rather than inside them. As a flex item
+     it collapsed to nothing the moment the row stopped wrapping, and it is a
+     full-width line of prose in any case. */
+  .hintbar {
+    background: var(--panel); border-bottom: 1px solid var(--rule);
+    padding-block: 1rem 0.7rem; flex: none;
+  }
+  .ctl { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+  .ctl > label {
+    font-size: 10.5px; letter-spacing: 0.06em; font-weight: 600;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .seg { display: flex; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; background: var(--paper); }
+  .seg button {
+    font: inherit; font-size: 0.86rem; border: 0; background: transparent;
+    color: var(--ink); padding: 0.33rem 0.7rem; cursor: pointer;
+    border-right: 1px solid var(--rule); white-space: nowrap;
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--paper); }
+  .seg button:disabled { color: var(--ink-soft); cursor: not-allowed; opacity: 0.5; }
+  /* A control can be both the current state and not yet changeable (precincts
+     before a state is picked). The normal active treatment puts muted text on
+     a full-strength background, which reads at about 2:1; mute the background
+     to match the text instead of leaving it unreadable. */
+  .seg button:disabled[aria-pressed="true"] {
+    background: var(--rule); color: var(--ink-soft); opacity: 1;
+  }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  /* The Chamber switch is a pair of links, not buttons: House and Senate are
+     separate pages, so moving between them is navigation and should behave
+     like it -- back button, open in a new tab, a URL you can send. Styled to
+     sit in a .seg beside the real buttons without looking different. */
+  .seg a {
+    font: inherit; font-size: 0.86rem; color: var(--ink); text-decoration: none;
+    padding: 0.33rem 0.7rem; border-right: 1px solid var(--rule);
+    white-space: nowrap; display: inline-flex; align-items: center;
+  }
+  .seg a:last-child { border-right: 0; }
+  .seg a[aria-current="page"] { background: var(--accent); color: var(--paper); }
+  .seg a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .hint { font-size: 12.25px; color: var(--ink-soft); font-style: italic; }
+  select.var {
+    font: inherit; font-size: 0.86rem; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 3px; padding: 0.3rem 0.4rem; max-width: 17rem;
+  }
+  select.var:disabled { opacity: 0.5; cursor: not-allowed; }
+  .swatches { display: grid; grid-template-columns: repeat(2, auto); gap: 0.15rem 0.6rem; }
+  .sw { display: flex; align-items: center; gap: 0.33rem; white-space: nowrap; }
+  .sw i { width: 11px; height: 11px; border-radius: 4px; flex: none; }
+  /* The flip legend's chips carry a hatch angle, and an 11px chip is barely
+     two stripes wide -- too few to read a direction from. */
+  .legend.flip .sw i {
+    width: 16px; height: 16px; border-radius: 5px;
+    box-sizing: border-box; border: 2px solid transparent;
+  }
+
+  /* The Post's Cook bar: one band per rating, width by seat count, the count
+     printed inside. It is the legend and the tally at once, which is why it
+     replaces the ramp rather than sitting beside it. */
+  .legend.cook { max-width: 30rem; }
+  .cookbar { margin-bottom: 0.3rem; }
+  .cb-head {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-weight: 600; margin-bottom: 3px;
+  }
+  .cb-head .d { color: var(--dem); }
+  .cb-head .r { color: var(--rep); }
+  /* Every district, in proportion. Thin, because it is the shape of the
+     field rather than something to read values off. */
+  .cb-all { display: flex; height: 9px; margin-bottom: 5px; }
+  .cb-all .cb-seg { min-width: 2px; }
+  .cb-track { display: flex; height: 19px; }
+  .cb-seg {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+    min-width: 15px; box-sizing: border-box;
+  }
+  .cb-seg + .cb-seg { border-left: 1px solid var(--paper); }
+  .cb-foot { display: flex; margin-top: 3px; }
+  .cb-foot span {
+    font-size: 9.75px; color: var(--ink-soft); text-align: center;
+    overflow: hidden; white-space: nowrap; min-width: 0;
+  }
+  .cb-sum {
+    margin-top: 4px; font-size: 11px; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  /* The seat totals the ratings add up to: the line the bar is really for,
+     so it takes the page's own colours and sits above the race counts. */
+  .cb-seats {
+    display: block; font-size: 12.25px; color: var(--ink);
+    margin-bottom: 1px;
+  }
+  .cb-seats .d { color: var(--dem); font-weight: 600; }
+  .cb-seats .r { color: var(--rep); font-weight: 600; }
+  .cb-seats .muted { color: var(--ink-soft); font-weight: 400; }
+  .tier {
+    margin-top: 0.4rem; padding-top: 0.35rem; border-top: 1px solid var(--rule);
+    font-size: 12.25px; color: var(--ink-soft); line-height: 14.7px;
+  }
+  .tier.warn { color: var(--rep); }
+
+  .stage {
+    /* The map's minimum lives here, on the container, not on the canvas.
+       resize() used to floor the canvas at 260px while this box was free to
+       flex down to nothing: on a short landscape phone the stage computed to
+       10px, the 260px canvas was clipped by overflow:hidden, and the map
+       simply vanished.
+
+       The minimum is a readable map rather than the smallest one that fits.
+       Where the viewport cannot hold that and the chrome at once, the page
+       grows and scrolls; nothing is compressed to avoid a scrollbar. */
+    /* Grows into a tall screen so nothing is left hanging under the footer,
+       but never shrinks below its minimum: where the chrome and a readable
+       map will not both fit, the page gets longer rather than the map
+       smaller. */
+    position: relative; flex: 1 0 auto;
+    min-height: max(420px, 70vh); background: var(--water);
+    overflow: hidden;   /* belt and braces: the canvas must never paint over the footer */
+  }
+  /* Out of flow, or it sizes the stage instead of the other way round:
+     resize() gives the canvas an explicit pixel height taken from the stage,
+     and since the stage no longer shrinks that height became content it
+     could not get back under -- so every resize ratcheted it taller and it
+     never came down. */
+  canvas {
+    position: absolute; inset: 0;
+    display: block; width: 100%; height: 100%;
+    /* The map takes the gesture, because dragging it pans and pinching it
+       zooms. */
+    touch-action: none;
+  }
+  /* Except when it is split in two, which is the phone overview: there is no
+     panning or zooming there -- the controls for it are hidden -- so the
+     canvas has no use for the gesture, and taking it anyway left most of the
+     screen unable to scroll the page. */
+  .stage.split canvas { touch-action: pan-y; }
+
+  /* After the Post's own map controls: bottom-right, white rounded chips with
+     a soft shadow and grey glyphs, the reset control set apart above the
+     zoom pair rather than welded into one strip. */
+  .zoom-buttons {
+    position: absolute; right: 14px; bottom: 14px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    z-index: 2;
+  }
+  .zb {
+    appearance: none; border: 0; padding: 0; cursor: pointer;
+    width: 34px; height: 34px; display: grid; place-items: center;
+    background: var(--paper); color: var(--zoom-glyph);
+    box-shadow: 0 1px 3px #0000002e;
+  }
+  .zb svg { width: 16px; height: 16px; display: block; }
+  .zb.solo { border-radius: 6px; }
+  .zb-pair {
+    display: flex; flex-direction: column;
+    border-radius: 6px; overflow: hidden;
+    box-shadow: 0 1px 3px #0000002e;
+  }
+  .zb-pair .zb { box-shadow: none; }
+  .zb-pair .zb:first-child { border-bottom: 1px solid var(--rule); }
+  .zb:hover { color: var(--ink); }
+  .zb:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+  /* The legend sits under the map rather than on it. As an overlay it hid a
+     piece of the thing it was explaining for as long as anyone read it, and
+     the "Changing hands" key -- four rows and a paragraph -- covered most of
+     a small screen. Below the map it costs the page height instead, which the
+     page can afford because it is allowed to scroll. */
+  .legend {
+    background: var(--paper); border-top: 1px solid var(--rule);
+    padding-block: 10px 12px; font-size: 12.25px; line-height: 14.7px;
+    max-width: 52rem; flex: none;
+  }
+
+  .legend .lt {
+    font-size: 10.5px; letter-spacing: 0.06em; font-weight: 600;
+    text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.4rem;
+  }
+  .ramp { height: 9px; border-radius: 0; margin-bottom: 0.25rem; }
+  .ends { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+
+  .readout {
+    position: absolute; right: 14px; top: 14px;
+    background: var(--paper); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 10px 12px; font-size: 14px; min-width: 12.5rem; max-width: 17rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  /* Anchored in the corner the panel sits on one fixed piece of the map and
+     hides it for as long as you read. Following the cursor it covers only
+     what you have just moved past, and never the thing you are reaching for.
+     It must not take the pointer, or the canvas under it stops seeing the
+     mouse and the hover dies the moment the panel catches up. */
+  .readout.at-cursor { right: auto; top: auto; pointer-events: none; }
+
+  .readout .rt { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .readout dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 5px; margin: 0; font-variant-numeric: tabular-nums; }
+  .readout dt { color: var(--ink-soft); }
+  .readout dd { margin: 0; text-align: right; }
+  .readout .d { color: var(--dem); font-weight: 600; }
+  .readout .r { color: var(--rep); font-weight: 600; }
+  .readout .muted { color: var(--ink-soft); font-weight: 400; }
+  .readout .idle { color: var(--ink-soft); font-style: italic; }
+  .flag {
+    margin-top: 0.4rem; padding-top: 0.35rem; border-top: 1px solid var(--rule);
+    font-size: 0.76rem; color: var(--ink-soft);
+  }
+
+  /* Modelled on the Post's .keyboard-hint: a dark translucent chip that reads
+     over either a light or a dark map without needing a theme of its own. */
+  .status {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-size: 12px; color: #fff;
+    background: #4a4a4ae6; border: 1px solid #2e2e2e40;
+    border-radius: 0.375rem; padding: 7px 18px;
+    box-shadow: 0 2px 2px 0 #00000005, 0 2px 8px 0 #00000014;
+  }
+  footer {
+    border-top: 1px solid var(--rule); padding-block: 0.45rem;
+    font-size: 12.25px; line-height: 14.7px; color: var(--ink-soft); flex: none;
+  }
+  /* --------------------------------------------------------- landscape */
+  /* Held sideways there is no height to spare, and the chrome would push the
+     map below the fold. Rather than shrink the chrome, reorder: the map comes
+     first and the controls follow it, so the thing worth looking at leads and
+     the page scrolls to the rest. Source order is unchanged, so the controls
+     still come first for a keyboard or a screen reader. */
+  @media (orientation: landscape) and (max-height: 560px) {
+    header { order: 0; }
+    .stage { order: 1; }
+    .legend { order: 2; }
+    .controls { order: 3; border-top: 1px solid var(--rule); padding-top: 0.7rem; }
+    .hintbar { order: 4; }
+    footer { order: 5; }
+  }
+
+  /* ------------------------------------------------------------- phones */
+  /* The desktop layout puts the readout top-right and the legend
+     bottom-left, each a fixed width, which works while there is map either
+     side of them. On a phone they are most of the screen and they cover the
+     only thing worth looking at. So on narrow screens both span the width
+     and move to opposite ends, leaving a clear band of map between them,
+     and the control rail scrolls sideways rather than stacking into five
+     rows and eating the map's height. */
+  @media (max-width: 620px) {
+    h1 { font-size: 16.5px; line-height: 20px; white-space: normal; }
+    .sub { font-size: 11.5px; line-height: 14px; }
+    header { padding-block: 0.6rem 0.5rem; }
+
+    /* The rail used to scroll sideways, which hid half the controls behind
+       a gesture nothing on the page suggested: a reader could not see that
+       Cook rating or the state list were there at all. They wrap into cards
+       instead, each sized to its own contents, so a narrow screen gets two
+       to a row and a wide one more. Taller, and all of it visible. */
+    .controls {
+      flex-wrap: wrap; gap: 0.5rem; padding-block: 0.55rem 0.55rem;
+      align-items: stretch;
+    }
+    .hintbar { padding-block: 0.6rem 0.55rem; }
+    .hint { font-size: 11.5px; }
+    .ctl {
+      flex: 1 1 auto; justify-content: flex-end;
+      background: var(--paper); border: 1px solid var(--rule);
+      border-radius: 4px; padding: 0.4rem 0.5rem 0.45rem;
+    }
+    /* The two that carry a row of their own: four buttons and a long list of
+       state names both want the full width rather than half of it. */
+    .ctl:has(> .seg > button:nth-child(4)), #varWrap, .ctl:has(#stateSel) {
+      flex-basis: 100%;
+    }
+    /* Four named modes do not fit across a phone in one strip -- the last of
+       them was cut off at the edge of its card -- so they go two by two.
+       Grid rather than flex-wrap: equal cells, and the dividers land on the
+       lines between them instead of wherever the text happened to end. */
+    .ctl:has(> .seg > button:nth-child(4)) .seg {
+      display: grid; grid-template-columns: 1fr 1fr;
+    }
+    .ctl:has(> .seg > button:nth-child(4)) .seg button {
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      white-space: normal;
+    }
+    .ctl:has(> .seg > button:nth-child(4)) .seg button:nth-child(2n) {
+      border-right: 0;
+    }
+    .ctl:has(> .seg > button:nth-child(4)) .seg button:nth-last-child(-n+2) {
+      border-bottom: 0;
+    }
+    .ctl > label { font-size: 9.5px; }
+    .seg button, .seg a { font-size: 12.5px; padding: 0.3rem 0.5rem; }
+    .var { font-size: 12.5px; }
+
+    .readout {
+      left: 10px; right: 10px; top: 10px;
+      min-width: 0; max-width: none;
+      font-size: 12.5px; padding: 8px 10px;
+    }
+    .readout .rt { font-size: 13px; margin-bottom: 4px; }
+    .readout dl { gap: 2px 5px; }
+    .readout[data-idle] { display: none; }
+
+    .legend { font-size: 11.5px; max-width: none; }
+    .legend.cook { max-width: none; }
+    .swatches { grid-template-columns: repeat(2, 1fr); }
+    .cb-foot span { font-size: 9px; }
+
+    /* The source line and the legend's provenance note are the two blocks
+       of small print competing with the map for a short screen. */
+    footer { font-size: 11px; line-height: 13.5px; padding-block: 0.4rem; }
+    .legend .tier { font-size: 10.5px; line-height: 13px; }
+
+    /* A phone shows the overview as two stacked panels, so the stage is
+       carrying two maps in the space a desktop gives one. 420px split in
+       half is not a map, it is a diagram of one. The page scrolls, so take
+       the height from the screen rather than from what fits above the fold. */
+    .stage { min-height: max(420px, min(66vh, 600px)); }
+    /* Split in two, the stage carries two maps and needs the room for both.
+       buildPanels() measures what they actually come to and sets a floor
+       inline; this is what holds until it has. */
+    .stage.split { min-height: 70vh; }
+
+    .zoom-buttons { right: 10px; bottom: 10px; flex-direction: row; }
+    .zb { width: 30px; height: 30px; }
+    .zb-pair { flex-direction: row; }
+    .zb-pair .zb:first-child {
+      border-bottom: 0; border-right: 1px solid var(--rule);
+    }
+  }
+
+  /* The idle panel's corner. On the House map the top right is open Canada;
+     on the Senate map it is Maine, whose race is one of the seven toss-ups,
+     and the panel sat squarely on its square. The bottom right is open
+     Atlantic on both. Phones hide the idle panel altogether, so this is a
+     desktop rule; once you hover, the panel follows the cursor either way.
+     (The Chamber switch's own styling lives in the House stylesheet, which
+     this page copies, so the two pages share one definition of it.) */
+  @media (min-width: 621px) {
+    .readout { top: auto; bottom: 14px; }
+    .readout.at-cursor { bottom: auto; }
+  }
+</style>
+<body>
+
+<header class="gutter">
+  <div class="hrow">
+    <h1>Senate Races Explorer</h1>
+    <p class="sub">The 35 Senate seats up in 2026: 33 regular races, and specials in Ohio and Florida</p>
+  </div>
+</header>
+
+<div class="controls gutter">
+  <div class="ctl">
+    <label id="l-ch">Chamber</label>
+    <div class="seg" role="group" aria-labelledby="l-ch">
+      <a href="./">House</a>
+      <a href="senate.html" aria-current="page">Senate</a>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <label id="l-color">Color by</label>
+    <div class="seg" role="group" aria-labelledby="l-color">
+      <button id="cElection" aria-pressed="false">2024 result</button>
+      <button id="cCook" aria-pressed="false">Cook rating</button>
+      <button id="cFlip" aria-pressed="true">Changing hands</button>
+    </div>
+  </div>
+
+  <div class="ctl" id="markWrap">
+    <label id="l-mark">Show as</label>
+    <div class="seg" role="group" aria-labelledby="l-mark">
+      <button id="kSquares" aria-pressed="true">Squares</button>
+      <button id="kFill" aria-pressed="false">Fill</button>
+    </div>
+  </div>
+</div>
+
+<div class="hintbar gutter">
+  <span class="hint" id="hint">No lines are redrawn in a Senate race, so each state is its own seat. Hover or tap a state for its race.</span>
+</div>
+
+<div class="stage" id="stage">
+  <canvas id="map"></canvas>
+  <div class="readout" id="readout" data-idle>
+    <div class="rt" id="rTitle">Hover the map</div>
+    <div class="idle" id="rIdle"></div>
+    <dl id="rList"></dl>
+    <div class="flag" id="rFlag" hidden></div>
+  </div>
+  <div class="status" id="status">Loading the Senate races&hellip;</div>
+</div>
+  <div class="legend gutter" id="legend" hidden>
+    <div class="lt" id="legendTitle"></div>
+    <div class="ramp" id="ramp"></div>
+    <div class="ends"><span id="lo"></span><span id="mid"></span><span id="hi"></span></div>
+    <div class="cookbar" id="cookBar" hidden>
+      <div class="cb-head"><span class="d">Democratic</span><span class="r">Republican</span></div>
+      <div class="cb-all" id="cbAll"></div>
+      <div class="cb-track" id="cbTrack"></div>
+      <div class="cb-foot" id="cbFoot"></div>
+      <div class="cb-sum" id="cbSum"></div>
+    </div>
+    <div class="swatches" id="swatches" hidden></div>
+    <div class="tier" id="tierNote" hidden></div>
+    <div class="tier" id="chamberNote" hidden></div>
+  </div>
+
+<footer class="gutter">
+  Cook Political Report Senate ratings &middot; senators from unitedstates/congress-legislators
+  &middot; 2024 presidential results from the MIT Election Data and Science Lab
+  &middot; state outlines dissolved from the House districts
+  &middot; <span id="build" title="Build date. If this is older than you expect, you are on a cached copy.">build &mdash;</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var BUILD = "2026-10-30d";
+  function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
+  document.getElementById("build").textContent = "build " + BUILD;
+
+  var STATE_NAME = {
+    AK: "Alaska", AL: "Alabama", AR: "Arkansas", AZ: "Arizona",
+    CA: "California", CO: "Colorado", CT: "Connecticut", DE: "Delaware",
+    FL: "Florida", GA: "Georgia", HI: "Hawaii", IA: "Iowa", ID: "Idaho",
+    IL: "Illinois", IN: "Indiana", KS: "Kansas", KY: "Kentucky",
+    LA: "Louisiana", MA: "Massachusetts", MD: "Maryland", ME: "Maine",
+    MI: "Michigan", MN: "Minnesota", MO: "Missouri", MS: "Mississippi",
+    MT: "Montana", NC: "North Carolina", ND: "North Dakota",
+    NE: "Nebraska", NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico",
+    NV: "Nevada", NY: "New York", OH: "Ohio", OK: "Oklahoma", OR: "Oregon",
+    PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+    SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah",
+    VA: "Virginia", VT: "Vermont", WA: "Washington", WI: "Wisconsin",
+    WV: "West Virginia", WY: "Wyoming"
+  };
+
+  var COOK_BANDS = [
+    { label: "Solid D",  cat: "Solid Democrat" },
+    { label: "Likely D", cat: "Likely Democrat" },
+    { label: "Lean D",   cat: "Lean Democrat" },
+    { label: "Toss-up",  cat: "Toss Up" },
+    { label: "Lean R",   cat: "Lean Republican" },
+    { label: "Likely R", cat: "Likely Republican" },
+    { label: "Solid R",  cat: "Solid Republican" }
+  ];
+  // The same four categories as the House view's Changing hands tab, so a
+  // reader moving between chambers reads the same marks the same way.
+  var FLIP_BANDS = [
+    { cat: "changeD", label: "D seat → R",   held: "D", side: "R", fate: "change" },
+    { cat: "changeR", label: "R seat → D",   held: "R", side: "D", fate: "change" },
+    { cat: "tossD",   label: "D seat, toss-up", held: "D", side: "D", fate: "toss" },
+    { cat: "tossR",   label: "R seat, toss-up", held: "R", side: "R", fate: "toss" }
+  ];
+  var FLIP_TONE = { D: "Solid Democrat", R: "Solid Republican" };
+  var PARTY_WORD = { D: "Democratic", R: "Republican" };
+  var PARTY_LETTER = { D: "D", R: "R", I: "I" };
+  var FLIP_PHRASE = {
+    changeD: "Democratic seat, now rated Republican",
+    changeR: "Republican seat, now rated Democratic",
+    tossD: "Democratic seat, now a toss-up",
+    tossR: "Republican seat, now a toss-up",
+    hold: "Still rated for the party that holds it"
+  };
+
+  var state = { color: "flip", squares: true, data: null, states: [], nation: null, hover: null };
+
+  var cv = document.getElementById("map"), ctx = cv.getContext("2d");
+  var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+  var W = 0, H = 0;
+  var proj = d3.geoAlbersUsa(), path = d3.geoPath(proj, ctx);
+  var canHover = window.matchMedia ? window.matchMedia("(hover: hover)").matches : true;
+  var squares = [];
+
+  /* ---------------------------------------------------------------- scales */
+
+  // Read out of the stylesheet, exactly as the House page does, so both views
+  // share one palette and both follow the theme.
+  var THEME = null;
+  function theme() {
+    if (THEME) return THEME;
+    var cs = getComputedStyle(document.documentElement);
+    var g = function (n) { return (cs.getPropertyValue(n) || "").trim(); };
+    var stops = [];
+    for (var i = 0; i < 7; i++) stops.push(g("--ramp" + i) || "#888");
+    THEME = {
+      election: d3.interpolateRgbBasis(stops), stops: stops,
+      nodata: g("--nodata") || "#dcdcdc",
+      chicfill: g("--chicfill") || "#e8e8e4",
+      cook: {
+        "Solid Democrat":    g("--cook-solidD")  || "#1366b3",
+        "Likely Democrat":   g("--cook-likelyD") || "#5784c5",
+        "Lean Democrat":     g("--cook-leanD")   || "#a9c6e8",
+        "Toss Up":           g("--cook-toss")    || "#e0a63a",
+        "Lean Republican":   g("--cook-leanR")   || "#eb9c92",
+        "Likely Republican": g("--cook-likelyR") || "#d35f4f",
+        "Solid Republican":  g("--cook-solidR")  || "#be2c25"
+      },
+      ink: g("--ink") || "#111111", paper: g("--paper") || "#ffffff",
+      basefill: g("--basefill") || "#f2f2f0", baseedge: g("--baseedge") || "#b9b9b4"
+    };
+    return THEME;
+  }
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    var onTheme = function () { THEME = null; hatchCache = {}; updateLegend(); render(); };
+    if (mq.addEventListener) mq.addEventListener("change", onTheme);
+    else if (mq.addListener) mq.addListener(onTheme);
+  }
+
+  function marginPts(s) { return (s === null || s === undefined) ? null : (2 * s - 1) * 100; }
+  function marginLabel(s) {
+    var m = marginPts(s);
+    if (m === null) return null;
+    var r = Math.round(Math.abs(m));
+    if (r === 0) return { text: "Even", cls: "" };
+    return m > 0 ? { text: "+" + r + " Harris", cls: "d" } : { text: "+" + r + " Trump", cls: "r" };
+  }
+  function electionColor(s) {
+    if (s === null || s === undefined) return theme().nodata;
+    return theme().election(Math.max(0, Math.min(1, (s - 0.25) / 0.5)));
+  }
+
+  /* ------------------------------------------------------------ the races */
+
+  function stOf(f) { return f.properties.state; }
+  function raceOf(f) { return (state.data && state.data.races[stOf(f)]) || null; }
+  function infoOf(f) { return (state.data && state.data.states[stOf(f)]) || null; }
+  function catOf(r) { return r.fate === "hold" ? "hold" : r.fate + r.held; }
+  function inPlay(r) { return !!r && (r.fate === "change" || r.fate === "toss"); }
+  function competitive(r) { return !!r && r.rating.indexOf("Solid") !== 0; }
+  function ratingMode() { return state.color === "cook" || state.color === "flip"; }
+  function chicletMode() { return ratingMode() && state.squares; }
+
+  // The House view's rules, unchanged: the Cook tab squares the races worth
+  // watching -- everything short of Solid -- and Changing hands squares the
+  // seats rated for the other party or called a toss-up.
+  function wantsSquare(f) {
+    var r = raceOf(f);
+    return state.color === "flip" ? inPlay(r) : competitive(r);
+  }
+
+  function fillFor(f) {
+    var T = theme(), r = raceOf(f);
+    if (state.color === "election") {
+      var info = infoOf(f);
+      return electionColor(info ? info.pres24_dem_share_two_party : null);
+    }
+    if (chicletMode()) return T.chicfill;            // the square carries it
+    if (state.color === "cook") return r ? T.cook[r.rating] : T.chicfill;
+    return inPlay(r) ? T.cook[r.rating] : T.chicfill;
+  }
+
+  // Diagonal stripes in the rating's color, cut by the page tone -- the
+  // House view's hatch, at the same weight.
+  var hatchCache = {};
+  function hatchFor(color) {
+    var T = theme(), key = color + "|" + T.paper + "|" + dpr;
+    if (hatchCache[key]) return hatchCache[key];
+    var step = 6, tile = document.createElement("canvas");
+    tile.width = tile.height = Math.max(1, Math.round(step * dpr));
+    var t = tile.getContext("2d");
+    t.scale(dpr, dpr);
+    t.fillStyle = color; t.fillRect(0, 0, step, step);
+    t.strokeStyle = T.paper; t.lineWidth = 1.1; t.beginPath();
+    for (var c = -step; c <= step * 2; c += step) { t.moveTo(-step, c + step); t.lineTo(step * 2, c - step * 2); }
+    t.stroke();
+    var pat = ctx.createPattern(tile, "repeat");
+    if (pat && pat.setTransform && window.DOMMatrix) pat.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
+    return (hatchCache[key] = pat);
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    if (c.roundRect) { c.beginPath(); c.roundRect(x, y, w, h, r); return; }
+    c.beginPath(); c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+
+  /* ------------------------------------------- a point inside each state */
+
+  // Pole of inaccessibility, coarse grid search: the centroid of Florida or
+  // Michigan lands in water, and a square there points at nothing. The same
+  // search the House view uses for districts.
+  function ringsOfPoly(g) { return g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : []; }
+  function ringArea(r) { var a = 0; for (var i = 0, j = r.length - 1; i < r.length; j = i++) a += (r[j][0] + r[i][0]) * (r[j][1] - r[i][1]); return Math.abs(a / 2); }
+  function inRing(x, y, r) {
+    var c = false;
+    for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
+      var xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) c = !c;
+    }
+    return c;
+  }
+  function edgeDist(x, y, r) {
+    var best = Infinity;
+    for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
+      var ax = r[j][0], ay = r[j][1], bx = r[i][0], by = r[i][1];
+      var dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+      var t = L ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L)) : 0;
+      var px = ax + t * dx - x, py = ay + t * dy - y, d = px * px + py * py;
+      if (d < best) best = d;
+    }
+    return Math.sqrt(best);
+  }
+  function innerPoint(f) {
+    if (f.__pole !== undefined) return f.__pole;
+    var polys = ringsOfPoly(f.geometry), big = null, bigA = -1;
+    for (var i = 0; i < polys.length; i++) { var a = ringArea(polys[i][0]); if (a > bigA) { bigA = a; big = polys[i]; } }
+    if (!big) return (f.__pole = d3.geoCentroid(f));
+    var outer = big[0], holes = big.slice(1);
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    outer.forEach(function (q) { x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]); y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
+    function score(x, y) {
+      if (!inRing(x, y, outer)) return -1;
+      for (var h = 0; h < holes.length; h++) if (inRing(x, y, holes[h])) return -1;
+      var d = edgeDist(x, y, outer);
+      for (var k = 0; k < holes.length; k++) d = Math.min(d, edgeDist(x, y, holes[k]));
+      return d;
+    }
+    var bx = (x0 + x1) / 2, by = (y0 + y1) / 2, bs = score(bx, by), sx = (x1 - x0) / 2, sy = (y1 - y0) / 2;
+    for (var round = 0; round < 4; round++) {
+      var n = round ? 4 : 12, cx = bx, cy = by, found = false, fx = 0, fy = 0;
+      for (var ix = -n; ix <= n; ix++) for (var iy = -n; iy <= n; iy++) {
+        var x = cx + sx * ix / n, y = cy + sy * iy / n, sc = score(x, y);
+        if (sc > bs) { bs = sc; fx = x; fy = y; found = true; }
+      }
+      if (found) { bx = fx; by = fy; }
+      sx /= 3; sy /= 3;
+    }
+    return (f.__pole = bs > 0 ? [bx, by] : d3.geoCentroid(f));
+  }
+
+  /* ---------------------------------------------------------------- draw */
+
+  var CHIC = 17, CHIC_R = 5, CHIC_GAP = 2.5;
+
+  // Anchored inside each state, then pushed apart where they would touch --
+  // only New England comes close at national zoom.
+  function layoutSquares() {
+    var out = [];
+    state.states.forEach(function (f) {
+      if (!wantsSquare(f)) return;
+      var p = proj(innerPoint(f));
+      if (p) out.push({ f: f, ax: p[0], ay: p[1], x: p[0], y: p[1] });
+    });
+    var sep = CHIC + CHIC_GAP;
+    for (var it = 0; it < 80; it++) {
+      var moved = false;
+      for (var i = 0; i < out.length; i++) for (var j = i + 1; j < out.length; j++) {
+        var a = out[i], b = out[j], dx = b.x - a.x, dy = b.y - a.y;
+        var ox = sep - Math.abs(dx), oy = sep - Math.abs(dy);
+        if (ox > 0 && oy > 0) {
+          moved = true;
+          if (ox < oy) { var sx = (dx < 0 ? -1 : 1) * ox / 2; a.x -= sx; b.x += sx; }
+          else { var sy = (dy < 0 ? -1 : 1) * oy / 2; a.y -= sy; b.y += sy; }
+        }
+      }
+      if (!moved) break;
+    }
+    var h = CHIC / 2;
+    out.forEach(function (o) { o.x = Math.max(h + 2, Math.min(W - h - 2, o.x)); o.y = Math.max(h + 2, Math.min(H - h - 2, o.y)); });
+    return out;
+  }
+
+  function render() {
+    if (!W || !state.states.length) return;
+    var T = theme();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    // The District of Columbia has no senators and no district, so it is
+    // the one hole in the states; the nation underneath fills it.
+    if (state.nation) { ctx.beginPath(); path(state.nation); ctx.fillStyle = T.basefill; ctx.fill(); }
+    state.states.forEach(function (f) {
+      ctx.beginPath(); path(f); ctx.fillStyle = fillFor(f); ctx.fill();
+    });
+    ctx.beginPath();
+    state.states.forEach(function (f) { path(f); });
+    ctx.strokeStyle = T.paper; ctx.lineWidth = 1; ctx.lineJoin = "round"; ctx.stroke();
+    if (state.hover) {
+      ctx.beginPath(); path(state.hover);
+      ctx.strokeStyle = T.ink; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    squares = chicletMode() ? layoutSquares() : [];
+    var h = CHIC / 2;
+    ctx.strokeStyle = T.baseedge; ctx.lineWidth = 1;
+    squares.forEach(function (s) {
+      if (Math.hypot(s.x - s.ax, s.y - s.ay) < CHIC * 0.8) return;
+      ctx.beginPath(); ctx.moveTo(s.ax, s.ay); ctx.lineTo(s.x, s.y); ctx.stroke();
+    });
+    squares.forEach(function (s) {
+      var r = raceOf(s.f), base = T.cook[r.rating], flip = state.color === "flip";
+      roundRect(ctx, s.x - h, s.y - h, CHIC, CHIC, CHIC_R);
+      // Hatched where the seat changes hands -- only on that tab, as in the
+      // House view, where hatching is the one mark that means "flips".
+      ctx.fillStyle = (flip && r.fate === "change") ? hatchFor(base) : base;
+      ctx.fill();
+      var on = state.hover === s.f;
+      // On Changing hands the ring is the party holding the seat now.
+      ctx.strokeStyle = on ? T.ink : flip ? T.cook[FLIP_TONE[r.held]] : T.baseedge;
+      ctx.lineWidth = (on || flip) ? 2.6 : 1;
+      ctx.stroke();
+    });
+  }
+
+  function resize() {
+    var r = document.getElementById("stage").getBoundingClientRect();
+    W = Math.max(1, Math.floor(r.width)); H = Math.max(1, Math.floor(r.height));
+    cv.width = Math.floor(W * dpr); cv.height = Math.floor(H * dpr);
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    if (state.states.length) {
+      var pad = W <= 560 ? 11 : 24;
+      proj.fitExtent([[pad, pad], [W - pad, H - pad]], { type: "FeatureCollection", features: state.states });
+    }
+    render();
+  }
+
+  /* ------------------------------------------------------------ interaction */
+
+  function squareAt(x, y) {
+    var h = CHIC / 2 + 2;
+    for (var i = squares.length - 1; i >= 0; i--) {
+      var s = squares[i];
+      if (Math.abs(x - s.x) <= h && Math.abs(y - s.y) <= h) return s.f;
+    }
+    return null;
+  }
+  function stateAt(x, y) {
+    var ll = proj.invert([x, y]);
+    if (!ll) return null;
+    for (var i = 0; i < state.states.length; i++) if (d3.geoContains(state.states[i], ll)) return state.states[i];
+    return null;
+  }
+  function featureAt(ev) {
+    var b = cv.getBoundingClientRect(), x = ev.clientX - b.left, y = ev.clientY - b.top;
+    return squareAt(x, y) || stateAt(x, y);
+  }
+
+  function idleText() {
+    if (state.color === "election") return "States are shaded by the 2024 presidential vote.";
+    if (state.color === "cook") return (state.squares ? "Squares mark " : "Shading marks ") +
+      "Cook's rating for each of the 35 seats up this year" + (state.squares ? ", short of Solid." : ".");
+    return (state.squares ? "Squares mark " : "Shading marks ") +
+      "seats Cook no longer rates for the party that holds them.";
+  }
+
+  function senatorLine(s) {
+    return s.name + ' <span class="muted">(' + (PARTY_LETTER[s.party] || "?") + ")</span>";
+  }
+
+  function showReadout(f) {
+    var box = document.getElementById("readout");
+    var rt = document.getElementById("rTitle"), idle = document.getElementById("rIdle");
+    var list = document.getElementById("rList"), flag = document.getElementById("rFlag");
+    if (!f) {
+      box.setAttribute("data-idle", "");
+      rt.textContent = "Hover the map"; idle.hidden = false; idle.textContent = idleText();
+      list.innerHTML = ""; flag.hidden = true;
+      return;
+    }
+    box.removeAttribute("data-idle"); idle.hidden = true;
+    var st = stOf(f), r = raceOf(f), info = infoOf(f), T = theme(), rows = [];
+    rt.textContent = STATE_NAME[st] || st;
+    var sens = (info && info.senators) || [];
+    var upSen = sens.filter(function (s) { return s.up; })[0];
+    var others = sens.filter(function (s) { return !s.up; });
+    if (r) {
+      rows.push(["2026 race", r.seat === "Special"
+        ? "Special election, for " + r.special_for + "’s seat"
+        : "Regular election"]);
+      rows.push(["Seat up", senatorLine(upSen || { name: r.incumbent, party: r.incumbent_party }) +
+        (r.open ? ' <span class="muted">· not running</span>' : "")]);
+      rows.push(["Cook rating", '<span class="swatch" style="background:' + T.cook[r.rating] +
+        '"></span>' + r.rating]);
+      if (others.length) rows.push(["Other senator", others.map(senatorLine).join(", ")]);
+    } else {
+      rows.push(["2026 race", '<span class="muted">None — neither seat is up</span>']);
+      rows.push(["Senators", sens.map(senatorLine).join(", ")]);
+    }
+    var ml = info && marginLabel(info.pres24_dem_share_two_party);
+    if (ml) rows.push(["2024 president", '<span class="' + ml.cls + '">' + ml.text + "</span>"]);
+    list.innerHTML = rows.map(function (x) { return "<dt>" + x[0] + "</dt><dd>" + x[1] + "</dd>"; }).join("");
+    if (r) {
+      flag.hidden = false;
+      flag.textContent = FLIP_PHRASE[catOf(r)] || "";
+    } else {
+      flag.hidden = true;
+    }
+  }
+
+  function placeReadout(ev) {
+    var el = document.getElementById("readout");
+    if (!canHover || !ev || el.hasAttribute("data-idle")) {
+      el.classList.remove("at-cursor"); el.style.left = el.style.top = ""; return;
+    }
+    el.classList.add("at-cursor");
+    var box = document.getElementById("stage").getBoundingClientRect();
+    var x = ev.clientX - box.left, y = ev.clientY - box.top;
+    var w = el.offsetWidth, h = el.offsetHeight, pad = 12, gap = 18;
+    var lx = x + gap, ty = y + gap;
+    if (lx + w > box.width - pad) lx = x - gap - w;
+    if (ty + h > box.height - pad) ty = y - gap - h;
+    el.style.left = Math.max(pad, Math.min(lx, box.width - w - pad)) + "px";
+    el.style.top = Math.max(pad, Math.min(ty, box.height - h - pad)) + "px";
+  }
+
+  var moveTimer = null;
+  cv.addEventListener("mousemove", function (ev) {
+    if (moveTimer) return;
+    moveTimer = setTimeout(function () { moveTimer = null; }, 24);
+    var f = featureAt(ev);
+    if (f !== state.hover) { state.hover = f; showReadout(f); render(); }
+    placeReadout(f ? ev : null);
+  });
+  cv.addEventListener("mouseleave", function () {
+    state.hover = null; showReadout(null); placeReadout(null); render();
+  });
+  // A tap on a phone is the hover: it selects the state under the finger and
+  // a second tap on the same one lets it go.
+  cv.addEventListener("click", function (ev) {
+    var f = featureAt(ev);
+    state.hover = (f && f === state.hover && !canHover) ? null : f;
+    showReadout(state.hover); placeReadout(state.hover ? ev : null); render();
+  });
+
+  /* ------------------------------------------------------------- legend */
+
+  function counts() {
+    var c = {};
+    COOK_BANDS.forEach(function (b) { c[b.cat] = 0; });
+    Object.keys(state.data.races).forEach(function (st) { c[state.data.races[st].rating]++; });
+    return c;
+  }
+
+  // How many toss-ups each side needs, said once when it is the same number.
+  function tossNeed(d, r, t) {
+    d = Math.max(0, d); r = Math.max(0, r);
+    function n(k) { return k === 0 ? "none of the" : k + " of the " + t; }
+    return d === r ? "either side needs " + n(d) + " toss-ups"
+      : "Democrats need " + n(d) + " toss-ups and Republicans " + n(r);
+  }
+
+  function chamberSentence() {
+    var ch = state.data.chamber, p = ch.projected, f = ch.favored, need = ch.needed_for_control;
+    return "With the " + (100 - ch.up.total) + " seats not up this year, Democrats are " +
+      "favored in " + p.D + ", Republicans in " + p.R + ", and " + f.toss + " are toss-ups. " +
+      "Control takes " + need.D + " for Democrats, " + need.R + " for Republicans with the " +
+      "Vice President's tiebreak — so " + tossNeed(need.D - p.D, need.R - p.R, f.toss) + ".";
+  }
+
+  function drawCookBar() {
+    var T = theme(), c = counts();
+    var cs = COOK_BANDS.map(function (b) { return c[b.cat]; });
+    var rated = cs.reduce(function (a, b) { return a + b; }, 0);
+    document.getElementById("cbAll").innerHTML = COOK_BANDS.map(function (b, i) {
+      return cs[i] ? '<div class="cb-seg" style="flex:' + cs[i] + ";background:" + T.cook[b.cat] + '"></div>' : "";
+    }).join("");
+    var mid = COOK_BANDS.filter(function (b) { return b.cat.indexOf("Solid") !== 0; });
+    var midC = mid.map(function (b) { return c[b.cat]; });
+    var watch = midC.reduce(function (a, b) { return a + b; }, 0);
+    document.getElementById("cbTrack").innerHTML = mid.map(function (b, i) {
+      if (!midC[i]) return "";
+      var pale = b.label !== "Likely D" && b.label !== "Likely R";
+      return '<div class="cb-seg" style="flex:' + midC[i] + ";background:" + T.cook[b.cat] +
+        ";color:" + (pale ? "#222222" : "#ffffff") + '">' + midC[i] + "</div>";
+    }).join("");
+    document.getElementById("cbFoot").innerHTML = mid.map(function (b, i) {
+      return midC[i] ? '<span style="flex:' + midC[i] + '">' + b.label + "</span>" : "";
+    }).join("");
+    var dem = cs[0] + cs[1] + cs[2], rep = cs[4] + cs[5] + cs[6], toss = cs[3];
+    document.getElementById("cbSum").innerHTML = '<span class="cb-seats"><span class="d">' + dem +
+      " Democratic</span> · " + '<span class="r">' + rep + " Republican</span>" +
+      (toss ? ' · <span class="muted">' + toss + " toss-up" + (toss === 1 ? "" : "s") + "</span>" : "") +
+      ' <span class="muted">of the ' + rated + " seats up</span></span>" +
+      watch + " race" + (watch === 1 ? "" : "s") + " to watch  ·  " + (rated - watch) + " solid";
+  }
+
+  function flipTally() {
+    var t = { hold: 0 };
+    Object.keys(state.data.races).forEach(function (st) {
+      var k = catOf(state.data.races[st]); t[k] = (t[k] || 0) + 1;
+    });
+    return t;
+  }
+
+  function updateLegend() {
+    if (!state.data) return;
+    var box = document.getElementById("legend"), title = document.getElementById("legendTitle");
+    var ramp = document.getElementById("ramp"), ends = document.getElementById("lo").parentNode;
+    var bar = document.getElementById("cookBar"), sw = document.getElementById("swatches");
+    var note = document.getElementById("tierNote"), cnote = document.getElementById("chamberNote");
+    var T = theme();
+    box.hidden = false;
+    box.classList.toggle("cook", ratingMode());
+    box.classList.toggle("flip", state.color === "flip");
+    ramp.hidden = ends.hidden = bar.hidden = sw.hidden = note.hidden = cnote.hidden = true;
+    document.getElementById("markWrap").hidden = !ratingMode();
+
+    if (state.color === "election") {
+      title.textContent = "2024 presidential margin";
+      ramp.hidden = ends.hidden = false;
+      ramp.style.background = "linear-gradient(to right," + T.stops.join(",") + ")";
+      document.getElementById("lo").textContent = "+50 Trump";
+      document.getElementById("mid").textContent = "Even";
+      document.getElementById("hi").textContent = "+50 Harris";
+      return;
+    }
+    cnote.hidden = false;
+    cnote.textContent = chamberSentence();
+    if (state.color === "cook") {
+      title.textContent = "Cook Political Report rating, as of " + asOf();
+      bar.hidden = false;
+      drawCookBar();
+      return;
+    }
+    title.textContent = "Changing hands";
+    var tally = flipTally();
+    sw.hidden = false;
+    sw.innerHTML = FLIP_BANDS.map(function (b) {
+      var col = b.fate === "toss" ? T.cook["Toss Up"] : T.cook[FLIP_TONE[b.side]];
+      var chip = b.fate === "change"
+        ? "repeating-linear-gradient(135deg," + col + " 0 3px," + T.paper + " 3px 4.6px)" : col;
+      return '<span class="sw"><i style="background:' + chip + ";border-color:" +
+        T.cook[FLIP_TONE[b.held]] + '"></i>' + b.label + ' <span class="muted">' +
+        (tally[b.cat] || 0) + "</span></span>";
+    }).join("");
+    var moving = (tally.changeD || 0) + (tally.changeR || 0);
+    var open = (tally.tossD || 0) + (tally.tossR || 0);
+    var moved = moving === 0 ? "No seat is rated to change hands"
+      : moving === 1 ? "One seat is rated to change hands"
+      : moving + " seats are rated to change hands";
+    var toss = open === 0 ? "none is a toss-up"
+      : open === 1 ? (moving ? "one more is" : "one is") + " a toss-up"
+      : (moving ? open + " more are" : open + " are") + " toss-ups";
+    var safe = tally.hold === 1 ? "; the other stays with its sitting party"
+      : tally.hold ? "; the other " + tally.hold + " stay with their sitting party" : "";
+    note.hidden = false;
+    note.className = "tier";
+    note.textContent = moved + ", " + toss + safe +
+      (state.squares
+        ? ". Fill is the Cook rating, the ring is who holds the seat now, and hatching marks the one changing hands."
+        : ". Shading is the Cook rating; who holds each seat and which are changing hands are on the squares.");
+  }
+
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+                "August", "September", "October", "November", "December"];
+  function asOf() {
+    var d = state.data && state.data.as_of, m = d && /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    return m ? MONTHS[+m[2] - 1] + " " + (+m[3]) + ", " + m[1] : (d || "current ratings");
+  }
+
+  /* ------------------------------------------------------------ controls */
+
+  function setPressed(ids, on) { ids.forEach(function (id) { document.getElementById(id).setAttribute("aria-pressed", String(id === on)); }); }
+  var COLOR_IDS = { election: "cElection", cook: "cCook", flip: "cFlip" };
+  function setColor(c) {
+    state.color = c; setPressed(["cElection", "cCook", "cFlip"], COLOR_IDS[c]);
+    updateLegend(); if (!state.hover) showReadout(null); render();
+  }
+  function setSquares(on) {
+    state.squares = on; setPressed(["kSquares", "kFill"], on ? "kSquares" : "kFill");
+    updateLegend(); if (!state.hover) showReadout(null); render();
+  }
+  document.getElementById("cElection").addEventListener("click", function () { setColor("election"); });
+  document.getElementById("cCook").addEventListener("click", function () { setColor("cook"); });
+  document.getElementById("cFlip").addEventListener("click", function () { setColor("flip"); });
+  document.getElementById("kSquares").addEventListener("click", function () { setSquares(true); });
+  document.getElementById("kFill").addEventListener("click", function () { setSquares(false); });
+
+  var resizeTimer = null;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 80);
+  });
+
+  /* ---------------------------------------------------------------- load */
+
+  function setStatus(msg) {
+    var el = document.getElementById("status");
+    if (!msg) { el.hidden = true; return; }
+    el.hidden = false; el.textContent = msg;
+  }
+
+  Promise.all([
+    fetch(dataUrl("senate.json")).then(function (r) { if (!r.ok) throw new Error("senate.json"); return r.json(); }),
+    fetch(dataUrl("senate_states.json")).then(function (r) { if (!r.ok) throw new Error("senate_states.json"); return r.json(); }),
+    fetch(dataUrl("basemap.json")).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+  ]).then(function (res) {
+    state.data = res[0];
+    state.states = topojson.feature(res[1], res[1].objects.states).features;
+    if (res[2]) state.nation = topojson.feature(res[2], res[2].objects.nation);
+    setStatus(null);
+    updateLegend(); showReadout(null); resize();
+  }).catch(function (e) {
+    setStatus("Could not load the Senate data (" + (e && e.message) + ")");
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+abbr,name,party,mid_decade,status,exp,lo,hi,backfire,callais,dx,dy
+AL,Alabama,gop,partisan,enacted,1,1,1,,,,
+CA,California,dem,partisan,enacted,6.25,3,9,55.1,,,
+FL,Florida,gop,partisan,enacted,2.23,1,4,47.7,,38,48
+GA,Georgia,gop,possible,proposed,,,,,1,,
+IN,Indiana,gop,partisan,blocked,,,,,,,
+LA,Louisiana,gop,court,enacted,0.69,0,1,45.2,,-18,72
+MD,Maryland,dem,possible,proposed,,,,,,,
+MS,Mississippi,gop,possible,proposed,,,,,1,,
+MO,Missouri,gop,partisan,blocked,0.89,0,1,49.1,,,
+NY,New York,dem,court,blocked,,,,,,,
+NC,North Carolina,gop,partisan,enacted,0.52,-1,1,47.0,,,
+OH,Ohio,gop,court,enacted,0.65,-1,2,45.9,,,
+SC,South Carolina,gop,possible,blocked,,,,,1,,
+TN,Tennessee,gop,partisan,enacted,1,1,1,53.0,,-72,6
+TX,Texas,gop,partisan,enacted,3.29,2,5,44.2,,,
+UT,Utah,dem,court,enacted,0.94,0,1,,,,
+VA,Virginia,dem,partisan,blocked,3.08,2,4,46.0,,30,8

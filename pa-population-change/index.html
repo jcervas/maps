@@ -1,0 +1,68 @@
+---
+layout: default
+title: "Pennsylvania's Uneven Decade"
+description: "Pennsylvania grew 2.4% from 2010 to 2020, but 44 of 67 counties lost population."
+permalink: /pa-population-change/
+breadcrumb: "PA population change"
+summary: "Pennsylvania grew 2.4% from 2010 to 2020, but 44 of its 67 counties shrank. A county map, a ranked strip and a sortable table, linked on hover."
+wide: true
+breadcrumb_width: 1040px
+order: 1.5
+# Front matter is YAML, not a template -- Liquid here would be published
+# verbatim -- so this one carries the /maps prefix written out.
+image: /maps/assets/pa-population-change/pa-population-change-map.png
+---
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="{{ '/assets/pa-population-change/pa-population-change.css' | relative_url }}">
+
+<div class="pa-pop" data-topo="{{ '/assets/pa-population-change/pa-counties.topo.json' | relative_url }}">
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Pennsylvania · Census 2010 to 2020</p>
+    <h1>The state grew 2.4%, but 44 of 67 counties shrank</h1>
+    <p class="lede">Pennsylvania added about <strong>300,000 residents</strong> over the decade. The gains were concentrated in the southeast and the south-central corridor from Harrisburg to Lancaster and York, the Lehigh Valley, and around Pittsburgh. Most of the rural north and west <span class="k-loss">lost population</span>, while only 23 counties <span class="k-gain">grew</span>.</p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <section class="figure" aria-label="Map of population change by county">
+    <div class="legend" id="legend"></div>
+    <svg id="map" role="img" aria-label="Choropleth of Pennsylvania counties by percent population change, 2010 to 2020"></svg>
+    <div class="tip" id="tip" hidden></div>
+  </section>
+
+  <section class="figure" aria-label="Counties ranked by percent change">
+    <div class="head-row">
+      <div><h2>All 67 counties, ranked by change</h2><p class="sub" id="strip-sub">Percent change in total population, 2010 to 2020. Hover a bar or a county to link the views.</p></div>
+      <div class="toggle" role="group" aria-label="Measure">
+        <button type="button" id="m-pct" aria-pressed="true">Percent change</button>
+        <button type="button" id="m-raw" aria-pressed="false">Raw change</button>
+      </div>
+    </div>
+    <div class="strip-scroll"><svg id="strip"></svg></div>
+  </section>
+
+  <section class="figure" aria-label="Table of all 67 counties">
+    <div><h2>All 67 counties by population</h2><p class="sub">Ranked by 2020 population. Click a column heading to re-sort.</p></div>
+    <div class="table-scroll"><table id="tbl">
+      <thead><tr>
+        <th data-k="rank"><button type="button">#</button></th>
+        <th data-k="name"><button type="button">County</button></th>
+        <th data-k="p10"><button type="button">2010</button></th>
+        <th data-k="p20" aria-sort="descending"><button type="button">2020</button></th>
+        <th data-k="chg"><button type="button">Change</button></th>
+        <th data-k="pct"><button type="button">% change</button></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <footer>
+    Source: U.S. Census Bureau, 2010 and 2020 Decennial Census redistricting data (P.L. 94-171), total population. Boundaries: 2020 Census cartographic boundary file (1:500k), filtered, projected to Pennsylvania State Plane South, and simplified with Mapshaper. See also Pennsylvania State Data Center, <em>Data Brief</em>, August 2021.
+  </footer>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="{{ '/assets/pa-population-change/pa-population-change.js' | relative_url }}"></script>

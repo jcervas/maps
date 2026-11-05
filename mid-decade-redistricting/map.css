@@ -1,0 +1,545 @@
+/* Mid-decade redistricting map — page-specific styles.
+   Page chrome (fonts, header/footer, theme toggle) comes from the site layout
+   and css/site.css; this file only adds map colors and components. Base colors
+   reuse the site's variables (--ink, --muted, --line, --bg) so the map follows
+   the site's light/dark theme automatically. */
+
+:root {
+  --dem-fill:      rgba(115, 181, 234, 0.55);
+  --dem-border:    rgb(115, 181, 234);
+  --dem-text:      #4d94d4;
+  --gop-fill:      rgba(238, 141, 140, 0.55);
+  --gop-border:    rgb(238, 141, 140);
+  --gop-text:      #e0595e;
+
+  --state-base:    #f7f7f6;
+  --state-border:  #c5c5c5;
+  --us-outline:    #b5b5b5;
+  --hatch-a:       #dddddd;
+  --hatch-b:       #eeeeee;
+  --connector:     #333333;
+  --tile-range:    #111111;
+}
+
+:root[data-theme="dark"] {
+  --dem-fill:      rgba(115, 181, 234, 0.38);
+  --dem-border:    rgb(101, 165, 219);
+  --dem-text:      #7db8e8;
+  --gop-fill:      rgba(238, 141, 140, 0.38);
+  --gop-border:    rgb(224, 122, 121);
+  --gop-text:      #ef8a8e;
+
+  --state-base:    #232326;
+  --state-border:  #3d3d42;
+  --us-outline:    #4a4a50;
+  --hatch-a:       #3a3a3e;
+  --hatch-b:       #2b2b2f;
+  --connector:     #c7c7c7;
+  --tile-range:    #f0f0f0;
+}
+
+/* Wider than the site's default 860px wrap — the map needs the room */
+.map-wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 1rem;
+}
+
+.map-header .page-title { margin: 0 0 .35rem; }
+
+.subtitle {
+  margin: 0;
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  color: var(--muted);
+}
+
+.updated {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.map-figure {
+  margin: 18px 0 0;
+  position: relative;
+}
+
+#map svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.map-note {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: 70ch;
+}
+
+/* ---------- SVG map ---------- */
+
+.state {
+  fill: var(--state-base);
+  stroke: none;
+}
+.state.st-dem { fill: var(--dem-fill); }
+.state.st-gop { fill: var(--gop-fill); }
+.state.st-blocked  { fill: url(#hatch-blocked); }
+.state.st-proposed { fill: url(#hatch-proposed); }
+.state.has-data { cursor: pointer; }
+
+.hatch-a { fill: var(--hatch-a); }
+.hatch-b { fill: var(--hatch-b); }
+
+.borders {
+  fill: none;
+  stroke: var(--state-border);
+  stroke-width: 0.7;
+  pointer-events: none;
+}
+
+.us-outline {
+  fill: none;
+  stroke: var(--us-outline);
+  stroke-width: 0.8;
+  pointer-events: none;
+}
+
+/* Party-colored outline drawn on top of involved states */
+.state-outline {
+  fill: none;
+  pointer-events: none;
+  stroke-width: 1.4;
+}
+.state-outline.st-dem { stroke: var(--dem-border); }
+.state-outline.st-gop { stroke: var(--gop-border); }
+.state-outline.st-proposed { stroke-width: 2; }
+
+/* ---------- Value tiles ---------- */
+
+.tile { pointer-events: none; }
+
+.tile text {
+  font-family: var(--font);
+  paint-order: stroke fill;
+  stroke: var(--bg);
+  stroke-linejoin: round;
+}
+
+.tile .tile-value {
+  font-weight: 700;
+  stroke-width: 4px;
+}
+.tile .tile-value.st-dem { fill: var(--dem-text); }
+.tile .tile-value.st-gop { fill: var(--gop-text); }
+
+.tile .tile-name {
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  fill: var(--muted);
+  stroke-width: 2.5px;
+}
+
+.tile .tile-range {
+  font-weight: 700;
+  fill: var(--tile-range);
+  stroke-width: 3px;
+}
+
+.tile .tile-backfire {
+  font-weight: 600;
+  fill: var(--muted);
+  stroke-width: 3px;
+}
+
+.tile.excluded { opacity: 0.8; }
+.tile .strike {
+  stroke: var(--tile-range);
+  stroke-width: 1.4;
+}
+
+.connector {
+  fill: none;
+  stroke: var(--connector);
+  stroke-width: 1.6;
+}
+.arrowhead-path { fill: var(--connector); }
+
+/* ---------- Legend & annotation (SVG) ---------- */
+
+.legend text { font-family: var(--font); }
+.legend .legend-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  fill: var(--muted);
+}
+.legend .legend-label { font-size: 21px; font-weight: 700; fill: var(--ink); }
+.legend .legend-value { font-size: 21px; font-weight: 700; }
+.legend .legend-value.st-dem { fill: var(--dem-text); }
+.legend .legend-value.st-gop { fill: var(--gop-text); }
+.legend .legend-rule { stroke: var(--line); stroke-width: 1; }
+
+/* Key to the shading, bottom-left */
+.key text { font-family: var(--font); }
+.key .key-label { font-size: 13.5px; fill: var(--ink); }
+.key .key-sample {
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--tile-range);
+}
+.key .strike { stroke: var(--tile-range); stroke-width: 1.4; }
+.key .key-swatch {
+  fill: var(--state-base);
+  stroke: var(--state-border);
+  stroke-width: 1.2;
+}
+.key .key-swatch.st-dem { fill: var(--dem-fill); stroke: var(--dem-border); }
+.key .key-swatch.st-gop { fill: var(--gop-fill); stroke: var(--gop-border); }
+.key .key-swatch.st-blocked  { fill: url(#hatch-blocked); }
+.key .key-swatch.st-proposed { fill: url(#hatch-proposed); stroke-width: 2; }
+
+.annotation text {
+  font-family: var(--font);
+  font-size: 14.5px;
+  fill: var(--ink);
+}
+.annotation .em { font-style: italic; }
+
+/* ---------- Selection + detail table ---------- */
+
+.select-outline {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.state.has-data:focus-visible { outline: none; }
+.state.has-data:focus-visible + * { outline: none; }
+.layer-states path:focus-visible {
+  stroke: var(--ink);
+  stroke-width: 2.4;
+}
+
+.detail {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.detail-hint,
+.detail-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.detail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.detail-name { margin: 0; font-size: 1.3rem; }
+
+.detail-clear {
+  flex: none;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 2px 9px;
+  cursor: pointer;
+}
+.detail-clear:hover { color: var(--ink); border-color: var(--muted); }
+
+.detail-sub {
+  margin: 4px 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.detail-scroll { overflow-x: auto; }
+
+.detail-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-table th,
+.detail-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.detail-table thead th {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.detail-table thead th .dr { text-transform: none; letter-spacing: 0; }
+
+.detail-table tbody th { font-weight: 500; }
+.detail-table tfoot th,
+.detail-table tfoot td {
+  border-bottom: none;
+  border-top: 2px solid var(--line);
+  font-weight: 700;
+}
+
+.detail-table .c-seats { font-weight: 600; }
+.detail-table .c-seats .st-dem { color: var(--dem-text); }
+.detail-table .c-seats .st-gop { color: var(--gop-text); }
+.detail-table .dash { color: var(--muted); padding: 0 3px; }
+
+.detail-table .c-change { width: 45%; min-width: 190px; }
+
+/* Diverging bar: a centre rule with Democratic gains growing left of it and
+   Republican gains right */
+.bar-wrap {
+  display: inline-flex;
+  width: 120px;
+  vertical-align: middle;
+}
+.bar-half { flex: 1 1 50%; display: flex; height: 13px; }
+.bar-half.left { justify-content: flex-end; border-right: 1px solid var(--muted); }
+
+.bar { display: block; height: 100%; }
+.bar.st-dem { background: var(--dem-border); }
+.bar.st-gop { background: var(--gop-border); }
+
+.change-label {
+  display: inline-block;
+  min-width: 3.5em;
+  margin-left: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  vertical-align: middle;
+}
+.change-label.st-dem { color: var(--dem-text); }
+.change-label.st-gop { color: var(--gop-text); }
+
+/* ---------- Vote-share panel (drives the table under it) ---------- */
+
+.swing { margin: 4px 0 20px; }
+
+.swing-title { margin: 0 0 4px; font-size: 1.05rem; }
+
+.swing-flip-text {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
+.swing-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.swing-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.swing-legend i { display: inline-block; }
+.swing-legend .sw-line { width: 18px; height: 2px; }
+.swing-legend .sw-line.st-dem { background: var(--dem-text); }
+.swing-legend .sw-line.st-gop { background: var(--gop-text); }
+.swing-legend .sw-line.sw-old {
+  background: repeating-linear-gradient(90deg, var(--muted) 0 5px, transparent 5px 8px);
+}
+.swing-legend .sw-zone { width: 14px; height: 10px; }
+.swing-legend .sw-zone.st-dem { background: var(--dem-fill); }
+.swing-legend .sw-zone.st-gop { background: var(--gop-fill); }
+.swing-legend .sw-band { width: 14px; height: 10px; background: var(--muted); opacity: 0.3; }
+.swing-legend .sw-rug { width: 2px; height: 9px; background: var(--muted); }
+
+.swing-chart { margin-top: 6px; }
+.swing-chart svg { display: block; max-width: 100%; height: auto; touch-action: none; }
+.swing-chart text { font-family: var(--font); }
+
+.swing-grid { stroke: var(--line); stroke-width: 1; }
+.swing-zero { stroke: var(--muted); stroke-width: 1; }
+.swing-actual { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 1 3; }
+.swing-tick { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.swing-axis-title { font-size: 11px; fill: var(--muted); }
+.swing-rug line { stroke: var(--muted); stroke-width: 1.5; }
+.swing-avg-label { font-size: 11px; fill: var(--muted); }
+
+.swing-band { fill: var(--muted); opacity: 0.16; }
+.swing-zone.st-dem { fill: var(--dem-fill); }
+.swing-zone.st-gop { fill: var(--gop-fill); }
+.swing-line { fill: none; stroke-width: 2; stroke-linejoin: round; }
+.swing-line.st-dem { stroke: var(--dem-text); }
+.swing-line.st-gop { stroke: var(--gop-text); }
+.swing-line.swing-old { stroke: var(--muted); stroke-dasharray: 5 3; }
+.swing-panel-title { font-size: 12px; font-weight: 600; fill: var(--ink); }
+/* Halo so the vertical reference lines don't strike through the labels */
+.swing-panel-title,
+.swing-avg-label,
+.swing-flip-label {
+  paint-order: stroke fill;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.swing-flip { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 4 3; }
+.swing-flip-label { font-size: 11.5px; font-weight: 600; fill: var(--ink); }
+
+.swing-hit { fill: transparent; cursor: crosshair; }
+.swing-guide { pointer-events: none; }
+.swing-guide line { stroke: var(--muted); stroke-width: 1; }
+.swing-guide text {
+  font-size: 11.5px;
+  font-weight: 600;
+  fill: var(--ink);
+  paint-order: stroke fill;
+  stroke: var(--bg);
+  stroke-width: 3px;
+}
+.swing-marker { pointer-events: none; }
+.swing-marker line { stroke: var(--ink); stroke-width: 1.5; }
+.swing-marker circle { stroke: var(--bg); stroke-width: 2; }
+.swing-marker circle.st-dem { fill: var(--dem-text); }
+.swing-marker circle.st-gop { fill: var(--gop-text); }
+.swing-marker circle.swing-old { fill: var(--muted); }
+
+.swing-control { margin-top: 6px; }
+.swing-input { display: block; width: 100%; margin: 0; accent-color: var(--ink); }
+.swing-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.swing-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.swing-presets button {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font: inherit;
+  padding: 1px 8px;
+  cursor: pointer;
+}
+.swing-presets button:hover:not(:disabled) { color: var(--ink); border-color: var(--muted); }
+.swing-presets button[aria-pressed="true"] { color: var(--ink); border-color: var(--ink); }
+.swing-presets .swing-reset { margin-left: auto; }
+.swing-presets .swing-reset:disabled { opacity: 0.5; cursor: default; }
+
+.swing-readout {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Election-by-election small multiples, under the table */
+.swing-each { margin-top: 26px; }
+.swing-each-note {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  max-width: 70ch;
+}
+.each-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px 18px;
+}
+.each { margin: 0; }
+.each figcaption {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+.each .each-name { font-weight: 600; }
+.each .each-flip { color: var(--muted); }
+.each svg { display: block; width: 100%; height: auto; }
+.each svg * { vector-effect: non-scaling-stroke; }
+.each .each-even { stroke: var(--line); stroke-width: 1; }
+.each .swing-line { stroke-width: 1.6; }
+.each .each-marker { stroke: var(--ink); stroke-width: 1.2; }
+
+/* Key numbers in the readout: larger and bold; seats take the drawing party's color */
+.swing-readout .ro-seats,
+.swing-readout .ro-share {
+  font-size: 1.3em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.swing-readout .ro-share { color: var(--ink); }
+.swing-readout .ro-seats.st-dem { color: var(--dem-text); }
+.swing-readout .ro-seats.st-gop { color: var(--gop-text); }
+
+.swing-note {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  max-width: 70ch;
+}
+
+/* ---------- Tooltip ---------- */
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  max-width: 240px;
+  z-index: 5;
+}
+.tooltip .tt-name { font-weight: 700; }
+.tooltip .tt-status { color: var(--muted); }
+.tooltip .tt-exp { font-weight: 600; }
+.tooltip .tt-exp.st-dem { color: var(--dem-text); }
+.tooltip .tt-exp.st-gop { color: var(--gop-text); }
+.tooltip .tt-backfire { margin-top: 3px; color: var(--muted); font-size: 0.8rem; }
+
+@media (max-width: 640px) {
+  .map-wrap { padding: 1.5rem 0.75rem 1rem; }
+
+  /* Keep all four columns on screen: the bar is the part that needs width,
+     and the change is still there as a number */
+  .detail-table { font-size: 0.82rem; }
+  .detail-table th,
+  .detail-table td { padding: 5px 6px; }
+  .detail-table .c-change { width: auto; min-width: 0; }
+  .detail-table thead .wide,
+  .detail-table thead .dr { display: none; }
+  .detail-table tbody th { white-space: normal; }
+  .bar-wrap { display: none; }
+  .change-label { margin-left: 0; min-width: 0; }
+}

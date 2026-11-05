@@ -1,0 +1,257 @@
+/* viewer.css -- everything is namespaced.
+ *
+ * Custom properties are all --cg-*, and every class is .cg-*. This page has to
+ * be able to drop into a host site that already defines --bg, --line, --muted,
+ * .wrap and friends on :root without redefining any of them out from under it.
+ *
+ * Theming works two ways so the same file serves both builds: the media query
+ * covers the standalone file, and the [data-theme] rules -- which come last and
+ * therefore win -- cover a host that sets the attribute explicitly.
+ */
+
+:root {
+  --cg-bg: #ffffff;
+  --cg-fg: #16181d;
+  --cg-muted: #6b7280;
+  --cg-line: #e3e6ea;
+  --cg-panel: #f7f8fa;
+  --cg-outline: #101216;
+  --cg-accent: #005599;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cg-bg: #14161a;
+    --cg-fg: #e8eaed;
+    --cg-muted: #9aa2ad;
+    --cg-line: #2a2e35;
+    --cg-panel: #1b1e24;
+    --cg-outline: #dfe3e9;
+    --cg-accent: #4f9be8;
+  }
+}
+:root[data-theme="light"] {
+  --cg-bg: #ffffff; --cg-fg: #16181d; --cg-muted: #6b7280;
+  --cg-line: #e3e6ea; --cg-panel: #f7f8fa; --cg-outline: #101216; --cg-accent: #005599;
+}
+:root[data-theme="dark"] {
+  --cg-bg: #14161a; --cg-fg: #e8eaed; --cg-muted: #9aa2ad;
+  --cg-line: #2a2e35; --cg-panel: #1b1e24; --cg-outline: #dfe3e9; --cg-accent: #4f9be8;
+}
+
+.cg,
+.cg * { box-sizing: border-box; }
+
+.cg {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8px 0 24px;
+  /* Text colour is deliberately inherited from the host page. Forcing it here
+   * would fight a host whose background this file knows nothing about. Only the
+   * pieces that need a specific colour -- panels, tooltip, map strokes -- use
+   * the --cg-* variables. */
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.cg-head { margin-bottom: 16px; }
+.cg-head h1 {
+  margin: 0 0 4px;
+  font-size: clamp(21px, 3.2vw, 32px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.cg-sub { color: var(--cg-muted); font-size: 14px; }
+.cg-sub a { color: inherit; }
+
+/* controls ---------------------------------------------------------------- */
+
+.cg-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+  padding: 11px 13px;
+  margin-bottom: 12px;
+  background: var(--cg-panel);
+  border: 1px solid var(--cg-line);
+  border-radius: 10px;
+}
+
+.cg button {
+  font: inherit;
+  font-weight: 550;
+  padding: 7px 14px;
+  color: var(--cg-bg);
+  background: var(--cg-fg);
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.cg button:hover { opacity: 0.85; }
+.cg button.cg-ghost {
+  color: var(--cg-fg);
+  background: transparent;
+  border: 1px solid var(--cg-line);
+}
+.cg button[hidden] { display: none; }
+
+.cg-scrub { display: flex; align-items: center; gap: 9px; flex: 1 1 230px; min-width: 190px; }
+.cg-scrub span { color: var(--cg-muted); font-size: 12px; white-space: nowrap; }
+.cg input[type="range"] { flex: 1; min-width: 80px; accent-color: var(--cg-accent); }
+
+.cg-chk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--cg-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.cg-legend { display: flex; gap: 16px; flex-wrap: wrap; }
+.cg-key { display: inline-flex; align-items: center; font-size: 13px; font-variant-numeric: tabular-nums; }
+.cg-sw {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 11px; height: 11px;
+  padding: 0 2px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: -1px;
+  flex: none;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+/* The election legend and both tooltips use bare swatches with no glyph; keep
+   those square rather than letting the padding above widen them. */
+.cg-sw:empty { min-width: 11px; width: 11px; padding: 0; }
+
+
+.cg-status { color: var(--cg-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* map --------------------------------------------------------------------- */
+
+/* overflow must be hidden, not visible: when zoomed, the viewBox shows a small
+ * part of the country and everything else has to be clipped away rather than
+ * painted across the rest of the page. Nothing is clipped at zoom 1 -- the
+ * content fits the frame by construction. */
+.cg-map { display: block; width: 100%; height: auto; overflow: hidden; touch-action: manipulation; }
+
+.cg-dists path { stroke: var(--cg-bg); stroke-linejoin: round; cursor: pointer; }
+.cg-dists path:hover { stroke: var(--cg-fg); }
+
+.cg-outer { fill: none; stroke: var(--cg-bg); stroke-linejoin: round; opacity: 0.75; }
+.cg-inner { fill: none; stroke: var(--cg-outline); stroke-linejoin: round; }
+
+/* a state dimmed because another one is zoomed into */
+.cg-state { transition: opacity 0.3s; }
+.cg-state.cg-dim { opacity: 0.16; }
+.cg-state.cg-dim .cg-dists path { cursor: default; }
+
+.cg-dlabel {
+  opacity: 0;
+  fill: #fff;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  user-select: none;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.35);
+  transition: opacity 0.2s;
+}
+
+.cg-slabels text {
+  fill: var(--cg-outline);
+  font-weight: 700;
+  dominant-baseline: middle;
+  pointer-events: none;
+  user-select: none;
+}
+.cg-slabels { transition: opacity 0.25s; }
+
+/* tooltip ----------------------------------------------------------------- */
+
+.cg-tip {
+  position: fixed;
+  display: none;
+  z-index: 40;
+  max-width: 280px;
+  padding: 9px 11px;
+  background: var(--cg-bg);
+  color: var(--cg-fg);
+  border: 1px solid var(--cg-line);
+  border-radius: 8px;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.16);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Helvetica, Arial, sans-serif;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.cg-foot { margin-top: 18px; color: var(--cg-muted); font-size: 12.5px; }
+.cg-err {
+  padding: 14px;
+  border: 1px solid var(--cg-line);
+  border-radius: 8px;
+  color: var(--cg-fg);
+  background: var(--cg-panel);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cg-state, .cg-slabels, .cg-dlabel { transition: none; }
+}
+
+/* ------------------------------------------------- apportionment additions ---
+ * The apportionment page shares this stylesheet so both visuals stay
+ * theme-consistent and there is one place to change the chrome.
+ */
+
+.cg button.cg-ghost-btn {
+  color: var(--cg-fg);
+  background: transparent;
+  border: 1px solid var(--cg-line);
+}
+
+.cg-cell { cursor: pointer; }
+.cg-cells path { stroke: var(--cg-bg); stroke-linejoin: round; }
+.cg-cells path:hover { stroke: var(--cg-fg); }
+
+/* +1 / -1 on the cells that moved */
+.cg-clabel {
+  fill: #fff;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+  user-select: none;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.3);
+  transition: opacity 0.25s;
+}
+
+
+/* the row of changed states under the map */
+.cg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.cg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--cg-line);
+  border-radius: 999px;
+  background: var(--cg-panel);
+  cursor: pointer;
+  user-select: none;
+}
+.cg-chip:hover { border-color: var(--cg-fg); }
+.cg-chip.is-active { border-color: var(--cg-fg); background: var(--cg-fg); color: var(--cg-bg); }
+.cg-chip b { font-weight: 700; }

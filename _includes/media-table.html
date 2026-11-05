@@ -1,0 +1,49 @@
+{%- comment -%}
+Reusable sortable/filterable media table.
+Params:
+  include.items    - array of entries: { date, title, outlet, url, topic, section? }
+  include.facets   - comma list of facet fields to filter on (default "topic,outlet")
+  include.columns  - comma list of columns to show (default "date,title,outlet")
+Renders content sorted newest-first; js/media-table.js enhances it.
+{%- endcomment -%}
+{%- assign cols = include.columns | default: "date,title,outlet" | split: "," -%}
+{%- assign facets = include.facets | default: "topic,outlet" -%}
+{%- assign facetlist = facets | split: "," -%}
+{%- assign rows = include.items | sort: "date" | reverse -%}
+<div class="mtable" data-facets="{{ facets }}">
+  <div class="mtable__controls">
+    <input type="search" class="mtable__search" placeholder="Search title or outlet…" aria-label="Search coverage">
+    <div class="mtable__facets"></div>
+    <span class="mtable__count" aria-live="polite"></span>
+  </div>
+  <div class="mtable__scroll">
+    <table class="mtable__table">
+      <thead>
+        <tr>
+          {%- for c in cols -%}
+          <th data-sort="{{ c }}" scope="col">{{ c | capitalize }}<span class="mtable__arrow" aria-hidden="true"></span></th>
+          {%- endfor -%}
+        </tr>
+      </thead>
+      <tbody>
+        {%- for it in rows -%}
+        <tr{% for f in facetlist %} data-{{ f }}="{{ it[f] | escape }}"{% endfor %}>
+          {%- for c in cols -%}
+            {%- if c == "date" -%}
+            <td class="mt-date" data-date="{{ it.date }}">{% if it.date and it.date != "" %}{{ it.date | date: "%b %-d, %Y" }}{% endif %}</td>
+            {%- elsif c == "title" -%}
+            <td class="mt-title"><a href="{{ it.url }}">{{ it.title }}</a>{% unless cols contains "author" %}{% if it.author %} <span class="mt-author">&mdash; {{ it.author }}</span>{% endif %}{% endunless %}{% if it.quotes %}<div class="mt-quotes">{% for q in it.quotes %}<blockquote>{{ q }}</blockquote>{% endfor %}</div>{% endif %}</td>
+            {%- elsif c == "outlet" -%}
+            <td class="mt-outlet">{{ it.outlet }}</td>
+            {%- elsif c == "author" -%}
+            <td class="mt-author-col">{{ it.author }}</td>
+            {%- else -%}
+            <td>{{ it[c] }}</td>
+            {%- endif -%}
+          {%- endfor -%}
+        </tr>
+        {%- endfor -%}
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,128 @@
+<div class="mm-root">
+<div class="mm-wrap">
+<header class="mm-head">
+  <h1>The Map Politics Forgot</h1>
+  <p class="standfirst">American television is carved into <b>210 Designated Market Areas</b> &mdash; Nielsen's county-by-county map of who watches which local stations. Nobody drew them around states, districts, or voters. Yet they decide whose news you see and where campaigns can buy an ad. <b>Half the country</b> lives in a market that straddles a state line &mdash; and half of all congressional districts are split across two or more of them.</p>
+</header>
+
+<div class="controls">
+  <div class="chips" role="group" aria-label="Color the map by">
+    <button class="chip" id="m-pop" data-mode="pop" aria-pressed="true">Market size</button>
+    <button class="chip" id="m-states" data-mode="states" aria-pressed="false">States spanned</button>
+    <button class="chip" id="m-vote" data-mode="vote" aria-pressed="false">2024 margin</button>
+    <button class="chip" id="m-tier" data-mode="tier" aria-pressed="false">Rank tier</button>
+  </div>
+  <div class="spacer"></div>
+  <input id="search" type="search" placeholder="Find a market..." autocomplete="off" aria-label="Find a market">
+  <button class="tog" id="t-lines" aria-pressed="true">State lines</button>
+  <button class="tog" id="t-cd" aria-pressed="false">Districts</button>
+  <span class="cycwrap" id="cycwrap" hidden>
+    <span class="cyc" role="group" aria-label="District cycle">
+      <button id="y-2022" data-y="2022" aria-pressed="false">2022</button>
+      <button id="y-2024" data-y="2024" aria-pressed="false">2024</button>
+      <button id="y-2026" data-y="2026" aria-pressed="true">2026</button>
+    </span>
+  </span>
+</div>
+
+<div class="stage">
+  <div class="mapcard" id="mapcard">
+    <button class="reset" id="reset" hidden>Reset view</button>
+    <svg id="map" viewBox="0 0 960 600" role="img" aria-label="Interactive map of United States television media markets"></svg>
+    <div class="legend"><h4 id="legtitle">Population</h4><div class="lgrid" id="leg"></div></div>
+  </div>
+
+  <aside class="panel" id="panel" aria-live="polite">
+    <p class="pname" id="pname">Hover a market</p>
+    <p class="prank" id="prank">205 markets in the lower 48</p>
+    <p class="hint" id="phint">Click any market to pin it. Scroll to zoom, drag to pan.</p>
+    <div id="pbody" hidden>
+      <dl class="kv">
+        <dt>Population</dt><dd id="v-pop"></dd>
+        <dt>Rank</dt><dd id="v-rank"></dd>
+        <dt>Counties</dt><dd id="v-cty"></dd>
+        <dt>States</dt><dd id="v-nst"></dd>
+        <dt>TV households</dt><dd id="v-tv"></dd>
+      </dl>
+      <p class="plabel">Population by state</p>
+      <div class="bar" id="v-bar"></div>
+      <div class="slist" id="v-slist"></div>
+      <p class="plabel">2024 presidential vote</p>
+      <div class="bar" id="v-vbar"></div>
+      <div class="slist" id="v-vote"></div>
+      <p class="plabel">Largest counties</p>
+      <div class="slist" id="v-counties"></div>
+      <p class="plabel" id="l-cd">Congressional districts</p>
+      <p class="hint" id="v-cdn" style="margin:0 0 7px"></p>
+      <div class="slist" id="v-cd"></div>
+    </div>
+  </aside>
+</div>
+
+<section class="findings">
+  <h2>Why this map misbehaves</h2>
+  <p class="sectlead">Markets were drawn by signal reach and viewing habit, not by any political authority. Four consequences fall out of the geography itself.</p>
+  <div class="tiles">
+    <div class="tile hi"><span class="n" id="s-multi">—</span><span class="c">markets cross at least one state line &mdash; <b id="s-multipct">—</b> of Americans live in one</span></div>
+    <div class="tile"><span class="n" id="s-half">—</span><span class="c">markets contain half the U.S. population. The other half is spread across 181.</span></div>
+    <div class="tile"><span class="n" id="s-top10">—</span><span class="c">of the country lives in just the 10 largest markets</span></div>
+    <div class="tile"><span class="n">5</span><span class="c">states feed the Washington, DC market &mdash; VA, MD, DC, WV and PA</span></div>
+  </div>
+
+  <h2>States that import their news</h2>
+  <p class="sectlead">A market takes its name from the city its stations broadcast from. For millions of people that city sits in a different state &mdash; so the local news covers another state's governor, another state's legislature, and campaigns must buy ads across a border to reach them.</p>
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>State</th><th>Share in an out-of-state market</th><th>People</th><th>Anchored in</th></tr></thead>
+      <tbody id="tb-states"></tbody>
+    </table>
+  </div>
+
+  <h2>The 25 largest markets</h2>
+  <p class="sectlead">Buy these and you have reached half the country. Click a row to pin it on the map.</p>
+  <div class="tblwrap">
+    <table>
+      <thead><tr><th>#</th><th>Market</th><th>Population</th><th>Counties</th><th>States</th><th>2024 margin</th></tr></thead>
+      <tbody id="tb-top"></tbody>
+    </table>
+  </div>
+
+  <h2>What it costs to reach a district</h2>
+  <p class="sectlead">A campaign cannot buy a congressional district. It buys a media market, and pays for everyone in it. Turning the 2026 district lines against the market map gives the exchange rate. The New York market is in a class of its own &mdash; it holds the 25 costliest districts in the country &mdash; so the table below shows at most three districts per market to make the rest visible.</p>
+  <div class="tiles">
+    <div class="tile cd"><span class="n" id="c-split">—</span><span class="c">of 432 districts are split across two or more markets; <b id="c-four">—</b> across four or more</span></div>
+    <div class="tile hi"><span class="n" id="c-reach">—</span><span class="c">people you pay for per district resident, in the median district's main market</span></div>
+    <div class="tile"><span class="n" id="c-ny">—</span><span class="c">districts sit at least partly inside the New York market alone</span></div>
+    <div class="tile"><span class="n" id="c-chg">—</span><span class="c">districts were redrawn for 2026 &mdash; the red outlines on the map</span></div>
+  </div>
+  <p class="plabel" style="border:0;padding:0;margin-bottom:9px">Three cycles, one unmoved constraint</p>
+  <div class="flat" id="flat"></div>
+  <p class="sectlead" style="margin-bottom:26px">Between 2022 and 2026 the House was redrawn twice and <b>181 districts changed shape</b>. The number split across two or more markets went from 209 to 213. Mapmakers optimize for partisanship; the media map is simply not a constraint they are working against &mdash; though underneath the flat total, <b id="f-moved">—</b> individual districts did change which markets they depend on.</p>
+
+  <div class="twocol">
+    <div>
+      <p class="plabel" style="border:0;padding:0;margin-bottom:9px">Costliest districts to advertise in</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th>District</th><th>2024</th><th>Main market</th><th>You pay for</th></tr></thead>
+        <tbody id="tb-cost"></tbody></table></div>
+    </div>
+    <div>
+      <p class="plabel" style="border:0;padding:0;margin-bottom:9px">Districts split across the most markets</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th>District</th><th>Markets</th><th>Largest share</th><th>Main market</th></tr></thead>
+        <tbody id="tb-frag"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h3>Sources &amp; method</h3>
+    <p><b>Boundaries.</b> Nielsen DMA polygons (206 lower-48 markets; Alaska's three and Honolulu are not in this file, so the national count of 210 shows here as 206). Nielsen builds every market out of whole counties, so the borders you see are county borders.</p>
+    <p><b>The crosswalk is derived, not downloaded.</b> No public county&rarr;DMA table was available, so each of the 3,107 lower-48 counties was matched to a market by point-in-polygon on its representative point. Every lower-48 county matched.</p>
+    <p><b>Population</b> is the Census Bureau's 2024 county estimate (Vintage 2024). Connecticut replaced counties with planning regions in 2022, so its eight legacy counties carry 2020 estimates scaled to the state's 2024 total. <b>Votes</b> are 2024 county-level presidential returns.</p>
+    <p><b>Congressional districts</b> are the enacted lines for 2022, 2024 and 2026 (432 of 435 each cycle; Alaska and Hawaii sit outside the market file), the 2026 set including the mid-decade redraws in ten states. Use the year buttons beside the Districts toggle to switch cycles; every district figure on this page follows that choice. To split each district's population across markets, county populations and district populations were reconciled by iterative proportional fitting over district&times;county area overlaps &mdash; so both totals are respected rather than area alone, which badly misreads dense urban districts. Shares, not absolute counts, drive every figure here.</p>
+    <p><b>One gap.</b> Nielsen splits Riverside County, CA between Los Angeles and Palm Springs. A whole-county method cannot, so Riverside lands in Los Angeles and <b>Palm Springs is shown as no-data</b>. It is the only market affected.</p>
+  </div>
+</section>
+</div>
+<div id="tip" hidden></div>
+</div>

@@ -1,0 +1,208 @@
+/* Packed cartogram — page-specific styles.
+   Page chrome (fonts, header/footer, theme toggle) comes from the site layout
+   and css/site.css; this file only adds the map's own colors and controls, and
+   it reuses the site variables (--ink, --muted, --line, --bg, --bg-alt) so the
+   map follows the light/dark theme without a second switch. */
+
+:root {
+  --state-fill:   #e8e6e1;
+  --state-edge:   #a9a49b;
+  --state-hover:  #cfd9e4;
+  --label-ink:    #4a4741;
+  --ok:           #2e7d52;
+  --bad:          #b3341f;
+}
+
+:root[data-theme="dark"] {
+  --state-fill:   #2b2e34;
+  --state-edge:   #565b64;
+  --state-hover:  #3c4652;
+  --label-ink:    #b6bcc4;
+  --ok:           #6cc48f;
+  --bad:          #ff8a72;
+}
+
+.map-wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 1rem;
+}
+
+.map-header .page-title { margin: 0 0 .35rem; }
+
+.subtitle {
+  margin: 0;
+  font-size: clamp(0.95rem, 2.2vw, 1.1rem);
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------- controls -- */
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.1rem 1.5rem;
+  margin: 1.4rem 0 .9rem;
+  padding: .9rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-alt);
+}
+
+.control { display: flex; flex-direction: column; gap: .3rem; }
+
+.control > label {
+  font-size: .76rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.control select {
+  font: inherit;
+  font-size: .95rem;
+  padding: .3rem .5rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+
+.control input[type="range"] { width: 170px; accent-color: var(--red); }
+
+.range-row { display: flex; align-items: center; gap: .6rem; }
+.range-out { font-variant-numeric: tabular-nums; font-size: .9rem; min-width: 3.4em; }
+
+button#run {
+  font: inherit;
+  font-size: .92rem;
+  padding: .42rem 1rem;
+  color: #fff;
+  background: var(--red);
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+}
+button#run:hover { background: var(--red-dark); }
+button#run.busy { opacity: .55; cursor: progress; }
+
+/* ------------------------------------------------------------------ map -- */
+
+.map-figure { margin: 0; position: relative; }
+
+#map svg { width: 100%; height: auto; display: block; }
+
+path.state {
+  fill: var(--state-fill);
+  stroke: var(--state-edge);
+  stroke-width: .8;
+  stroke-linejoin: round;
+}
+path.state:hover { fill: var(--state-hover); }
+
+.labels text {
+  fill: var(--label-ink);
+  font-family: var(--font);
+  font-weight: 600;
+  pointer-events: none;
+  letter-spacing: .02em;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  padding: .4rem .6rem;
+  font-size: .85rem;
+  line-height: 1.35;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .13);
+}
+
+.load-error { color: var(--bad); }
+
+/* ------------------------------------------------------------ readout -- */
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem 2.2rem;
+  margin: 1rem 0 .5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.stats li { display: flex; flex-direction: column; gap: .1rem; }
+
+.stat-label {
+  font-size: .72rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stat-value { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.stat-value.ok { color: var(--ok); }
+.stat-value.bad { color: var(--bad); }
+
+.verdict {
+  margin: .2rem 0 1.2rem;
+  font-size: .9rem;
+  line-height: 1.5;
+  color: var(--muted);
+  border-left: 3px solid var(--line);
+  padding-left: .75rem;
+}
+.verdict.ok { border-left-color: var(--ok); }
+.verdict.bad { border-left-color: var(--bad); }
+
+.map-note {
+  font-size: .88rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 1rem;
+}
+
+/* ------------------------------------------------------------- method -- */
+
+.method { margin: 2.2rem 0 1rem; }
+.method h2 { font-size: 1.25rem; margin: 0 0 .6rem; }
+.method h3 { font-size: 1rem; margin: 1.4rem 0 .4rem; }
+.method p { line-height: 1.65; }
+.method ol { line-height: 1.65; padding-left: 1.2rem; }
+.method li { margin-bottom: .5rem; }
+
+.method .formula {
+  display: block;
+  margin: .8rem 0;
+  padding: .7rem .9rem;
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .9rem;
+  overflow-x: auto;
+}
+
+@media (max-width: 620px) {
+  .control input[type="range"] { width: 130px; }
+  .controls { gap: .9rem 1.1rem; }
+}
+
+.method .caveat {
+  padding: .7rem .9rem;
+  background: var(--bg-alt);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: .9rem;
+}
+
+.leaders line {
+  stroke: var(--label-ink);
+  stroke-width: .7;
+  opacity: .55;
+}

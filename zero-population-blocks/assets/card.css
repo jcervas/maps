@@ -1,0 +1,283 @@
+/* ------------------------------------------------------------------
+   The card.
+
+   One screen, never more. The page is a graphic somebody can screenshot
+   and post, so nothing may scroll and nothing may fall off the bottom:
+   the body is exactly the viewport, overflow is hidden, and the map takes
+   whatever height is left once the title and the foot have had theirs.
+
+   Sizing rule for the whole file: every fixed row states its height, the
+   map row is the only one that flexes, and type is clamped so a short
+   laptop window loses point size rather than losing the map.
+
+   Loads on top of zpb.css, which brings the colour tokens and the map's
+   own tooltip and buttons. Most of what else is in there dresses a long
+   document and is undone at the top of this file.
+   ------------------------------------------------------------------ */
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body.zpb-card {
+  /* svh, not vh: on a phone vh counts the space behind the browser's own
+     chrome, which is exactly the amount that would push the foot off. */
+  height: 100svh;
+  min-height: 100svh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 0;                      /* zpb.css's masthead rule */
+  counter-reset: none;
+  background: var(--paper);
+}
+
+/* zpb.css reserves a margin-note gutter past 1000px and a contents sidebar
+   past 1320px, and holds every direct child of <body> to the 46rem measure.
+   None of that applies to a single card.
+
+   The measure rule names tags -- `body > div`, `body > p`, and so on -- and
+   <main> is not among them, so .card escapes it already. The two <div>
+   children do not, and are reset here by name rather than with a blanket
+   `> *`, which would outrank .card's own padding and flatten the card to
+   the window edges. */
+body.zpb-card > .card-rotate,
+body.zpb-card > .card-tartan {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------------------------------------------------------------- card */
+
+.card {
+  flex: 1;
+  min-height: 0;                      /* lets the figure actually shrink */
+  display: flex;
+  flex-direction: column;
+  padding: clamp(14px, 2.2vh, 26px) clamp(16px, 3vw, 40px) 0;
+  box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------- title */
+
+.card-head { flex: none; }
+
+.card-head h1 {
+  font-family: var(--display);
+  font-size: clamp(1.5rem, 3.5vh, 2.9rem);
+  line-height: 1.05;
+  letter-spacing: -.02em;
+  margin: 0;
+  padding: 0;
+  border: 0;                          /* zpb.css puts a red rule over h1 */
+  color: var(--ink);
+}
+
+.card-note {
+  margin: clamp(4px, .9vh, 10px) 0 0;
+  font-size: clamp(12px, 1.75vh, 16px);
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 62rem;
+}
+
+.card-note b {
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* --------------------------------------------------------------- figure */
+
+.card-figure {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: clamp(4px, 1vh, 12px) 0 0;
+}
+
+.card-figure #zmap {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Beats `.zpb-fig svg { max-height: 78vh }`, which is measured against the
+   whole viewport and so does not know about the title or the foot. */
+.card-figure #zmap > svg {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+
+/* The static twin, on the same terms, for when the live map never draws. */
+.card-figure .dd-fallback {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-figure .dd-fallback p { margin: 0; }
+
+.card-figure .dd-fallback img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+/* The map's own controls are chrome, and chrome lands in the screenshot.
+   Where there is a pointer to hover with they stay out of the picture
+   until wanted; on a touch screen there is no hover, so they stay put. */
+@media (hover: hover) {
+  .card-figure .zmap-btn {
+    opacity: 0;
+    transition: opacity .18s ease-in;
+  }
+  .card-figure:hover .zmap-btn,
+  .card-figure .zmap-btn:focus-visible { opacity: 1; }
+}
+
+/* ----------------------------------------------------------------- foot */
+
+.card-foot {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: clamp(6px, 1.2vh, 14px) 0 clamp(8px, 1.4vh, 16px);
+}
+
+.card-meta {
+  font-size: clamp(10.5px, 1.4vh, 13px);
+  line-height: 1.5;
+  color: var(--ink-3);
+  min-width: 0;
+}
+
+.card-meta a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.card-meta a:hover { border-bottom-color: var(--accent); }
+
+/* The hint and the link share a line, the credit takes the next, so the foot
+   stays two lines deep however short the window gets. */
+.card-meta .card-hint { color: var(--ink-2); }
+
+.card-meta .card-hint::after {
+  content: "\00b7";
+  margin: 0 .5em 0 .45em;
+  color: var(--ink-3);
+}
+
+.card-meta .card-source { display: block; }
+
+/* The logo, bottom right. */
+.card-logo {
+  flex: none;
+  display: block;
+  width: clamp(38px, 6.4vh, 62px);
+  height: clamp(38px, 6.4vh, 62px);
+}
+
+/* --------------------------------------------------------------- tartan */
+
+/* The Carnegie Mellon tartan, straight red, trimmed from the university's
+   own swatch: the full width of it, so the strip is one continuous piece and
+   never repeats. The weave is drawn by hand rather than stepped off a grid,
+   so it has no exact horizontal period -- tiling it leaves a seam at every
+   repeat, and mirroring it to force a seam-free tile turns the diagonals
+   into chevrons. `cover` sidesteps both: one image, scaled to the strip,
+   cropped from the middle. The sett then reads a little larger on a wide
+   window and a little smaller on a phone, which is the right way round. */
+.card-tartan {
+  flex: none;
+  height: clamp(12px, 2vh, 24px);
+  width: 100%;
+  background-image: url("img/cmu-tartan.webp");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+/* -------------------------------------------------------------- rotate */
+
+/* A phone held upright cannot show a map of the United States at any
+   useful size, so it is asked to turn rather than given a stamp. */
+.card-rotate { display: none; }
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .card { display: none; }
+
+  .card-rotate {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    padding: 24px 28px;
+    text-align: center;
+  }
+
+  .card-rotate svg {
+    width: 58px;
+    height: 58px;
+    color: var(--accent);
+    animation: card-tip 2.6s ease-in-out infinite;
+  }
+
+  .card-rotate h1 {
+    font-family: var(--display);
+    font-size: 1.9rem;
+    line-height: 1.1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: var(--ink);
+  }
+
+  .card-rotate p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 22rem;
+  }
+
+  .card-rotate .card-rotate-alt {
+    font-size: 13.5px;
+    color: var(--ink-3);
+  }
+
+  .card-rotate a { color: var(--accent); font-weight: 600; }
+}
+
+@keyframes card-tip {
+  0%, 55%, 100% { transform: rotate(0deg); }
+  25%, 40%      { transform: rotate(-90deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-rotate svg { animation: none; }
+}

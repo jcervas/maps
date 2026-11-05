@@ -1,0 +1,174 @@
+title: "Jonathan Cervas"
+tagline: "Assistant Teaching Professor, Carnegie Mellon University"
+description: >-
+  Interactive maps and cartograms by Jonathan Cervas: congressional
+  redistricting, U.S. House apportionment, equal-area district cartograms,
+  election results by precinct, and the methods behind them.
+url: "https://jonathancervas.com"   # canonical
+# This repository is a GitHub Pages *project* site. Under the user site's
+# custom domain it is served at https://jonathancervas.com/maps/, so every
+# URL these pages had while they lived in jcervas.github.io/maps/ is
+# unchanged -- which is the whole reason the move was safe to make.
+#
+# baseurl is what makes that work: `relative_url` prefixes it, so a page at
+# wv-election-map/index.html lands on /maps/wv-election-map/. Two consequences
+# worth remembering before editing anything here:
+#
+#   * front matter `permalink` is written WITHOUT the /maps prefix
+#     (`/wv-election-map/`, not `/maps/wv-election-map/`), or the prefix is
+#     applied twice and the page moves to /maps/maps/...
+#   * links back out to the rest of the site -- the nav, the brand, the CV --
+#     must be plain absolute paths and must NOT go through `relative_url`,
+#     which would send /publications/ to /maps/publications/. _layouts has
+#     them written out that way; see the note there.
+baseurl: "/maps"
+author: "Jonathan Cervas"
+email: "cervas@cmu.edu"
+markdown: kramdown
+
+plugins:
+  - jekyll-sitemap        # auto-generates /maps/sitemap.xml at build time
+  - jekyll-redirect-from  # serves legacy URLs (see redirect_from: in page front matter)
+
+defaults:
+  # ---- The /maps/ index ----------------------------------------------------
+  # One table for every map page, in the order they appear on /maps/:
+  #   order       puts the page on the index and sets its position there
+  #   wide        aligns its breadcrumb with the map's ~1200px content rather
+  #               than the 860px text column
+  #   breadcrumb  short label for the trail, in place of the long page title
+  #
+  # These live here rather than in each page's front matter because several of
+  # the map pages are generated output: jcervas/cartograms republishes them
+  # into this repo, front matter and all, so anything added to those files by
+  # hand is wiped on the next publish. Keeping the keys here puts them out of
+  # the generator's reach. Front matter in a page still wins, so a hand-authored
+  # page can override any of this locally.
+  #
+  # Paths are exact files, not directories: a directory scope would also match
+  # everything beneath it, which would drag the cartogram-method sub-pages onto
+  # the index. A map page with no `order` here is deliberately left off it.
+  #
+  # Paths lost their "maps/" prefix when these pages moved out of
+  # jcervas.github.io into this repository, where /maps/ is the site root.
+  # -1, not 0: citizen-apportionment already claims `order: 0` in its own front
+  # matter, where it beats anything set here, and a tie leaves the two in
+  # whatever order site.pages happened to come out in. The newest map leads.
+  - scope:
+      path: "elections/2026/index.html"
+    values:
+      breadcrumb: "2026 Senate by precinct"
+      wide: true
+      order: -1
+  - scope:
+      path: "mid-decade-redistricting/index.html"
+    values:
+      breadcrumb: "Mid-decade redistricting"
+      wide: true
+      order: 1
+  - scope:
+      path: "us-house-2022-cartogram/index.html"
+    values:
+      breadcrumb: "U.S. House 2022 cartogram"
+      wide: true
+      order: 2
+  - scope:
+      path: "apportionment-2020-2030/index.html"
+    values:
+      breadcrumb: "Apportionment 2020&ndash;2030"
+      wide: true
+      order: 3
+  - scope:
+      path: "apportionment-2010-2020/index.html"
+    values:
+      breadcrumb: "Apportionment 2010&ndash;2020"
+      wide: true
+      order: 4
+  - scope:
+      path: "apportionment-2000-2010/index.html"
+    values:
+      breadcrumb: "Apportionment 2000&ndash;2010"
+      wide: true
+      order: 5
+  - scope:
+      path: "cartogram-placement/index.md"
+    values:
+      breadcrumb: "Placement walkthrough"
+      wide: true
+      order: 6
+  # cartogram-method has no entry on purpose. The walkthrough moved to
+  # /maps/cartogram-placement/ and what is left at the old URL is a redirect
+  # stub, carrying layout: null and sitemap: false -- giving it an `order`
+  # would put a bare redirect on the index.
+  - scope:
+      path: "cartogram-studio/index.html"
+    values:
+      breadcrumb: "Cartogram studio"
+      wide: true
+      order: 8
+  - scope:
+      path: "cartogram-editor/index.html"
+    values:
+      breadcrumb: "Cartogram editor"
+      wide: true
+      order: 9
+  - scope:
+      path: "alpine-lake-construction/index.html"
+    values:
+      breadcrumb: "Alpine Lake construction"
+      wide: true
+      order: 10
+  - scope:
+      path: "packed-cartogram/index.html"
+    values:
+      breadcrumb: "Packed cartogram"
+      wide: true
+      order: 11
+  - scope:
+      path: "media-markets/index.html"
+    values:
+      breadcrumb: "Media markets"
+      wide: true
+      order: 12
+      thumb: "/media-markets/thumb.svg"
+
+# Primary navigation. These are the main site's pages, not this repository's,
+# so they are absolute paths and the layout prints them as-is -- putting them
+# through relative_url would aim them at /maps/publications/ and so on.
+nav:
+  - title: Home
+    url: /
+  - title: Publications
+    url: /publications/
+  - title: Teaching
+    url: /teaching/
+  - title: Redistricting
+    url: /redistricting/
+  - title: Resources
+    url: /resources/
+  - title: Media
+    url: /media/
+  - title: CV
+    url: /cv.pdf
+
+# Files Jekyll should ignore when building the site.
+#
+# `build` covers build/scraper too, which matters: at refresh time the scraper
+# writes raw/ and out/ beneath it, hundreds of megabytes of .pmtiles. Those are
+# gitignored, but gitignore means nothing to Jekyll, which walks the working
+# directory as it finds it.
+#
+# elections/2026/data is deliberately NOT here, and must not be added. On GitHub
+# Pages the published site is the Jekyll output, so `exclude` does not mean
+# "skip the work" -- it means the files never reach the output at all, and the
+# map would 404 on its own geometry. Nor does `keep_files` rescue it: that only
+# protects what is already sitting in _site between local builds, and Pages
+# builds into an empty directory every time. The ~1,300 data files are copied
+# verbatim on each build, which costs time and nothing else: Jekyll renders only
+# files with front matter, and none of them have any.
+exclude:
+  - README.md
+  - build
+  - Gemfile
+  - Gemfile.lock
+  - "*.sh"

@@ -1,0 +1,356 @@
+@charset "UTF-8";
+
+/* If the screen size is 601px or more, set the font-size of <div> to 80px */
+@media only screen and (min-width: 601px) {
+    .jc-article {
+        font-size: 20px;
+    }
+
+    .jc-main-content {
+        padding: 10px 50px;
+    }
+}
+
+/* If the screen size is 600px or less, set the font-size of <div> to 30px */
+@media only screen and (max-width: 600px) {
+    .jc-article {
+        font-size: 12px;
+    }
+
+    .jc-main-content {
+        padding: 10px 5px;
+    }
+}
+
+
+.jc-article {
+    margin: 0;
+    padding: 0;
+    display: list-item;
+    list-style-type: none;
+    font-family: sans-serif;
+    line-height: 1.4em;
+    /*font-size: 20px;*/
+    font-weight: 300;
+    /*text-indent: -16px;*/
+    margin: auto;
+    max-width: 900px;
+}
+
+.jc-article a {
+    text-decoration-line: none;
+    background-image: linear-gradient(to right, black 75%, transparent 75%);
+    background-position: 0 1.04em;
+    background-repeat: repeat-x;
+    background-size: 8px 3px;
+    color: #111;
+}
+
+.jc-article a:hover {
+    background-color: rgba(0, 0, 0, .09);
+}
+
+@media print {
+    h1 {
+        color: #000;
+        background: none;
+    }
+
+    nav,
+    aside {
+        display: none;
+    }
+
+    body,
+    article {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+
+    cite {
+        text-weight: italic;
+    }
+
+    cite em {
+        text-weight: italic;
+    }
+
+    @page {
+        margin: 2cm;
+    }
+
+    h2,
+    h3 {
+        page-break-after: avoid;
+    }
+
+    img {
+        max-width: 95% !important;
+    }
+
+    ul,
+    img {
+        page-break-inside: avoid;
+    }
+}
+
+@media print {
+    ahref::after {
+        content: " (" attr(href) ")";
+    }
+}
+
+.jc-article p {
+    margin: auto;
+}
+
+.jc-article h1 {
+    font-size: 1.5em;
+    /*text-align: center;*/
+    padding: 30px auto 5px;
+    line-height: 1.2;
+    font-weight: 400;
+}
+
+.jc-article h2 {
+    font-size: 1.15em;
+    color: #444;
+    margin: 25px auto 0;
+    /*padding: 10px 0;*/
+    font-family: sans-serif;
+    line-height: 1.1
+}
+
+.jc-article-title {
+    font-size: 26px;
+    font-weight: 600;
+    margin: 10px 30px;
+    padding: 10px 0;
+    font-family: sans-serif;
+    line-height: 1.2
+}
+
+.jc-article-byline {
+    font-size: 20px;
+    font-weight: 200;
+    margin: 10px 50px;
+    padding: 10px 0;
+    font-family: sans-serif;
+    line-height: 1;
+}
+
+.jc-article cite {
+    color: #666;
+    font-weight: 300;
+    font-style: normal;
+    font-size: 92%;
+}
+
+.footnotes li {
+    display: list-item;
+    list-style-type: decimal;
+    font-weight: 300;
+    font-size: 13px;
+    color: #999;
+    line-height: 1.3em;
+}
+
+.footnotes a {
+    color: #777;
+}
+
+.jc-note {
+    font-weight: 300;
+    font-size: 13px;
+    color: #999;
+    line-height: 1.3em;
+}
+
+.jc-fig-note {
+    font-weight: 300;
+    font-size: 13px;
+    color: #999;
+    line-height: 1.3em;
+}
+
+.jc-article footnote {
+    display: none;
+    /*    position: relative;
+    bottom: 0.5em;
+    font-size: 0.4em;
+    font-weight: 300;
+    font-size: 13px;
+    color: #999;
+    line-height: 1.3em;*/
+}
+
+.jc-footnote {
+    /*display: none;*/
+    font-weight: 300;
+    font-size: 13px;
+    color: #999;
+    line-height: 1.3em;
+    vertical-align: super;
+}
+
+.jc-footnote-link {
+    font-weight: 300;
+    font-size: 13px;
+    color: #999;
+    line-height: 1.3em;
+    cursor: pointer;
+    vertical-align: super;
+}
+
+.jc-footnote-link a sup {
+    color: #999;
+    cursor: pointer;
+}
+
+.jc-note-inline {
+    display: block;
+    font-weight: 300;
+    font-size: 13px;
+    text-indent: 0.25em;
+    color: #999;
+    line-height: 1.3em;
+    /*overflow: hidden;*/
+    /*max-height: 0;*/
+    /*width: 0;*/
+    /*opacity: 0;*/
+    transition: max-height .3s ease-out 0s, width .01s ease-out .3s, opacity .2s ease-out 0s;
+}
+
+.expanded {
+    display: block;
+    width: 100%;
+    opacity: 1;
+    transition: max-height .5s ease-in .01s, width .01s ease-in 0s, opacity .2s ease-in-out .21s;
+}
+
+.jc-pdf::before {
+    content: "[";
+    /*url(http://polisci.uci.edu/~jcervas/images/icon-pdf.svg) ;*/
+    /*padding-right: 5px;  create some space between the image and the content before it */
+}
+
+.jc-pdf::after {
+    content: "]";
+}
+
+.jc-fulltext::before {
+    content: "[";
+}
+
+.jc-fulltext::after {
+    content: "]";
+}
+
+.jc-citedownload::before {
+    content: "[Download Citation: ";
+}
+
+.jc-citedownload::after {
+    content: "]";
+}
+
+.jc-cite {
+    font-weight: 300;
+    font-size: 13px;
+    color: #999;
+    line-height: 1em;
+    vertical-align: middle;
+}
+
+.bump path {
+    fill: none;
+    stroke: #000;
+    stroke-linejoin: round;
+}
+
+.bump .halo {
+    stroke: #fff;
+}
+
+.jc-main-content {
+    margin: 1.5em auto;
+}
+
+.jc-main-content p {
+    padding-top: 15px;
+    text-indent: 2em;
+}
+
+.jc-main-content .jc-fig-container {
+    display: block;
+    margin: 50px 10%;
+    text-align: center;
+    border: 1px dotted rgba(0, 0, 0, 0.85);
+}
+
+.jc-main-content table {
+    border: 1px solid rgba(0, 0, 0, 0.85);
+}
+
+.jc-article .jc-main-content img {
+    display: block;
+    width: 100%;
+}
+
+.jc-main_img {
+    width: 100%;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.jc-title-content {
+    text-align: center;
+    border: rgba(0, 0, 0, 0.4) dotted 1px;
+    border-radius: 25px;
+    padding: 10px 25px 10px;
+    margin: 1.5em 0.5em 1.5em;
+    max-width: 600px;
+    background-color: rgba(0, 0, 0, 0.04);
+    padding: 10px 75px;
+    /*margin: 1.5em auto;*/
+    /*max-width: 850px;*/
+}
+
+.jc-article blockquote {
+    background: #f9f9f9;
+    border-left: 10px solid #ccc;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+    quotes: "\201C" "\201D";
+}
+
+.jc-article blockquote:before {
+    color: #ccc;
+    content: open-quote;
+    font-size: 4em;
+    line-height: 0.1em;
+    margin-right: 0.25em;
+    vertical-align: -0.4em;
+}
+
+.jc-article blockquote p {
+    display: inline;
+    /*font-size: 1.1rem;*/
+    letter-spacing: -0.02rem;
+    font-style: italic;
+}
+
+.MathJax {
+    font-size: 0.75em !important;
+}
+
+.jc-mainpage {
+    background-image: url(http://jonathancervas.com/dissertation/images/background.png);
+    background-size: 100%;
+    background-repeat: no-repeat;
+    background-position: top center;
+    margin: 0;
+    padding-bottom: 50px;
+    text-align: center;
+}

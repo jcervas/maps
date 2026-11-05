@@ -6,3 +6,11 @@
 # Python
 __pycache__/
 *.pyc
+
+# The scraper's working files: the .pmtiles as downloaded and their zoom-12
+# dumps (hundreds of MB, re-fetchable), and the reference geographies the
+# projection fit needs, which are built from Census sources rather than kept.
+build/scraper/raw/
+build/scraper/out/
+build/scraper/counties.json
+build/scraper/ak_house.json

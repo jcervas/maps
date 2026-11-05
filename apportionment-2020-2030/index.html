@@ -1,0 +1,39 @@
+---
+layout: default
+title: Projected change in U.S. House apportionment, 2020 to 2030
+description: "13 seats would move between 16 states. Every state is drawn at its peak seat count and split into equal-area cells, with the seats that moved marked. Built with mapshaper and base R."
+---
+
+<link rel="stylesheet" href="{{ '/apportionment-2020-2030/cartogram.css' | relative_url }}?v=7263e8e0">
+
+<div class="cg" id="ap" data-src="{{ '/apportionment-2020-2030/apportionment-2020-2030.json' | relative_url }}?v=72f6fb45">
+  <div class="cg-head">
+    <h1 id="ap-title">Change in U.S. House apportionment</h1>
+    <div class="cg-sub" id="ap-sub"></div>
+  </div>
+
+  <div class="cg-bar">
+    <div class="cg-legend" id="ap-legend"></div>
+    <span style="flex:1"></span>
+    <span class="cg-status" id="ap-status"></span>
+    <button id="ap-reset" type="button" class="cg-ghost-btn" hidden>Zoom out &#9099;</button>
+  </div>
+
+  <svg class="cg-map" id="ap-map" role="img" aria-label="Cartogram of change in U.S.
+       House apportionment, with each state sized to its seat count"></svg>
+
+  <div class="cg-chips" id="ap-chips"></div>
+
+  <div class="cg-foot">
+    Every state is carved into as many equal-area cells as it held at its
+    <em>peak</em> across the two censuses, so each cell is the same size
+    nationally and a state that lost a seat simply has one cell more than it now
+    needs. Click a state to zoom. <strong>Which</strong> cell is marked is
+    presentational: a seat is apportioned to a state, not to a place inside it.
+  </div>
+
+  <div class="cg-tip" id="ap-tip"></div>
+<p class="cg-updated" style="margin:18px 0 0;font-size:12.5px;opacity:.65">Updated <time datetime="2026-07-30T13:57:15-04:00">30 July 2026</time> · apportionment from the U.S. Census Bureau</p>
+</div>
+
+<script src="{{ '/apportionment-2020-2030/apportionment.js' | relative_url }}?v=5078ffaa" defer></script>

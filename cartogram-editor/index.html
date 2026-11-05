@@ -1,0 +1,42 @@
+---
+layout: default
+title: Cartogram editor
+description: "Move states and labels on an equal-area cartogram by hand. A state carries its cells with it; what comes out is the same GeoJSON that went in, and still opens in mapshaper."
+---
+
+<link rel="stylesheet" href="{{ '/cartogram-editor/editor.css' | relative_url }}">
+
+<div class="ce" id="ce-root"
+     data-src="{{ '/citizen-apportionment/apportionment-proposed-rule-2030.geojson' | relative_url }}">
+
+  <h1 class="page-title">Cartogram editor</h1>
+
+  <p class="section-lead">
+    The placement a solver returns is a good default, not a judgment. This moves
+    states and labels by hand: drag a state and its cells go with it, drag a label
+    and it moves alone. Every feature carries the state it belongs to, so that
+    grouping is all the handle needs to be &mdash; and what you save is the same
+    flat GeoJSON that went in.
+  </p>
+
+  <!-- No accept filter on the picker: macOS greys out .geojson under some
+       spellings of it, and there is nothing gained by narrowing the dialog when
+       the file is validated on load anyway. Dropping a file on the page works too. -->
+  <div class="ce-bar">
+    <label class="ce-file">Open a cartogram&hellip;<input type="file" id="ce-file"></label>
+    <span class="ce-hint" id="ce-hint">Loading&hellip;</span>
+    <button class="ce-btn" id="ce-reset" type="button" disabled>Revert all</button>
+    <button class="ce-btn" id="ce-save" type="button" disabled>Save GeoJSON</button>
+  </div>
+
+  <div class="ce-main">
+    <div class="ce-stage"><svg id="ce-svg" role="img" aria-label="Editable cartogram"></svg></div>
+    <aside class="ce-side">
+      <h2>Moved</h2>
+      <ul id="ce-moved"></ul>
+      <p id="ce-empty">Nothing moved yet. Arrow keys nudge the selection, Shift for 10px.</p>
+    </aside>
+  </div>
+</div>
+
+<script src="{{ '/cartogram-editor/editor.js' | relative_url }}" defer></script>

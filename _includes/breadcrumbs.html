@@ -1,0 +1,162 @@
+{%- comment -%}
+  Breadcrumb trail. Included once by _layouts/default.html, so every page that
+  uses a layout gets one — nothing to add per page.
+
+  The trail is walked up from the page URL, so /maps/cartogram-method/browser/
+  becomes  Home / Maps / Cartogram method / Solving it in the browser.
+
+  Front matter a page can set:
+    breadcrumb: "Short title"     label for this page in its own trail and in
+                                  the trail of anything beneath it (defaults to
+                                  the page title, which is often too long)
+    breadcrumb_parent: /some/url/ parent to use instead of the one in the URL,
+                                  for pages that live under a path with no index
+                                  page of its own (the /maps/* pages)
+    breadcrumbs: false            no trail on this page
+    breadcrumb_width: 1040px      max-width for the trail, to line it up with a
+                                  page whose content column is neither the text
+                                  column nor the 1200px `wide` maps
+
+  Labels for URLs that have no page of their own live in _data/breadcrumbs.yml.
+  An ancestor with no page behind it is rendered as plain text, not a dead link.
+{%- endcomment -%}
+
+{%- if page.url != "/" and page.breadcrumbs != false -%}
+
+{%- comment -%} Every addressable page, so ancestors can be titled and linked. {%- endcomment -%}
+{%- assign bc_docs = site.pages -%}
+{%- for bc_c in site.collections -%}
+  {%- assign bc_docs = bc_docs | concat: bc_c.docs -%}
+{%- endfor -%}
+
+{%- comment -%}
+  Walk up to the root, following breadcrumb_parent where it is set and the URL
+  where it is not. Ancestors are prepended, so the trail comes out outermost
+  first. Six steps is well past the deepest path on the site.
+{%- endcomment -%}
+{%- assign bc_trail = "" -%}
+{%- assign bc_cursor = page.url -%}
+{%- assign bc_node = page -%}
+{%- for bc_step in (1..6) -%}
+  {%- if bc_step > 1 -%}
+    {%- assign bc_node = false -%}
+    {%- for bc_d in bc_docs -%}
+      {%- if bc_d.url == bc_cursor -%}{%- assign bc_node = bc_d -%}{%- break -%}{%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+
+  {%- if bc_node.breadcrumb_parent -%}
+    {%- assign bc_parent = bc_node.breadcrumb_parent -%}
+  {%- else -%}
+    {%- assign bc_segs = bc_cursor | split: "/" -%}
+    {%- assign bc_keep = bc_segs.size | minus: 1 -%}
+    {%- if bc_keep > 0 -%}
+      {%- assign bc_parent = bc_segs | slice: 0, bc_keep | join: "/" | append: "/" -%}
+    {%- else -%}
+      {%- assign bc_parent = "/" -%}
+    {%- endif -%}
+  {%- endif -%}
+
+  {%- if bc_parent == "/" or bc_parent == "" -%}{%- break -%}{%- endif -%}
+  {%- assign bc_trail = bc_parent | append: " " | append: bc_trail -%}
+  {%- assign bc_cursor = bc_parent -%}
+{%- endfor -%}
+
+{%- comment -%}
+  Resolve each ancestor to a label and to whether a real page sits behind it.
+  Done once here and stashed in delimited strings, so the markup and the
+  structured data below can both read it without repeating the lookup.
+{%- endcomment -%}
+{%- assign bc_urls = bc_trail | split: " " -%}
+{%- assign bc_labels = "" -%}
+{%- assign bc_linked = "" -%}
+{%- for bc_url in bc_urls -%}
+  {%- assign bc_node = false -%}
+  {%- for bc_d in bc_docs -%}
+    {%- if bc_d.url == bc_url -%}{%- assign bc_node = bc_d -%}{%- break -%}{%- endif -%}
+  {%- endfor -%}
+
+  {%- assign bc_label = site.data.breadcrumbs[bc_url] -%}
+  {%- if bc_label == nil and bc_node -%}
+    {%- assign bc_label = bc_node.breadcrumb | default: bc_node.title -%}
+  {%- endif -%}
+  {%- if bc_label == nil or bc_label == "" -%}
+    {%- assign bc_label = bc_url | split: "/" | last | replace: "-", " " | capitalize -%}
+  {%- endif -%}
+
+  {%- comment -%}
+    Titles here are written with HTML entities (&amp;, &mdash;, &ldquo;). Those
+    are fine in markup but not inside the JSON-LD below, where a <script> body
+    is never entity-decoded, and they also confuse `truncate`, which could cut
+    one in half. Decode to real characters once, and let `escape` put back what
+    the markup needs. &amp; must go last or it would re-create the others.
+  {%- endcomment -%}
+  {%- assign bc_label = bc_label | strip_html
+        | replace: "&mdash;", "—" | replace: "&ndash;", "–"
+        | replace: "&ldquo;", "“" | replace: "&rdquo;", "”"
+        | replace: "&lsquo;", "‘" | replace: "&rsquo;", "’"
+        | replace: "&hellip;", "…" | replace: "&nbsp;", " "
+        | replace: "&quot;", '"' | replace: "&#39;", "'"
+        | replace: "&amp;", "&" -%}
+
+  {%- assign bc_labels = bc_labels | append: bc_label | append: "~~" -%}
+  {%- if bc_node -%}
+    {%- assign bc_linked = bc_linked | append: "1~~" -%}
+  {%- else -%}
+    {%- assign bc_linked = bc_linked | append: "0~~" -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- assign bc_labels = bc_labels | split: "~~" -%}
+{%- assign bc_linked = bc_linked | split: "~~" -%}
+{%- assign bc_here = page.breadcrumb | default: page.title | default: "This page" | strip_html
+      | replace: "&mdash;", "—" | replace: "&ndash;", "–"
+      | replace: "&ldquo;", "“" | replace: "&rdquo;", "”"
+      | replace: "&lsquo;", "‘" | replace: "&rsquo;", "’"
+      | replace: "&hellip;", "…" | replace: "&nbsp;", " "
+      | replace: "&quot;", '"' | replace: "&#39;", "'"
+      | replace: "&amp;", "&" -%}
+
+<nav class="breadcrumbs{% if page.wide %} breadcrumbs--wide{% endif %}"{% if page.breadcrumb_width %} style="max-width: {{ page.breadcrumb_width }}"{% endif %} aria-label="Breadcrumb">
+  <ol class="breadcrumbs__list">
+    {%- comment -%}
+      Two fixed crumbs, because this repository's root IS /maps/. "Home" is
+      jonathancervas.com and lives outside it, so it is a bare absolute path
+      rather than relative_url, which would aim it at /maps/. "Maps" is this
+      site's own root, which relative_url renders as /maps/ correctly. The
+      walked-up ancestors below are all pages in this repository, so they keep
+      relative_url. This page never renders its own trail -- the guard at the
+      top skips page.url == "/" -- so Maps is never both a crumb and the
+      current page.
+    {%- endcomment -%}
+    <li class="breadcrumbs__item"><a href="/">Home</a></li>
+    <li class="breadcrumbs__item"><a href="{{ '/' | relative_url }}">Maps</a></li>
+    {%- for bc_url in bc_urls -%}
+    <li class="breadcrumbs__item">
+      {%- if bc_linked[forloop.index0] == "1" -%}
+        <a href="{{ bc_url | relative_url }}">{{ bc_labels[forloop.index0] | escape }}</a>
+      {%- else -%}
+        <span>{{ bc_labels[forloop.index0] | escape }}</span>
+      {%- endif -%}
+    </li>
+    {%- endfor -%}
+    {%- comment -%}
+      Shortened on screen so a long article title does not run to three lines;
+      the full name still goes to the structured data and the title attribute.
+    {%- endcomment -%}
+    <li class="breadcrumbs__item breadcrumbs__item--current" aria-current="page"
+        title="{{ bc_here | escape }}">{{ bc_here | truncate: 64 | escape }}</li>
+  </ol>
+</nav>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"Home","item":{{ site.url | append: '/' | jsonify }}}
+,{"@type":"ListItem","position":2,"name":"Maps","item":{{ '/' | absolute_url | jsonify }}}
+{%- for bc_url in bc_urls -%}
+,{"@type":"ListItem","position":{{ forloop.index | plus: 2 }},"name":{{ bc_labels[forloop.index0] | jsonify }}{% if bc_linked[forloop.index0] == "1" %},"item":{{ bc_url | absolute_url | jsonify }}{% endif %}}
+{%- endfor -%}
+,{"@type":"ListItem","position":{{ bc_urls.size | plus: 3 }},"name":{{ bc_here | jsonify }},"item":{{ page.url | absolute_url | jsonify }}}
+]}
+</script>
+
+{%- endif -%}

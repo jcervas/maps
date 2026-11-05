@@ -1,0 +1,39 @@
+---
+layout: default
+title: Mid-Decade Congressional Redistricting
+description: "Interactive map of mid-decade congressional redistricting: which states have redrawn their maps, which are blocked or proposed, and the expected partisan seat shifts."
+---
+
+<link rel="stylesheet" href="{{ '/mid-decade-redistricting/map.css' | relative_url }}">
+
+<div class="map-wrap">
+  <header class="map-header">
+    <h1 class="page-title">Mid-Decade Congressional Redistricting</h1>
+    <p class="subtitle">Expected partisan seat shifts from newly enacted congressional maps</p>
+    <p class="updated" id="updated" hidden>Updated <span id="updated-date"></span></p>
+  </header>
+
+  <figure class="map-figure">
+    <div id="map" role="group" aria-label="Map of the United States showing states that have redrawn, proposed, or been blocked from redrawing congressional districts mid-decade, with expected partisan seat gains. Select a shaded state for its election-by-election detail."></div>
+    <div id="tooltip" class="tooltip" hidden></div>
+    <figcaption class="map-note">
+      <strong>Note:</strong> Utah redrawn after court order. Ohio redrawn as required by statute.
+      Louisiana map struck down as a racial gerrymander (<i>LA v.&nbsp;Callais</i>).
+      Missouri&rsquo;s new map was blocked by the Missouri Supreme Court on September&nbsp;3,&nbsp;2026,
+      which ordered a referendum on it for the November ballot; the 2022 map governs the 2026 election.
+      Struck-through values indicate maps that were blocked and are not counted in the totals.
+      &ldquo;Backfires&nbsp;&lt;&rdquo; gives the drawing party&rsquo;s share of the two-party vote below which
+      its new map would win it fewer seats than the old one (a dummymander), on average across
+      statewide elections; select a state for the detail.
+      Data: Dave&rsquo;s Redistricting, VEST.
+    </figcaption>
+  </figure>
+
+  <section class="detail" id="detail" aria-live="polite">
+    <p class="detail-hint">Select a shaded state for its election-by-election detail.</p>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="{{ '/mid-decade-redistricting/map.js' | relative_url }}" defer></script>

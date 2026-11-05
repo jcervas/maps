@@ -1,0 +1,52 @@
+---
+layout: page
+title: Maps
+permalink: /
+description: "Interactive maps and cartograms by Jonathan Cervas: congressional redistricting, U.S. House apportionment, equal-area district cartograms, and the method behind them."
+---
+
+<p class="section-lead">
+  Interactive maps built for research and for teaching &mdash; congressional redistricting and
+  House apportionment, the equal-area cartograms that redraw every district at the same size,
+  and write-ups of how those cartograms are made.
+</p>
+
+{% comment %}
+  Sorted by the `order:` in _config.yml's defaults, the same contract the cases
+  and courses lists use. A page with no `order:` is left off — that is how the
+  cartogram-method sub-pages stay out of this list.
+
+  While these pages lived in jcervas.github.io this also filtered on
+  `m.url contains '/maps/'`, to pick the map pages out of the whole site. In
+  this repository /maps/ IS the site root, so every page url is of the form
+  /wv-election-map/ and that test would match nothing at all. `order:` alone
+  does the work now.
+{% endcomment %}
+{% assign maps = site.pages | where_exp: "m", "m.order" | sort: "order" %}
+
+{% comment %}
+  A map page with a `thumb:` gets it above the title, the same frame the case
+  cards use. Cards without one stay text-only, so the grid tops-aligns rather
+  than stretching a text card to match a taller neighbour.
+  A page with `draft: true` gets a "Draft" pill after its title.
+{% endcomment %}
+<div class="case-grid case-grid--maps">
+  {% for m in maps %}
+  <div class="case map-card{% if m.thumb %} has-thumb{% endif %}">
+    {% if m.thumb %}
+    <a href="{{ m.url | relative_url }}" class="case__img-link" tabindex="-1" aria-hidden="true">
+      <img src="{{ m.thumb | relative_url }}" alt="" loading="lazy" width="1000" height="636">
+    </a>
+    {% endif %}
+    <div class="case__body">
+      <h3><a href="{{ m.url | relative_url }}">{{ m.title }}</a>{% if m.draft %} <span class="draft-tag">Draft</span>{% endif %}</h3>
+      {% comment %}
+        `summary` is the card line, as on the case cards; `description` is the
+        page's meta description. A page with only the one key uses it for both.
+      {% endcomment %}
+      <p>{{ m.summary | default: m.description }}</p>
+      <a class="more-link" href="{{ m.url | relative_url }}">Open the map &rarr;</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>

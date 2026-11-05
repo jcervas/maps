@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "jekyll",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd ../.. && exec bundle exec jekyll serve --port 4000 --destination \"/private/tmp/claude-501/-Users-cervas-Library-CloudStorage-GoogleDrive-jcervas-andrew-cmu-edu-My-Drive-GitHub-jcervas-github-io-maps-zero-population-blocks/3d901037-40f4-41f9-8d16-3a361673b399/scratchpad/_site\""],
+      "port": 4000
+    }
+  ]
+}

@@ -1,0 +1,1131 @@
+---
+layout: null
+title: West Virginia Senate Atlas
+description: "West Virginia's 17 State Senate districts with district and precinct results for 36 elections, 2008 to 2024, swing between elections, and statistics for each district."
+summary: "Every West Virginia State Senate district, with district and precinct results from 2008 to 2024, swing maps, and the old 2012–2020 lines for comparison."
+permalink: /wv-election-map/
+order: 2
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="West Virginia's 17 State Senate districts with district and precinct results for 36 elections, 2008 to 2024, swing between elections, and statistics for each district.">
+<style>:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); } body { margin: 0; } [hidden] { display: none !important; }</style>
+<title>West Virginia Senate Atlas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Spline+Sans+Mono:wght@400;500&display=swap">
+<style>
+.backlink { font-size: 11.5px; color: var(--muted); text-decoration: none; letter-spacing: .02em; }
+.backlink:hover { color: var(--accent); text-decoration: underline; }
+
+/* Layout: full-screen atlas. Top bar for the election and view; statewide summary on the left,
+   the map in the middle, district detail on the right. Stacks to one column on narrow screens. */
+:root {
+  --bg: #eef0ec;
+  --panel: #fafbf8;
+  --ink: #1b2220;
+  --muted: #5d6762;
+  --faint: #8b948f;
+  --line: #d6dbd4;
+  --land: #e2e5df;
+  --nodata: #c9cec7;
+  --accent: #9c7414;          /* old gold */
+  --accent-soft: #f1e5c4;
+  --pD: #2a52a3; --pR: #b52a2a; --pL: #8a6d2f; --pM: #2f7d4f; --pC: #6c4f93; --pI: #5f6b66; --pO: #7c8580;
+  --tip-bg: #ffffff;
+  --hR0: #f6dcd6; --hR1: #dd7466; --hD0: #dfe7f7; --hD1: #6a8fd5;
+  --shadow: 0 10px 30px rgba(20, 30, 25, .14), 0 1px 3px rgba(20, 30, 25, .12);
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-data: "Spline Sans Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111614; --panel: #181e1b; --ink: #e5eae6; --muted: #9ca69f; --faint: #6f7a74; --line: #2b3430;
+    --land: #232a26; --nodata: #3a423e; --accent: #e3b450; --accent-soft: #3a3020;
+    --pD: #7f9ee0; --pR: #ee8b80; --pL: #c9a75e; --pM: #6fc290; --pC: #ad91d6; --pI: #a3ada8; --pO: #9aa39e;
+    --tip-bg: #1f2622; --shadow: 0 10px 30px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
+    --hR0: #3b2523; --hR1: #b0544a; --hD0: #222c40; --hD1: #5677bd;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111614; --panel: #181e1b; --ink: #e5eae6; --muted: #9ca69f; --faint: #6f7a74; --line: #2b3430;
+  --land: #232a26; --nodata: #3a423e; --accent: #e3b450; --accent-soft: #3a3020;
+  --pD: #7f9ee0; --pR: #ee8b80; --pL: #c9a75e; --pM: #6fc290; --pC: #ad91d6; --pI: #a3ada8; --pO: #9aa39e;
+  --tip-bg: #1f2622; --shadow: 0 10px 30px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .4);
+  --hR0: #3b2523; --hR1: #b0544a; --hD0: #222c40; --hD1: #5677bd;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 13px; line-height: 1.4; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--f-data); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+.app {
+  height: 100%; display: grid; grid-template-columns: 300px minmax(0, 1fr) 360px; grid-template-rows: auto minmax(0, 1fr);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 12px; column-gap: 12px;
+}
+
+/* ---------- top bar ---------- */
+.top { grid-column: 1 / -1; display: flex; align-items: center; gap: 20px; padding-block: 12px; flex-wrap: wrap; }
+.brand { display: flex; flex-direction: column; min-width: 0; margin-right: 6px; }
+.brand h1 { margin: 0; font-family: var(--f-display); font-stretch: 78%; font-weight: 800; font-size: 21px; letter-spacing: .01em; line-height: 1.05; text-wrap: balance; }
+.brand h1 span { color: var(--accent); }
+.brand small { color: var(--muted); font-size: 11.5px; letter-spacing: .02em; }
+.ctl { display: flex; flex-direction: column; gap: 4px; }
+.ctl > label, .lbl { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 2px; gap: 2px; flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: 550; font-size: 12.5px; white-space: nowrap; }
+.seg button:hover:not(:disabled) { background: var(--land); }
+.seg button[aria-pressed="true"], .seg button[aria-pressed="true"]:hover { background: var(--ink); color: var(--panel); }
+.seg button:disabled { color: var(--faint); cursor: not-allowed; }
+select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 28px 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
+.spacer { flex: 1; }
+
+/* ---------- panels ---------- */
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-height: 0; overflow: auto; }
+.panel-inner { padding: 16px; display: flex; flex-direction: column; gap: 18px; }
+.sec { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sec h2 { margin: 0; font-family: var(--f-display); font-stretch: 85%; font-size: 15px; font-weight: 750; text-wrap: balance; }
+.sec h3 { margin: 0; font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.hint { color: var(--muted); font-size: 12px; margin: 0; }
+.note { color: var(--faint); font-size: 11px; margin: 0; }
+
+/* candidate rows */
+.cands { display: flex; flex-direction: column; gap: 7px; }
+.cand { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; }
+.cand .who { display: flex; gap: 6px; align-items: baseline; min-width: 0; }
+.cand .who b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cand .who .win { color: var(--accent); font-size: 11px; }
+.cand .bar { grid-column: 1 / -1; height: 6px; background: var(--land); border-radius: 3px; overflow: hidden; }
+.cand .bar i { display: block; height: 100%; border-radius: 3px; }
+.chip { display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: .05em; padding: 1px 4px; border-radius: 3px; color: var(--panel); flex: none; }
+.c-D { background: var(--pD); } .c-R { background: var(--pR); } .c-L { background: var(--pL); } .c-M { background: var(--pM); }
+.c-C { background: var(--pC); } .c-I { background: var(--pI); } .c-O { background: var(--pO); }
+.f-D { color: var(--pD); } .f-R { color: var(--pR); }
+.totals { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+
+/* seats */
+.seats { display: grid; grid-template-columns: repeat(17, 1fr); gap: 3px; }
+.seats button { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 3px; cursor: pointer; padding: 0; font-size: 9px; font-weight: 700; color: #fff; }
+.seats button.on { outline: 2px solid var(--accent); outline-offset: 1px; }
+.seatline { font-size: 12.5px; }
+.seatline b { font-family: var(--f-display); font-stretch: 85%; font-size: 15px; }
+
+/* ranking chart */
+.rank svg { display: block; width: 100%; height: auto; overflow: visible; }
+.rank .row { cursor: pointer; }
+.rank .row:hover .rl, .rank .row.on .rl { font-weight: 700; fill: var(--accent); }
+.rank text { font-size: 11px; fill: var(--ink); }
+.rank .rv { font-family: var(--f-data); font-size: 10.5px; fill: var(--muted); }
+
+/* ---------- map ---------- */
+.mapwrap { position: relative; min-height: 0; border-radius: 10px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); }
+#map { width: 100%; height: 100%; display: block; touch-action: none; }
+#map path { vector-effect: non-scaling-stroke; }
+.livedot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--pR); margin-right: 6px; vertical-align: 1px; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+.ctable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ctable th { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); text-align: right; font-weight: 650; padding-bottom: 4px; }
+.ctable th:first-child, .ctable td:first-child { text-align: left; }
+.ctable td { text-align: right; padding: 3px 0; border-top: 1px solid var(--line); }
+.arrow { fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.arrow.halo { stroke: var(--panel); stroke-opacity: .85; }
+.arrow.D { stroke: var(--pD); } .arrow.R { stroke: var(--pR); }
+.legend .arrows { display: flex; gap: 16px; align-items: flex-end; font-size: 11px; color: var(--muted); }
+.legend .arrows svg { display: block; overflow: visible; }
+.dist-fill { stroke: none; cursor: pointer; transition: opacity .2s; }
+.prec { stroke: var(--panel); stroke-width: .35; stroke-opacity: .55; cursor: pointer; }
+.county { fill: none; stroke: var(--ink); stroke-opacity: .22; stroke-width: .7; stroke-dasharray: 2 2; pointer-events: none; }
+.dist-line { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-opacity: .8; pointer-events: none; }
+.precmode .dist-line { stroke-width: 2; stroke-opacity: .9; }
+.sel-line { fill: none; stroke: var(--accent); stroke-width: 3.5; pointer-events: none; }
+.hov-line { fill: none; stroke: var(--ink); stroke-width: 2.2; pointer-events: none; }
+.dlabel { font-family: var(--f-display); font-stretch: 80%; font-weight: 800; fill: var(--ink); paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+.mapbar { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; gap: 8px; align-items: flex-start; pointer-events: none; }
+.mapbar > * { pointer-events: auto; }
+.status { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; font-size: 12px; box-shadow: var(--shadow); max-width: 60%; }
+.status b { font-weight: 650; }
+.mapopts { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.linesctl .lbl { white-space: nowrap; }
+.linesctl { background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 5px 6px 5px 10px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 8px; }
+.linesctl .seg { border: 0; padding: 0; background: transparent; }
+.linesctl .seg button { padding: 4px 8px; font-size: 12px; }
+.zoom { margin-left: auto; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; box-shadow: var(--shadow); }
+.zoom button { border: 0; background: transparent; width: 32px; height: 30px; cursor: pointer; font-size: 16px; font-weight: 600; }
+.zoom button + button { border-top: 1px solid var(--line); }
+.zoom button:hover { background: var(--land); }
+.legend { position: absolute; left: 12px; bottom: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px; }
+.legend .ramp { display: flex; }
+.legend .ramp i { width: 22px; height: 11px; display: block; }
+.legend .ticks { display: grid; grid-template-columns: 11px repeat(11, 22px) 11px; font-family: var(--f-data); font-size: 9.5px; color: var(--muted); }
+.legend .ticks span { text-align: center; white-space: nowrap; }
+.legend .extra { display: flex; gap: 12px; font-size: 11px; color: var(--muted); align-items: center; }
+.legend .sw { display: inline-block; width: 14px; height: 11px; vertical-align: -1px; margin-right: 4px; border-radius: 2px; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; pointer-events: none; }
+
+/* ---------- tooltip ---------- */
+.tip { position: fixed; z-index: 10; pointer-events: none; background: var(--tip-bg); border: 1px solid var(--line); border-radius: 9px; box-shadow: var(--shadow); padding: 11px 12px; width: 300px; font-size: 12px; display: flex; flex-direction: column; gap: 8px; }
+.tip h4 { margin: 0; font-family: var(--f-display); font-stretch: 85%; font-size: 15px; font-weight: 750; line-height: 1.15; }
+.tip .sub { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+.tip table { width: 100%; border-collapse: collapse; }
+.tip td { padding: 2px 0; vertical-align: baseline; }
+.tip td.n { text-align: right; font-family: var(--f-data); font-size: 11.5px; padding-left: 8px; white-space: nowrap; }
+.tip td.nm { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tip tr.lead td { font-weight: 650; }
+.tip .kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; color: var(--muted); }
+.tip .kv b { color: var(--ink); font-weight: 600; text-align: right; font-family: var(--f-data); font-size: 11.5px; }
+.tip .split { background: var(--accent-soft); border-radius: 5px; padding: 5px 7px; font-size: 11.5px; }
+.mchip { font-family: var(--f-data); font-weight: 600; font-size: 11.5px; padding: 1px 6px; border-radius: 4px; color: #fff; white-space: nowrap; }
+
+/* ---------- right panel ---------- */
+.dtable { width: 100%; border-collapse: collapse; }
+.dtable th { text-align: right; font-size: 10px; font-weight: 650; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); padding: 0 0 6px; }
+.dtable th:first-child, .dtable td:first-child { text-align: left; }
+.dtable td { text-align: right; padding: 4px 0; border-top: 1px solid var(--line); }
+.dtable tr.r { cursor: pointer; }
+.dtable tr.r:hover td { background: var(--land); }
+.dtable td:first-child { font-weight: 700; padding-left: 4px; }
+.dhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.dhead h2 { font-size: 26px; font-stretch: 75%; font-weight: 800; line-height: 1; margin: 0; font-family: var(--f-display); }
+.dhead .counties { color: var(--muted); margin-top: 4px; font-size: 12px; }
+.xbtn { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+.xbtn:hover { background: var(--land); }
+.seatlist { display: flex; flex-direction: column; gap: 6px; }
+.seat { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.seat:hover { background: var(--land); }
+.seat .who { display: flex; flex-direction: column; min-width: 0; }
+.seat .who b { font-weight: 650; font-size: 13.5px; }
+.seat .who small { color: var(--muted); font-size: 11px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.stats div { background: var(--panel); padding: 8px 10px; display: flex; flex-direction: column; gap: 1px; }
+.stats span { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+.stats b { font-family: var(--f-display); font-stretch: 85%; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stats small { color: var(--muted); font-size: 11px; }
+.hbars { display: flex; flex-direction: column; gap: 5px; }
+.hb { display: grid; grid-template-columns: 74px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: 12px; }
+.hb .t { height: 7px; background: var(--land); border-radius: 4px; overflow: hidden; }
+.hb .t i { display: block; height: 100%; background: var(--muted); border-radius: 4px; }
+.hb .v { text-align: right; font-family: var(--f-data); font-size: 11.5px; }
+.hist { display: flex; flex-direction: column; }
+.hrow { display: grid; grid-template-columns: 128px minmax(0, 1fr) 52px; gap: 8px; align-items: center; padding: 3px 4px; border-radius: 5px; cursor: pointer; border: 0; background: transparent; text-align: left; }
+.hrow:hover { background: var(--land); }
+.hrow.on { background: var(--accent-soft); }
+.hrow .l { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hrow .l em { font-style: normal; color: var(--muted); }
+.hrow svg { display: block; width: 100%; height: 14px; overflow: visible; }
+.hrow .v { text-align: right; font-family: var(--f-data); font-size: 11px; }
+.yearhd { font-size: 10px; font-weight: 700; letter-spacing: .08em; color: var(--faint); padding: 6px 4px 2px; }
+.key { display: flex; gap: 12px; font-size: 11px; color: var(--muted); align-items: center; }
+.key svg { width: 18px; height: 10px; vertical-align: -1px; }
+
+@media (max-width: 1100px) { .app { grid-template-columns: 270px minmax(0, 1fr) 320px; } }
+@media (max-width: 900px) {
+  html, body { height: auto; }
+  .app { height: auto; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; row-gap: 12px; }
+  .mapwrap { height: 70vh; order: -1; grid-row: 2; }
+  .panel { overflow: visible; }
+  .legend .ticks { grid-template-columns: 8px repeat(11, 16.5px) 8px; font-size: 8.5px; } .legend .ramp i { width: 16.5px; }
+  .status { max-width: 75%; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+{% raw %}
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <h1>West Virginia <span>Senate</span> Atlas</h1>
+      <small>2022 plan · 17 two-member districts · <a class="backlink" href="/maps/">← Maps</a></small>
+    </div>
+    <div class="ctl"><label>Year</label><div class="seg" id="years" role="group" aria-label="Election year"></div></div>
+    <div class="ctl"><label>Office</label><div class="seg" id="offices" role="group" aria-label="Office"></div></div>
+    <div class="ctl"><label>Show results by</label>
+      <div class="seg" id="modes" role="group" aria-label="Map view">
+        <button data-mode="district" aria-pressed="true">Senate district</button>
+        <button data-mode="precinct" aria-pressed="false">Precinct</button>
+      </div>
+    </div>
+    <div class="ctl"><label for="cmppick">Swing since</label>
+      <select id="cmppick" class="pick"></select>
+    </div>
+    <div class="spacer"></div>
+    <div class="ctl"><label for="distpick">District</label>
+      <select id="distpick" class="pick"><option value="">All 17 districts</option></select>
+    </div>
+  </header>
+
+  <aside class="panel" id="left"><div class="panel-inner" id="leftInner"></div></aside>
+
+  <main class="mapwrap" id="mapwrap">
+    <svg id="map" role="img" aria-label="Map of West Virginia State Senate districts colored by election margin"></svg>
+    <div class="mapbar">
+      <div class="status" id="status">Loading map…</div>
+      <div class="zoom">
+        <button id="zin" aria-label="Zoom in">+</button>
+        <button id="zout" aria-label="Zoom out">−</button>
+        <button id="zreset" aria-label="Show the whole state" title="Show the whole state">⤢</button>
+      </div>
+    </div>
+    <div class="mapopts">
+        <div class="linesctl" id="swingctl" hidden>
+        <span class="lbl">Swing as</span>
+          <div class="seg" id="swingstyle" role="group" aria-label="How swing is drawn">
+          <button data-s="fill">Shading</button>
+          <button data-s="arrows">Arrows</button>
+          </div>
+        </div>
+        <div class="linesctl" id="linesctl" hidden>
+        <span class="lbl">District lines</span>
+          <div class="seg" id="lines" role="group" aria-label="District lines">
+          <button data-l="now" title="Senate districts used since 2022">Current</button>
+          <button data-l="old" title="Senate districts used 2012–2020">2012–2020</button>
+          <button data-l="off">Off</button>
+          </div>
+        </div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="loading" id="loading">Loading election data…</div>
+  </main>
+
+  <aside class="panel" id="right"><div class="panel-inner" id="rightInner"></div></aside>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script>
+(async function () {
+  // ---------- constants ----------
+  const PARTY = { D: 'Democratic', R: 'Republican', L: 'Libertarian', M: 'Mountain', C: 'Constitution', I: 'Independent', O: 'Other' };
+  const BINS = [-.6, -.45, -.3, -.2, -.1, 0, .1, .2, .3, .45, .6];   // WV margins run wide
+  const RAMP = ['#7d1717', '#a82626', '#c9443b', '#dd7466', '#eba292', '#f5cdc2',
+                '#c8d6f2', '#99b3e6', '#6a8fd5', '#4470c1', '#2a52a3', '#183674'];
+  const SOURCE = { p2016: 'VEST 2016 precincts', p2018: 'VEST 2018 precincts', p2020: 'VEST 2020 precincts', p2024: 'RDH 2024 precincts' };
+  const srcOf = e => e.src || SOURCE[e.layer];
+  const fmt = d3.format(',');
+  const pct = (v, d = 1) => v == null ? '—' : (v * 100).toFixed(d) + '%';
+  const marginLabel = m => m == null ? '—' : Math.abs(m) < 0.0005 ? 'Tie' : (m > 0 ? 'D+' : 'R+') + Math.abs(m * 100).toFixed(1);
+  const marginColor = m => RAMP[d3.bisectRight(BINS, m)];
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---------- data ----------
+  const [data, base] = await Promise.all([fetch('wv_data.json').then(r => r.json()), fetch('wv_base.json').then(r => r.json())]);
+  document.getElementById('loading').hidden = true;
+  const districtsFC = topojson.feature(base, base.objects.districts);
+  const countiesMesh = topojson.mesh(base, base.objects.counties, (a, b) => a !== b);
+  const distFeat = new Map(districtsFC.features.map(f => [f.properties.d, f]));
+  // The 2011 senate districts (2012–2020), for State Senate races held under them
+  const oldFC = topojson.feature(base, base.objects.old);
+  const oldFeat = new Map(oldFC.features.map(f => [f.properties.d, f]));
+  const isOld = e => e.plan === 'old';
+  const planFC = () => isOld(cur()) ? oldFC : districtsFC;
+  const featOf = (d, plan) => ((plan || linesPlan()) === 'old' ? oldFeat : distFeat).get(d);
+  const elecPlan = () => isOld(cur()) ? 'old' : 'now';
+  const OLDNOTE = 'Held under the 2011 senate districts (2012–2020)';
+  const E = data.elections, byId = new Map(E.map(e => [e.id, e]));
+  const isSU = e => e.office === 'State Senate';
+  const layerGeo = {}, layerLoading = {};
+  const DN = d3.range(1, 18);
+  const ideal = d3.sum(DN, d => data.districts[d].pop) / 17;
+
+  // ---------- live results: State Senate District 13, November 3, 2026 ----------
+  // The page reads the WV Secretary of State's election-night feed (Clarity ENR) straight
+  // from the browser; the feed allows that from any site. live.json names the statewide
+  // Clarity election; the county feeds for Monongalia and Marion come from its settings.
+  const LIVE = { district: 13, counties: ['Monongalia', 'Marion'], every: 60000,
+                 contest: /STATE SENATOR,\s*13th Senatorial District/i,
+                 base: 'https://results.enr.clarityelections.com/WV' };
+  const liveCfg = await fetch('live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const liveExtra = await fetch('wv_live.json').then(r => r.ok ? r.json() : null).catch(() => null);
+  const liveE = liveCfg && liveCfg.eid ? {
+    id: 'su26', year: 2026, office: 'State Senate', label: 'State Senate 2026 · District 13', layer: 'p2024',
+    multi: true, live: true, cands: [], prec: [], dist: Object.fromEntries(DN.map(d => [String(d), []])), state: [],
+    src: 'Unofficial results, WV Secretary of State (county clerks via Clarity ENR)',
+    feed: { eid: liveCfg.eid, label: liveCfg.label || '', test: !!liveCfg.test, at: null, err: null, reporting: null, counties: [], unplaced: [] }
+  } : null;
+  if (liveE) { E.unshift(liveE); byId.set(liveE.id, liveE); }
+  // Precincts on the 2026 ballot that the 2024 map lacks (Marion 32) join the 2024 layer
+  const p24 = data.precincts.p2024, extraStart = p24.length;
+  if (liveE && liveExtra) liveExtra.precincts.forEach(x => p24.push({ n: x.n, c: x.c, d: x.d, only26: true, geometry: x.geometry }));
+  const pkey = (county, name) => county.toUpperCase() + '|' + name.toUpperCase().replace(/^(VOTING\s+)?PRECINCT\s*/, '').replace(/[\s-]/g, '');
+  const p24ix = new Map(p24.map((p, i) => [pkey(data.counties[p.c] || '', p.n), i]));
+  const placeLive = (county, name) => {
+    const k = pkey(county, name);
+    if (p24ix.has(k)) return p24ix.get(k);
+    return p24ix.get(k.replace(/(\d+)[A-Z]+$/, '$1'));     // 2A and 2B report separately; the map has 2
+  };
+  const titleName = s => s.toLowerCase().replace(/\b([a-z])/g, m => m.toUpperCase()).replace(/\bMc([a-z])/g, (m, c) => 'Mc' + c.toUpperCase()).replace(/\b(Ii|Iii|Iv)\b/g, m => m.toUpperCase());
+  const LPARTY = { REP: 'R', DEM: 'D', LBN: 'L', LIB: 'L', MTN: 'M', CST: 'C', IND: 'I', NPA: 'I' };
+  async function getJSON(u) { const r = await fetch(u, { cache: 'no-store' }); if (!r.ok) throw new Error(`${r.status} for ${u.replace(LIVE.base, 'ENR')}`); return r.json(); }
+  async function pollLive() {
+    if (!liveE || document.hidden) return;
+    const f = liveE.feed;
+    try {
+      const v = (await (await fetch(`${LIVE.base}/${f.eid}/current_ver.txt?t=${Date.now()}`, { cache: 'no-store' })).text()).trim();
+      if (!/^\d+$/.test(v)) throw new Error('the results feed is not up yet');
+      const es = await getJSON(`${LIVE.base}/${f.eid}/${v}/json/en/electionsettings.json`);
+      const rows = (es.settings.electiondetails.participatingcounties || []).map(x => x.split('|'));
+      const cands = [], ckey = new Map(), dist = [], prec = p24.map(() => null), counties = [], unplaced = [];
+      let tp = 0, pr = 0;
+      for (const cname of LIVE.counties) {
+        const row = rows.find(r => r[0] === cname);
+        if (!row) continue;
+        const cb = `${LIVE.base}/${cname}/${row[1]}/${row[2]}`;
+        const [sum, all] = await Promise.all([getJSON(`${cb}/json/en/summary.json`), getJSON(`${cb}/json/ALL.json`)]);
+        const cs = sum.filter(c => LIVE.contest.test(c.C));
+        const cnt = { name: cname, updated: row[3], votes: [], tp: 0, pr: 0 };
+        for (const c of cs) {
+          const idx = c.CH.map((nm, j) => {
+            const k = nm.toUpperCase().replace(/[^A-Z ]/g, '').trim();
+            if (!ckey.has(k)) { ckey.set(k, cands.length); cands.push({ f: k, name: titleName(nm), p: LPARTY[c.P[j]] || 'O', d: LIVE.district }); dist.push(0); }
+            return ckey.get(k);
+          });
+          c.V.forEach((x, j) => { dist[idx[j]] += x; cnt.votes[idx[j]] = (cnt.votes[idx[j]] || 0) + x; });
+          cnt.tp = Math.max(cnt.tp, c.TP); cnt.pr = Math.max(cnt.pr, c.PR);
+          for (const pc of all.Contests) {
+            const at = pc.C.indexOf(c.K);
+            if (at < 0 || pc.A === '-1') continue;      // '-1' holds votes not tied to a precinct
+            const i = placeLive(cname, pc.A);
+            if (i == null) { unplaced.push(`${cname} ${pc.A}`); continue; }
+            prec[i] = prec[i] || [];
+            pc.V[at].forEach((x, j) => { prec[i][idx[j]] = (prec[i][idx[j]] || 0) + x; });
+          }
+        }
+        tp += cnt.tp; pr += cnt.pr; counties.push(cnt);
+      }
+      const n = cands.length;
+      liveE.cands = cands;
+      liveE.prec = prec.map(x => x ? Array.from({ length: n }, (_, k) => x[k] || 0) : null);
+      liveE.dist = Object.fromEntries(DN.map(d => [String(d), d === LIVE.district ? dist.slice() : []]));
+      liveE.state = dist.slice();
+      counties.forEach(c => { c.votes = Array.from({ length: n }, (_, k) => c.votes[k] || 0); });
+      Object.assign(f, { at: new Date(), err: null, reporting: { pr, tp }, counties, unplaced: [...new Set(unplaced)], name: es.settings.electiondetails.internalname });
+    } catch (err) {
+      f.err = err.message; f.at = new Date();
+    }
+    for (const k of [...distCache.keys()]) if (k.startsWith('su26:')) distCache.delete(k);
+    if (cur() === liveE || S.cmp === 'su26') renderAll(); else renderControls();
+  }
+
+
+  // Tally of one result: rows sorted by votes, D/R totals, margin, two-party share
+  function tally(e, votes, d) {
+    let rows = e.cands.map((c, i) => ({ c, v: votes ? votes[i] || 0 : 0 }));
+    if (d && e.cands.length && e.cands[0].d) rows = rows.filter(r => r.c.d === d);       // one State Senate contest
+    else if (e.multi) rows = rows.filter(r => r.v > 0);                 // whichever contests appear here
+    rows.sort((a, b) => b.v - a.v);
+    const total = d3.sum(rows, r => r.v);
+    const D = d3.sum(rows, r => r.c.p === 'D' ? r.v : 0), R = d3.sum(rows, r => r.c.p === 'R' ? r.v : 0);
+    const contested = D > 0 && R > 0;
+    return { rows, total, D, R, contested, nomatch: !votes, winner: rows.length && total ? rows[0].c.p : null,
+             margin: total ? (D - R) / total : null, two: D + R ? D / (D + R) : null };
+  }
+  // Statewide: for State Senate and U.S. House, totals by party across the contests
+  function stateTally(e) {
+    if (!e.multi) return tally(e, e.state);
+    const by = d3.rollup(e.cands.map((c, i) => [c.p, e.state[i]]), v => d3.sum(v, x => x[1]), x => x[0]);
+    const pe = { cands: [...by.keys()].map(p => ({ name: PARTY[p] + ' candidates', p })), office: '' };
+    return tally(pe, [...by.values()]);
+  }
+  const distCache = new Map();
+  function distTally(e, d) {
+    const k = e.id + ':' + d;
+    if (!distCache.has(k)) distCache.set(k, tally(e, e.dist[d], d));
+    return distCache.get(k);
+  }
+  const fillFor = t => !t || !t.total ? css('--nodata') : !t.contested ? `url(#hatch-${t.winner === 'D' ? 'D' : 'R'})` : marginColor(t.margin);
+  const chipColor = t => !t || !t.total ? 'var(--nodata)' : !t.contested ? `var(--p${t.winner === 'D' ? 'D' : 'R'})` : marginColor(t.margin);
+
+  // ---------- state ----------
+  const S = { eid: 'pre24', mode: 'district', sel: null, lines: null, cmp: null, swingStyle: 'fill' };
+  const cur = () => byId.get(S.eid);
+  // Which district lines are drawn: the election's own map, unless the viewer picked
+  // other lines in precinct view (for example today's lines over 2020 precincts)
+  const precView = () => S.mode === 'precinct' && !!cur().layer;
+  const linesPlan = () => precView() && S.lines ? S.lines : (isOld(cur()) ? 'old' : 'now');
+  const linesFC = () => ({ now: districtsFC, old: oldFC, off: null })[linesPlan()];
+  const canSelect = () => !isOld(cur()) || linesPlan() !== 'old';
+
+  // ---------- swing ----------
+  // Change in the Democratic share of the two-party vote from an earlier statewide race.
+  // Precincts: the earlier race's block-level votes are re-added into this race's precincts
+  // (wv_x{layer}.json), so races from different years compare on the same precincts.
+  const SBINS = [-.2, -.15, -.1, -.05, -.02, 0, .02, .05, .1, .15, .2];
+  const swingColor = v => RAMP[d3.bisectRight(SBINS, v)];
+  const swingLabel = v => v == null ? '—' : Math.abs(v) < .0005 ? 'No change' : (v > 0 ? 'D+' : 'R+') + Math.abs(v * 100).toFixed(1);
+  const statewideRace = e => !e.multi && !isOld(e) && stateTally(e).two != null;
+  // Statewide races compare with each other; State Senate and U.S. House races compare with
+  // races for the same office on the same district map (two-party swing where both years
+  // had a Democrat and a Republican)
+  const comparable = (a, b) => a && b && a.id !== b.id &&
+    (statewideRace(a) ? statewideRace(b) : a.multi && b.multi && a.office === b.office && isOld(a) === isOld(b));
+  const swingOn = () => !!S.cmp && comparable(cur(), baseE());
+  const baseE = () => byId.get(S.cmp);
+  const xData = {}, xLoading = {};
+  function loadX(layer) {
+    if (!xLoading[layer]) xLoading[layer] = fetch(`wv_x${layer}.json`).then(r => r.json()).then(x => (xData[layer] = x));
+    return xLoading[layer];
+  }
+  function precTwo(e, layer, i) {
+    if (e.layer === layer && e.prec) { const t = tally(e, e.prec[i]); return (e.multi ? t.contested : t.D + t.R) ? { two: t.two } : null; }
+    const x = xData[layer] && xData[layer][e.id];
+    if (!x) return null;
+    const D = x[0][i], R = x[1][i];
+    return D + R >= 1 ? { two: D / (D + R), est: true } : null;
+  }
+  const twoOf = (e, d) => { const t = distTally(e, d); return e.multi && !t.contested ? null : t.two; };
+  const distSwing = d => { const a = twoOf(cur(), d), b = twoOf(baseE(), d); return a != null && b != null ? a - b : null; };
+  // Statewide swing; for district-by-district races, over the districts with a Democrat and a
+  // Republican on the ballot both times
+  function stateSwing() {
+    const e = cur(), b = baseE();
+    if (!e.multi) { const a = stateTally(e).two, c = stateTally(b).two; return { a, b: c, v: a - c, n: null }; }
+    let aD = 0, aR = 0, bD = 0, bR = 0, n = 0;
+    for (const d of DN) {
+      const x = distTally(e, d), y = distTally(b, d);
+      if (x.contested && y.contested) { n++; aD += x.D; aR += x.R; bD += y.D; bR += y.R; }
+    }
+    if (!n) return null;
+    const a = aD / (aD + aR), c = bD / (bD + bR);
+    return { a, b: c, v: a - c, n };
+  }
+  const precSwingPossible = () => { const e = cur(), b = baseE(); return !!e.layer && (b.layer === e.layer || statewideRace(b)); };
+  const precSwing = (layer, i) => { const a = precTwo(cur(), layer, i), b = precTwo(baseE(), layer, i); return a && b ? { v: a.two - b.two, a: a.two, b: b.two, est: b.est } : null; };
+  const arrowsOn = () => swingOn() && S.swingStyle === 'arrows';
+  const swingChip = v => v == null ? '—' : `<span class="mchip" style="background:${swingColor(v)};color:${Math.abs(v) < .05 ? '#1b2220' : '#fff'}">${swingLabel(v)}</span>`;
+
+  // ---------- controls ----------
+  const years = [...new Set(E.map(e => e.year))].sort((a, b) => b - a);
+  const yearsEl = d3.select('#years'), officesEl = d3.select('#offices');
+  function renderControls() {
+    const e = cur();
+    yearsEl.selectAll('button').data(years).join('button').text(y => y)
+      .attr('aria-pressed', y => y === e.year)
+      .on('click', (ev, y) => {
+        const same = E.find(x => x.year === y && x.office === cur().office);
+        setElection((same || E.find(x => x.year === y)).id);
+      });
+    officesEl.selectAll('button').data(E.filter(x => x.year === e.year), x => x.id).join('button')
+      .text(x => x.office).attr('aria-pressed', x => x.id === e.id)
+      .on('click', (ev, x) => setElection(x.id));
+    d3.selectAll('#modes button').attr('aria-pressed', function () { return this.dataset.mode === S.mode; })
+      .property('disabled', function () { return this.dataset.mode === 'precinct' && !e.layer; })
+      .attr('title', function () { return this.dataset.mode === 'precinct' && !e.layer ? 'No precinct results for this election; district totals come from DRA' : null; });
+    const dp = document.getElementById('distpick');
+    dp.value = S.sel || ''; dp.disabled = !canSelect();
+    dp.title = !canSelect() ? 'This race used the 2012–2020 districts. In precinct view, switch District lines to Current to pick one of today’s districts.' : '';
+    document.getElementById('linesctl').hidden = !precView();
+    document.getElementById('swingctl').hidden = !swingOn();
+    d3.selectAll('#swingstyle button').attr('aria-pressed', function () { return this.dataset.s === S.swingStyle; });
+    const cands = E.filter(x => comparable(e, x)), ok = cands.length > 0;
+    const cp = document.getElementById('cmppick');
+    const opts = [['', ok ? 'No comparison' : 'No comparable race']].concat(cands.map(x => [x.id, x.label]));
+    cp.innerHTML = opts.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+    cp.value = ok && comparable(e, byId.get(S.cmp)) ? S.cmp : ''; cp.disabled = !ok;
+    cp.title = ok ? 'Color the map by the change in the Democratic two-party share since another race' : 'No other race for this office on the same district map';
+    d3.selectAll('#lines button').attr('aria-pressed', function () { return this.dataset.l === linesPlan(); });
+  }
+  d3.selectAll('#modes button').on('click', function () { setMode(this.dataset.mode); });
+  d3.selectAll('#lines button').on('click', function () { setLines(this.dataset.l); });
+  d3.selectAll('#swingstyle button').on('click', function () { S.swingStyle = this.dataset.s; renderAll(); });
+  document.getElementById('cmppick').addEventListener('change', ev => { S.cmp = ev.target.value || null; renderAll(); });
+  const pick = document.getElementById('distpick');
+  DN.forEach(d => pick.add(new Option('District ' + d, d)));
+  pick.addEventListener('change', () => select(pick.value ? +pick.value : null));
+
+  // ---------- map ----------
+  const svg = d3.select('#map');
+  const defs = svg.append('defs');
+  for (const p of ['D', 'R']) {
+    const pat = defs.append('pattern').attr('id', 'hatch-' + p).attr('patternUnits', 'userSpaceOnUse')
+      .attr('width', 7).attr('height', 7).attr('patternTransform', 'rotate(45)');
+    pat.append('rect').attr('width', 7).attr('height', 7).style('fill', `var(--h${p}0)`);
+    pat.append('rect').attr('width', 3).attr('height', 7).style('fill', `var(--h${p}1)`);
+  }
+  const clip = defs.append('clipPath').attr('id', 'clipSel').append('path');
+  const g = svg.append('g');
+  const gDist = g.append('g'), gPrec = g.append('g').attr('clip-path', null), gCounty = g.append('g'),
+        gLine = g.append('g'), gArr = g.append('g'), gHov = g.append('g'), gSel = g.append('g'), gLab = g.append('g');
+  const projection = d3.geoConicConformal().parallels([37.5, 40]).rotate([80.5, 0]);
+  const path = d3.geoPath(projection);
+  let W = 0, H = 0, K = 1;
+
+  function size() {
+    const r = document.getElementById('mapwrap').getBoundingClientRect();
+    W = r.width; H = r.height;
+    svg.attr('viewBox', [0, 0, W, H]);
+    projection.fitExtent([[24, 60], [W - 24, H - 70]], districtsFC);
+    drawDistricts();
+    gDist.selectAll('path').attr('d', path);
+    gCounty.selectAll('path').attr('d', path);
+    gLine.selectAll('path').attr('d', path);
+    gPrec.selectAll('path').attr('d', path);
+    drawSel(); drawLabels(); centroids.clear(); drawArrows();
+  }
+
+  let drawnFill = null, drawnLines;
+  function drawDistricts() {
+    const fc = planFC();
+    if (drawnFill !== fc) {
+      drawnFill = fc;
+      gDist.selectAll('path').data(fc.features, f => f.properties.d).join('path').attr('class', 'dist-fill').attr('d', path)
+        .on('pointermove', (ev, f) => { if (!precView()) { showTip(ev, distTip(f.properties.d)); hover(f.properties.d, elecPlan()); } })
+        .on('pointerleave', () => { hideTip(); hover(null); })
+        .on('click', (ev, f) => { if (!isOld(cur())) select(S.sel === f.properties.d ? null : f.properties.d); });
+    }
+    const lc = linesFC();
+    if (drawnLines !== lc) {
+      drawnLines = lc;
+      gLine.selectAll('path').data(lc ? lc.features : [], f => f.properties.d).join('path').attr('class', 'dist-line').attr('d', path);
+    }
+  }
+  gCounty.append('path').datum(countiesMesh).attr('class', 'county');
+
+  const zoom = d3.zoom().scaleExtent([1, 40]).on('zoom', ev => { g.attr('transform', ev.transform); K = ev.transform.k; drawLabels(); });
+  svg.call(zoom).on('dblclick.zoom', null);
+  svg.on('click', ev => { if (ev.target === svg.node()) select(null); });
+  document.getElementById('zin').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1.6);
+  document.getElementById('zout').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 1 / 1.6);
+  document.getElementById('zreset').onclick = () => { select(null); };
+
+  function zoomTo(d) {
+    if (!d) return svg.transition().duration(600).call(zoom.transform, d3.zoomIdentity);
+    const [[x0, y0], [x1, y1]] = path.bounds(distFeat.get(d));
+    const k = Math.min(40, 0.82 / Math.max((x1 - x0) / W, (y1 - y0) / (H - 90)));
+    const t = d3.zoomIdentity.translate(W / 2, H / 2 + 10).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+    svg.transition().duration(700).call(zoom.transform, t);
+  }
+
+  function drawLabels() {
+    const lc = linesFC(), selOn = linesPlan() === 'now';
+    gLab.selectAll('text').data(lc ? lc.features : [], f => f.properties.d).join('text').attr('class', 'dlabel')
+      .attr('x', f => projection([f.properties.lx, f.properties.ly])[0])
+      .attr('y', f => projection([f.properties.lx, f.properties.ly])[1])
+      .style('font-size', f => (selOn && S.sel === f.properties.d ? 22 : 15) / K + 'px')
+      .style('stroke-width', 3 / K + 'px')
+      .attr('opacity', f => selOn && S.sel && S.sel !== f.properties.d ? .45 : 1)
+      .text(f => f.properties.d);
+  }
+  function drawSel() {
+    gSel.selectAll('path').data(S.sel ? [distFeat.get(S.sel)] : []).join('path').attr('class', 'sel-line').attr('d', path);
+    clip.attr('d', S.sel ? path(distFeat.get(S.sel)) : null);
+  }
+  function hover(d, plan) {
+    plan = plan || linesPlan();
+    const f = d && plan !== 'off' && !(plan === 'now' && d === S.sel) ? featOf(d, plan) : null;
+    gHov.selectAll('path').data(f ? [f] : []).join('path').attr('class', 'hov-line').attr('d', path);
+  }
+
+  async function loadLayer(layer) {
+    if (layerGeo[layer]) return layerGeo[layer];
+    if (!layerLoading[layer]) layerLoading[layer] = fetch(`wv_${layer}.json`).then(r => r.json()).then(t => {
+      const fc = topojson.feature(t, t.objects[Object.keys(t.objects)[0]]);
+      fc.features.forEach(f => { f.properties.meta = data.precincts[layer][f.properties.i]; });
+      if (layer === 'p2024') data.precincts.p2024.forEach((p, i) => { if (p.geometry) fc.features.push({ type: 'Feature', properties: { i, meta: p }, geometry: p.geometry }); });
+      layerGeo[layer] = fc; return fc;
+    });
+    return layerLoading[layer];
+  }
+
+  // The senate district a precinct votes in: from the race itself for old-map races
+  function precDist(e, f, plan) {
+    plan = plan || (isOld(e) ? 'old' : 'now');
+    if (plan === 'old') {
+      if (!isOld(e)) return null;       // no 2012–2020 assignment for other races' precincts
+      const v = e.prec[f.properties.i];
+      const k = v ? v.findIndex(x => x > 0) : -1;
+      return k >= 0 ? e.cands[k].d : null;
+    }
+    const ks = Object.keys(f.properties.meta.d);
+    return ks.length ? +ks[0] : null;
+  }
+  let drawnLayer = null;
+  async function renderMap() {
+    const e = cur();
+    drawDistricts();
+    const pm = S.mode === 'precinct' && e.layer;
+    d3.select('#mapwrap').classed('precmode', pm);
+    gDist.selectAll('path')
+      .attr('fill', f => pm || arrowsOn() ? css('--land') : swingOn() ? (v => v == null ? css('--nodata') : swingColor(v))(distSwing(f.properties.d)) : fillFor(distTally(e, f.properties.d)))
+      .style('opacity', f => !pm && S.sel && S.sel !== f.properties.d ? .3 : 1)
+      .style('pointer-events', pm ? 'none' : null);
+    gCounty.style('display', pm ? null : 'none');
+    drawSel(); drawLabels();
+    if (!pm) { gPrec.style('display', 'none'); drawArrows(); renderStatus(); return; }
+    gArr.selectAll('*').remove();
+    renderStatus(`Loading ${SOURCE[e.layer]}…`);
+    const fc = await loadLayer(e.layer);
+    if (swingOn() && baseE().layer !== e.layer && statewideRace(baseE())) await loadX(e.layer);
+    if (cur() !== e || S.mode !== 'precinct') return;
+    if (drawnLayer !== e.layer) {
+      gPrec.selectAll('path').remove();
+      gPrec.selectAll('path').data(fc.features).join('path').attr('class', 'prec').attr('d', path)
+        .on('pointermove', (ev, f) => { showTip(ev, precTip(f)); if (linesPlan() !== 'off') hover(precDist(cur(), f, linesPlan())); })
+        .on('pointerleave', () => { hideTip(); hover(null); })
+        .on('click', (ev, f) => { if (!canSelect()) return; const d = precDist(cur(), f, 'now'); if (d) select(S.sel === d ? null : d); });
+      drawnLayer = e.layer;
+    }
+    gPrec.style('display', null).attr('clip-path', S.sel ? 'url(#clipSel)' : null);
+    gPrec.selectAll('path')
+      .style('display', f => (f.properties.meta.only26 && !e.live) || (S.sel && !f.properties.meta.d[S.sel]) ? 'none' : null)
+      .attr('fill', f => {
+        if (!swingOn()) return fillFor(tally(e, e.prec[f.properties.i]));
+        if (arrowsOn()) return css('--land');
+        const sw = precSwing(e.layer, f.properties.i);
+        return sw ? swingColor(sw.v) : css('--nodata');
+      });
+    drawArrows();
+    renderStatus();
+  }
+
+  // Swing arrows, after the New York Times shift maps: up and to the left for a shift toward
+  // Democrats, up and to the right toward Republicans, length proportional to the shift.
+  // Precincts with fewer than 25 votes are skipped (their shifts are mostly noise).
+  const centroids = new Map();
+  const ANG = 35 * Math.PI / 180, CX = Math.cos(ANG), CY = Math.sin(ANG);
+  function drawArrows() {
+    gArr.selectAll('*').remove();
+    if (!arrowsOn()) return;
+    const e = cur(), pm = precView(), units = [];
+    if (pm) {
+      const fc = layerGeo[e.layer];
+      if (!fc) return;
+      for (const f of fc.features) {
+        const i = f.properties.i;
+        if (S.sel && !f.properties.meta.d[S.sel]) continue;
+        const t = tally(e, e.prec[i]);
+        if (t.total < 25) continue;
+        const sw = precSwing(e.layer, i);
+        if (!sw) continue;
+        const k = e.layer + i;
+        if (!centroids.has(k)) centroids.set(k, path.centroid(f));
+        units.push({ at: centroids.get(k), v: sw.v });
+      }
+    } else {
+      for (const f of planFC().features) {
+        const v = distSwing(f.properties.d);
+        if (v != null) { const [x, y] = projection([f.properties.lx, f.properties.ly]); units.push({ at: [x, y + 22], v, d: f.properties.d }); }   // just below the label
+      }
+    }
+    const scale = W * (pm ? .22 : .75), width = pm ? 1.4 : 3;
+    const dpath = u => {
+      const L = Math.min(.3, Math.abs(u.v)) * scale, sx = u.v >= 0 ? -1 : 1;
+      const dx = sx * CX * L, dy = -CY * L;
+      const x0 = u.at[0] - dx / 2, y0 = u.at[1] - dy / 2, x1 = x0 + dx, y1 = y0 + dy;
+      const h = Math.max(L * .32, pm ? 1.6 : 4), a = Math.atan2(dy, dx), w = .45;
+      return `M${x0},${y0}L${x1},${y1}M${x1 - h * Math.cos(a - w)},${y1 - h * Math.sin(a - w)}L${x1},${y1}L${x1 - h * Math.cos(a + w)},${y1 - h * Math.sin(a + w)}`;
+    };
+    const live = units.filter(u => Math.abs(u.v) >= .001);
+    gArr.selectAll('path.halo').data(live).join('path').attr('class', 'arrow halo').attr('d', dpath).style('stroke-width', width + 2 + 'px');
+    gArr.selectAll('path.line').data(live).join('path').attr('class', u => `arrow line ${u.v >= 0 ? 'D' : 'R'}`).attr('d', dpath)
+      .style('stroke-width', width + 'px').style('opacity', u => !pm && S.sel && S.sel !== u.d ? .35 : 1);
+  }
+
+  function renderStatus(msg) {
+    const e = cur(), el = document.getElementById('status');
+    if (msg) { el.innerHTML = msg; return; }
+    const pm = S.mode === 'precinct' && e.layer;
+    let s = `<b>${esc(e.label)}</b> · `;
+    if (e.live && !swingOn()) {
+      const f = e.feed, t = f.at ? f.at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+      s = `<span class="livedot"></span><b>${f.test ? 'Test feed' : 'Live'} · unofficial</b> · ${esc(e.label)}`;
+      if (f.err) s += `<br><span style="color:var(--muted)">Results could not load (${esc(f.err)}). Trying again every minute${location.hostname.endsWith('claude.ai') || location.protocol === 'blob:' ? '; live results load on jonathancervas.com, not in this preview' : ''}.</span>`;
+      else if (f.reporting) s += ` · ${f.reporting.pr} of ${f.reporting.tp} precincts reporting · checked ${t}${f.test ? `<br><span style="color:var(--muted)">Showing ${esc(f.label || f.name || 'a test feed')} until the November 3 feed is set.</span>` : ''}`;
+      else s += ' · loading…';
+      el.innerHTML = s; return;
+    }
+    if (swingOn()) {
+      const b = baseE();
+      s = `<b>Swing: ${esc(b.label)} → ${esc(e.label)}</b> · change in the Democratic share of the two-party vote`;
+      if (e.multi) s += `<br><span style="color:var(--muted)">Different candidates in each year; a swing is shown only where both races had a Democrat and a Republican.${isOld(e) ? ' ' + OLDNOTE + '.' : ''}</span>`;
+      if (pm && !precSwingPossible()) s += `<br><span style="color:var(--muted)">These two races are on different precinct maps and have no block-level results to line them up, so precinct swing is not available; switch to Senate district view.</span>`;
+      else if (pm && b.layer !== e.layer) s += `<br><span style="color:var(--muted)">${esc(b.label)} votes are re-added from census blocks into the ${e.layer.slice(1)} precincts.</span>`;
+      el.innerHTML = s; return;
+    }
+    if (isOld(e)) s += OLDNOTE + (pm ? ` · ${srcOf(e)}` : e.layer ? '' : ' · county-level results, no precinct map') + '. ';
+    if (isOld(e) && !pm) { el.innerHTML = s; return; }
+    if (isOld(e)) { el.innerHTML = s + (e.unplaced && e.unplaced.precincts ? `<br><span style="color:var(--muted)">${e.unplaced.precincts} precincts (${fmt(e.unplaced.votes)} votes) could not be placed on the map; they count in district totals.</span>` : ''); return; }
+    if (!pm) s += e.layer ? (e.src && e.src.startsWith('OpenElections') ? (e.year === 2022 ? 'District totals from the senate races and precincts' : 'Precinct votes allotted to districts by voting-age population') : 'District totals from block-level results') : 'District totals from DRA; no precinct results';
+    else {
+      const ps = data.precincts[e.layer];
+      if (S.sel) {
+        const inD = ps.filter(p => p.d[S.sel]); const split = inD.filter(p => Object.keys(p.d).length > 1).length;
+        s += `${fmt(inD.length)} ${e.year === 2022 ? '2024' : SOURCE[e.layer].split(' ')[0]} precincts in District ${S.sel}` + (split ? `, ${split} split with another district (clipped at the line)` : '');
+      } else s += `${fmt(ps.length)} ${srcOf(e)}`;
+      if (e.unplaced && e.year === 2022) s += `<br><span style="color:var(--muted)">2022 precincts are placed on the 2024 map by name. ${e.unplaced.precincts} of them (${fmt(e.unplaced.votes)} votes) have no match and appear only in district totals; ${e.unplaced.nomatch2024} 2024 precincts are gray.</span>`;
+      else if (e.unplaced && e.unplaced.precincts) s += `<br><span style="color:var(--muted)">${e.unplaced.precincts} precincts (${fmt(e.unplaced.votes)} votes) could not be placed on the map${e.office === 'U.S. House' ? ' and are left out of district totals' : ''}.</span>`;
+    }
+    el.innerHTML = s;
+  }
+
+  function renderLegend() {
+    const e = cur();
+    if (arrowsOn()) {
+      const arr = (dir, L) => { const dx = dir * CX * L, dy = -CY * L, x0 = dir > 0 ? 4 : 4 + CX * L, y0 = 4 + CY * L, x1 = x0 + dx, y1 = y0 + dy, a = Math.atan2(dy, dx), h = Math.max(L * .32, 4);
+        return `<svg width="${CX * L + 10}" height="${CY * L + 8}"><path class="arrow line ${dir < 0 ? 'D' : 'R'}" style="stroke-width:3px" d="M${x0},${y0}L${x1},${y1}M${x1 - h * Math.cos(a - .45)},${y1 - h * Math.sin(a - .45)}L${x1},${y1}L${x1 - h * Math.cos(a + .45)},${y1 - h * Math.sin(a + .45)}"/></svg>`; };
+      document.getElementById('legend').innerHTML =
+        `<div class="lbl">Swing in two-party Dem. share</div>
+         <div class="arrows"><span>${arr(-1, 26)}More Dem.</span><span>${arr(1, 26)}More Rep.</span></div>
+         <div class="extra"><span>Arrow length shows the size of the shift${precView() ? '; precincts under 25 votes are left out' : ''}.</span></div>`;
+      return;
+    }
+    if (swingOn()) {
+      const st = ['R+20', '15', '10', '5', '2', '0', '2', '5', '10', '15', 'D+20'];
+      document.getElementById('legend').innerHTML =
+        `<div class="lbl">Swing in two-party Dem. share, points</div>
+         <div class="ramp">${RAMP.map(c => `<i style="background:${c}"></i>`).join('')}</div>
+         <div class="ticks"><span></span>${st.map((t, i) => `<span style="${i === 0 ? 'text-align:left;margin-left:-11px' : i === 10 ? 'text-align:right;margin-right:-11px' : ''}">${t}</span>`).join('')}<span></span></div>
+         <div class="extra"><span>Toward Republicans ← → toward Democrats</span><span><i class="sw" style="background:var(--nodata)"></i>${e.multi ? 'No D-vs-R race in one year' : 'No data'}</span></div>`;
+      return;
+    }
+    const ticks = ['R+60', '45', '30', '20', '10', '0', '10', '20', '30', '45', 'D+60'];
+    document.getElementById('legend').innerHTML =
+      `<div class="lbl">Margin, points</div>
+       <div class="ramp">${RAMP.map(c => `<i style="background:${c}"></i>`).join('')}</div>
+       <div class="ticks"><span></span>${ticks.map((t, i) => `<span style="${i === 0 ? 'text-align:left;margin-left:-11px' : i === 10 ? 'text-align:right;margin-right:-11px' : ''}">${t}</span>`).join('')}<span></span></div>
+       <div class="extra">
+         <span><svg class="sw" viewBox="0 0 14 11"><rect width="14" height="11" fill="url(#hatch-R)"/></svg>No Democrat on the ballot</span>
+         <span><i class="sw" style="background:var(--nodata)"></i>${cur().year === 2022 ? 'No 2022 match' : cur().unplaced ? 'No votes or no match' : 'No votes'}</span>
+       </div>`;
+  }
+
+  // ---------- tooltip ----------
+  const tip = document.getElementById('tip');
+  function showTip(ev, html) {
+    tip.innerHTML = html; tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight, pad = 14;
+    let x = ev.clientX + pad, y = ev.clientY + pad;
+    if (x + w > innerWidth - 8) x = ev.clientX - w - pad;
+    if (y + h > innerHeight - 8) y = Math.max(8, innerHeight - h - 8);
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function hideTip() { tip.hidden = true; }
+
+  function resultRows(t, max = 6) {
+    const rows = t.rows.slice(0, max);
+    return `<table>${rows.map((r, i) => `<tr class="${i === 0 && t.total ? 'lead' : ''}">
+      <td class="nm"><span class="chip c-${r.c.p in PARTY ? r.c.p : 'O'}">${r.c.p}</span> ${esc(r.c.name)}</td>
+      <td class="n">${fmt(Math.round(r.v))}</td><td class="n">${t.total ? pct(r.v / t.total) : '—'}</td></tr>`).join('')}
+      ${t.rows.length > max ? `<tr><td class="nm" style="color:var(--muted)">${t.rows.length - max} more</td><td></td><td></td></tr>` : ''}</table>`;
+  }
+  const mchip = t => t && t.total ? (t.contested
+      ? `<span class="mchip" style="background:${chipColor(t)};color:${Math.abs(t.margin) < .2 ? '#1b2220' : '#fff'}">${marginLabel(t.margin)}</span>`
+      : `<span class="mchip" style="background:${chipColor(t)}">${t.rows.length === 1 ? 'Unopposed' : 'No ' + (t.winner === 'D' ? 'Republican' : 'Democrat')}</span>`) : '';
+
+  function distTip(d) {
+    const e = cur(), t = distTally(e, d), st = stateTally(e), info = isOld(e) ? null : data.districts[d];
+    const ranked = DN.filter(x => distTally(e, x).two != null).sort((a, b) => distTally(e, b).two - distTally(e, a).two);
+    const rank = ranked.indexOf(d) + 1;
+    const diff = t.contested && st.margin != null && !isSU(e) ? (t.margin - st.margin) : null;
+    return `<div><h4>District ${d}${info ? '' : ' (2011 map)'} ${mchip(t)}</h4><div class="sub">${esc(e.label)} · ${info ? info.counties.map(c => esc(c.n)).join(', ') : OLDNOTE}</div></div>
+      ${resultRows(t)}
+      <div class="kv">
+        <span>Total votes</span><b>${fmt(Math.round(t.total))}</b>
+        <span>Two-party Dem.</span><b>${pct(t.two)}</b>
+        ${rank ? `<span>Rank (most Dem.)</span><b>${rank} of ${ranked.length}</b>` : ''}
+        ${diff != null ? `<span>vs. statewide</span><b>${Math.abs(diff) < .0005 ? 'Same' : (Math.abs(diff * 100).toFixed(1) + ' pts more ' + (diff > 0 ? 'Dem.' : 'Rep.'))}</b>` : ''}
+        ${info ? `<span>Population</span><b>${fmt(info.pop)}</b>` : ''}
+        ${swingOn() ? `<span>${esc(baseE().label)}</span><b>${pct(twoOf(baseE(), d))}</b><span>Swing</span><b>${swingChip(distSwing(d))}</b>` : ''}
+      </div>`;
+  }
+
+  function precTip(f) {
+    const e = cur(), m = f.properties.meta, t = tally(e, e.prec[f.properties.i]);
+    const od = isOld(e) ? precDist(e, f) : null;
+    const ds = isOld(e) ? (od ? [[String(od), 1]] : []) : Object.entries(m.d);
+    if (!ds.length) return `<div><h4>${esc(m.n)}</h4><div class="sub">${esc(data.counties[m.c] || '')} County · ${esc(e.label)}</div></div><p class="hint">No results could be matched to this precinct.</p>`;
+    const dt = distTally(e, +ds[0][0]);
+    const dname = isOld(e) ? '2011 District' : 'District';
+    const share = isSU(e) ? null : (dt.total ? t.total / dt.total : null);
+    if (t.nomatch) return `<div><h4>${esc(m.n)}</h4><div class="sub">${esc(data.counties[m.c] || '')} County · District ${ds.map(x => x[0]).join(' / ')} · ${esc(e.label)}</div></div>
+      <p class="hint">${e.live ? 'No results reported for this precinct yet.' : e.year === 2022 ? 'No 2022 precinct with this name in the same senate district. Precincts were renamed or redrawn between 2022 and 2024; this area’s 2022 votes are still in the district totals.' : 'No precinct in the results file matched this one by name.'}</p>`;
+    return `<div><h4>${esc(m.n)} ${mchip(t)}</h4><div class="sub">${esc(data.counties[m.c] || '')} County · ${dname} ${ds.map(x => x[0]).join(' / ')} · ${esc(e.label)}</div></div>
+      ${ds.length > 1 ? `<div class="split">Split precinct: ${ds.map(([d, s]) => `${pct(s, 0)} in District ${d}`).join(', ')} (share of voting-age population). Votes shown are for the whole precinct.</div>` : ''}
+      ${t.total ? resultRows(t) : '<p class="hint">No votes reported in this precinct.</p>'}
+      <div class="kv">
+        <span>Total votes</span><b>${fmt(t.total)}</b>
+        <span>Two-party Dem.</span><b>${pct(t.two)}</b>
+        <span>${dname} ${ds[0][0]} result</span><b>${marginLabel(dt.contested ? dt.margin : null)}</b>
+        ${isOld(e) ? `<span>Today’s district</span><b>${Object.entries(m.d).map(([d, sh]) => Object.keys(m.d).length > 1 ? `${d} (${pct(sh, 0)})` : d).join(', ') || '—'}</b>` : ''}
+        ${share != null && ds.length === 1 ? `<span>Share of district vote</span><b>${pct(share, 2)}</b>` : ''}
+        ${swingOn() ? (sw => sw ? `<span>${esc(baseE().label)}${sw.est ? '*' : ''}</span><b>${pct(sw.b)}</b><span>Swing</span><b>${swingChip(sw.v)}</b>` : `<span>Swing</span><b>—</b>`)(precSwing(e.layer, f.properties.i)) : ''}
+      </div>
+      ${swingOn() && baseE().layer !== e.layer ? `<div class="note">* ${esc(baseE().label)} votes re-added from census blocks into this precinct.</div>` : ''}
+      <div class="note">${srcOf(e)}</div>`;
+  }
+
+  // ---------- left panel: statewide ----------
+  function candBlock(t, opts = {}) {
+    const max = opts.max || 8;
+    return `<div class="cands">${t.rows.slice(0, max).map((r, i) => `
+      <div class="cand">
+        <div class="who"><span class="chip c-${r.c.p in PARTY ? r.c.p : 'O'}">${r.c.p}</span><b title="${esc(r.c.name)}">${esc(r.c.name)}</b>${i === 0 && t.total ? '<span class="win">●</span>' : ''}</div>
+        <span class="num">${t.total ? pct(r.v / t.total) : '—'}</span>
+        <div class="bar"><i style="width:${t.total ? 100 * r.v / t.total : 0}%;background:var(--p${r.c.p in PARTY ? r.c.p : 'O'})"></i></div>
+      </div>`).join('')}</div>`;
+  }
+
+  function renderLeft() {
+    const e = cur(), st = e.live ? tally(e, e.state, LIVE.district) : stateTally(e);
+    const tallies = DN.map(d => ({ d, t: distTally(e, d) }));
+    const dWins = tallies.filter(x => x.t.winner === 'D').length, rWins = tallies.filter(x => x.t.winner === 'R').length;
+    const other = 17 - dWins - rWins;
+    const sorted = [...tallies].sort((a, b) => (b.t.two ?? (b.t.winner === 'D' ? 2 : -1)) - (a.t.two ?? (a.t.winner === 'D' ? 2 : -1)));
+    const unc = tallies.filter(x => x.t.total && !x.t.contested).length;
+
+    if (e.live) {
+      const f = e.feed, rp = f.reporting;
+      document.getElementById('leftInner').innerHTML = `<section class="sec">
+        <h3>${f.test ? 'Test feed · ' : ''}Unofficial results</h3>
+        <h2>${esc(e.label)}</h2>
+        ${st.total ? candBlock(st) : '<p class="hint">No votes reported yet. County clerks start posting results after polls close at 7:30 p.m.</p>'}
+        <div class="totals"><span>${fmt(Math.round(st.total))} votes</span><span>Margin <b class="num">${marginLabel(st.margin)}</b></span></div>
+        ${rp ? `<div class="cand"><div class="who"><b>Precincts reporting</b></div><span class="num">${rp.pr} of ${rp.tp}</span>
+          <div class="bar"><i style="width:${rp.tp ? 100 * rp.pr / rp.tp : 0}%;background:var(--accent)"></i></div></div>` : ''}
+      </section>
+      ${f.counties.length ? `<section class="sec"><h3>By county</h3>
+        <table class="ctable"><thead><tr><th>County</th>${st.rows.map(r => `<th>${esc(r.c.name.split(' ').slice(-1)[0])}</th>`).join('')}<th>Reporting</th></tr></thead><tbody>
+        ${f.counties.map(c => { const tot = d3.sum(c.votes); return `<tr><td>${esc(c.name)}</td>${st.rows.map(r => { const k = e.cands.indexOf(r.c); return `<td class="num">${fmt(c.votes[k] || 0)}${tot ? ` <span style="color:var(--muted)">${pct((c.votes[k] || 0) / tot, 0)}</span>` : ''}</td>`; }).join('')}<td class="num">${c.pr}/${c.tp}</td></tr>`; }).join('')}
+        </tbody></table></section>` : ''}
+      <section class="sec"><h3>Earlier District 13 races</h3>
+        ${['su24', 'su22'].map(id => { const x = byId.get(id), t = distTally(x, LIVE.district); return `<div class="totals" style="border:0;padding:0"><span><a href="#" data-id="${id}" class="elink">${esc(x.label)}</a>: ${esc(t.rows[0].c.name)} ${pct(t.rows[0].v / t.total)}</span><span>${mchip(t)}</span></div>`; }).join('')}
+        <p class="note">Pick one of these in “Swing since” to map the change precinct by precinct.</p>
+      </section>
+      <section class="sec"><p class="note">Results are unofficial and come from the county clerks through the WV Secretary of State’s election-night site, checked every minute. Precincts: 2024 map (RDH); Marion precinct 32 from the WV GIS Technical Center, since the 2024 map folds it into precinct 31. Votes not tied to a precinct (absentee and early votes in some counties) count in the totals but not on the map.${f.unplaced.length ? ` Not on the map: ${esc(f.unplaced.join(', '))}.` : ''}</p></section>`;
+      d3.selectAll('#leftInner .elink').on('click', function (ev) { ev.preventDefault(); S.cmp = this.dataset.id; renderAll(); });
+      return;
+    }
+    let html = `<section class="sec">
+        <h3>${isSU(e) ? `Statewide, all ${new Set(e.cands.map(c => c.d)).size} contests` : e.multi ? `Statewide, all ${new Set(e.cands.map(c => c.cd)).size} districts` : 'Statewide result'}</h3>
+        <h2>${esc(e.label)}</h2>
+        ${candBlock(st)}
+        <div class="totals"><span>${fmt(Math.round(st.total))} votes</span><span>Margin <b class="num">${marginLabel(st.margin)}</b></span></div>
+        ${isOld(e) ? `<p class="note">${OLDNOTE}. Districts below are the old ones, numbered 1–17 like today’s but with different lines.</p>` : !e.layer ? '<p class="note">From DRA’s block-level data; precinct results are not available for this election.</p>' : ''}
+      </section>
+      <section class="sec">
+        <h3>${isOld(e) ? '2011 districts carried' : 'Senate districts carried'}</h3>
+        <div class="seatline"><b class="f-D">${dWins}</b> Democratic · <b class="f-R">${rWins}</b> Republican${other ? ` · <b>${other}</b> other` : ''}
+          ${st.two != null ? `<span style="color:var(--muted)"> with ${pct(st.two)} of the two-party vote</span>` : ''}</div>
+        <div class="seats">${sorted.map(x => `<button data-d="${x.d}" class="${S.sel === x.d ? 'on' : ''}" style="background:${chipColor(x.t)}" title="District ${x.d}: ${marginLabel(x.t.contested ? x.t.margin : null)}">${x.d}</button>`).join('')}</div>
+        ${unc ? `<p class="note">${unc} ${unc === 1 ? 'district had' : 'districts had'} no contest between a Democrat and a Republican.</p>` : ''}
+      </section>
+      ${swingOn() ? (() => { const b = baseE(), ss = stateSwing(); return `<section class="sec">
+        <h3>Swing since ${esc(b.label)}</h3>
+        <div class="seatline">${ss ? `${ss.n == null ? 'Statewide' : `In the ${ss.n} ${isOld(e) ? 'old ' : ''}${ss.n === 1 ? 'district' : 'districts'} with a Democrat and a Republican both times,`} two-party Dem.: ${pct(ss.b)} → ${pct(ss.a)} ${swingChip(ss.v)}` : 'No district had a Democrat and a Republican on the ballot both times.'}</div>
+        <div id="swingChart" class="rank"></div>
+        <p class="note">Districts sorted by swing; bars run from the center toward the party that gained.</p>
+      </section>`; })() : ''}
+      <section class="sec rank">
+        <h3>Districts ranked by Democratic share</h3>
+        <div id="rankChart"></div>
+        <div class="key"><span><svg viewBox="0 0 18 10"><line x1="9" x2="9" y1="0" y2="10" stroke="var(--accent)" stroke-width="2"/></svg>Statewide ${st.two != null ? pct(st.two) : ''}</span><span><svg viewBox="0 0 18 10"><line x1="9" x2="9" y1="0" y2="10" stroke="var(--ink)" stroke-dasharray="2 2"/></svg>50%</span></div>
+      </section>
+      <section class="sec">
+        <p class="note">Map: DRA official plan “WV 2022 State Senate”. Precinct results: VEST (2016–2020) and Redistricting Data Hub (2024), from the WV Secretary of State; OpenElections for 2022, U.S. House 2018–2020 and State Senate 2014–2020 (the older senate races on DRA’s 2011 district map). U.S. House 2018–2020 votes are allotted to senate districts by each precinct’s voting-age population. District totals add up block-level results, so split precincts are divided the way DRA divides them. President 2008 and 2012: DRA. Demographics: 2020 Census via DRA.</p>
+      </section>`;
+    document.getElementById('leftInner').innerHTML = html;
+    d3.selectAll('#leftInner .seats button').on('click', function () { const d = +this.dataset.d; if (!isOld(cur())) select(S.sel === d ? null : d); })
+      .on('mouseenter', function () { hover(+this.dataset.d, elecPlan()); }).on('mouseleave', () => hover(null));
+    drawRank(sorted, st);
+    if (swingOn()) drawSwing();
+  }
+
+  function drawSwing() {
+    const el = document.getElementById('swingChart');
+    const rows = DN.map(d => ({ d, v: distSwing(d) })).filter(r => r.v != null).sort((a, b) => b.v - a.v);
+    const w = el.clientWidth || 260, rowH = 17, lw = 26, rw = 52;
+    const m = Math.max(.02, d3.max(rows, r => Math.abs(r.v)));
+    const x = d3.scaleLinear([-m, m], [lw, w - rw]);
+    const s = d3.select(el).append('svg').attr('viewBox', [0, 0, w, rowH * rows.length + 4]);
+    const g = s.selectAll('g').data(rows).join('g').attr('class', r => 'row' + (S.sel === r.d ? ' on' : ''))
+      .attr('transform', (r, i) => `translate(0,${2 + i * rowH})`)
+      .on('click', (ev, r) => { if (!isOld(cur())) select(S.sel === r.d ? null : r.d); })
+      .on('mouseenter', (ev, r) => hover(r.d, elecPlan())).on('mouseleave', () => hover(null));
+    g.append('rect').attr('width', w).attr('height', rowH).attr('fill', 'transparent');
+    g.append('text').attr('class', 'rl').attr('x', lw - 6).attr('y', rowH / 2).attr('text-anchor', 'end').attr('dominant-baseline', 'central').text(r => r.d);
+    g.append('rect').attr('x', r => Math.min(x(0), x(r.v))).attr('y', 3).attr('height', rowH - 6).attr('rx', 2)
+      .attr('width', r => Math.abs(x(r.v) - x(0))).attr('fill', r => r.v >= 0 ? 'var(--pD)' : 'var(--pR)');
+    g.append('text').attr('class', 'rv').attr('x', w - rw + 6).attr('y', rowH / 2).attr('dominant-baseline', 'central').text(r => swingLabel(r.v));
+    s.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', rowH * rows.length + 4).attr('stroke', 'var(--ink)').attr('stroke-opacity', .6);
+  }
+
+  function drawRank(sorted, st) {
+    const el = document.getElementById('rankChart');
+    const w = el.clientWidth || 260, rowH = 17, top = 4, lw = 26, rw = 46;
+    const x = d3.scaleLinear([0, 1], [lw, w - rw]);
+    const s = d3.select(el).append('svg').attr('viewBox', [0, 0, w, top + rowH * 17 + 4]);
+    const rows = s.selectAll('g').data(sorted).join('g').attr('class', d => 'row' + (S.sel === d.d ? ' on' : ''))
+      .attr('transform', (d, i) => `translate(0,${top + i * rowH})`)
+      .on('click', (ev, d) => { if (!isOld(cur())) select(S.sel === d.d ? null : d.d); })
+      .on('mouseenter', (ev, d) => hover(d.d, elecPlan())).on('mouseleave', () => hover(null));
+    rows.append('rect').attr('x', 0).attr('width', w).attr('height', rowH).attr('fill', 'transparent');
+    rows.append('text').attr('class', 'rl').attr('x', lw - 6).attr('y', rowH / 2).attr('text-anchor', 'end').attr('dominant-baseline', 'central').text(d => d.d);
+    rows.each(function (d) {
+      const r = d3.select(this), t = d.t, y = 3, h = rowH - 6;
+      if (!t.total) return;
+      if (!t.contested) {
+        r.append('rect').attr('x', x(0)).attr('y', y).attr('width', x(1) - x(0)).attr('height', h).attr('fill', `url(#hatch-${t.winner === 'D' ? 'D' : 'R'})`).attr('rx', 2);
+      } else {
+        r.append('rect').attr('x', x(0)).attr('y', y).attr('width', x(t.two) - x(0)).attr('height', h).attr('fill', 'var(--pD)').attr('rx', 2);
+        r.append('rect').attr('x', x(t.two)).attr('y', y).attr('width', x(1) - x(t.two)).attr('height', h).attr('fill', 'var(--pR)').attr('opacity', .85).attr('rx', 2);
+      }
+      r.append('text').attr('class', 'rv').attr('x', w - rw + 6).attr('y', rowH / 2).attr('dominant-baseline', 'central')
+        .text(t.contested ? pct(t.two) : 'unc.');
+    });
+    s.append('line').attr('x1', x(.5)).attr('x2', x(.5)).attr('y1', 0).attr('y2', top + rowH * 17).attr('stroke', 'var(--ink)').attr('stroke-dasharray', '2 2').attr('stroke-opacity', .7);
+    if (st.two != null && !isSU(cur())) s.append('line').attr('x1', x(st.two)).attr('x2', x(st.two)).attr('y1', 0).attr('y2', top + rowH * 17).attr('stroke', 'var(--accent)').attr('stroke-width', 2);
+  }
+
+  // ---------- right panel: district table or district detail ----------
+  function renderRight() {
+    const e = cur(), el = document.getElementById('rightInner');
+    if (!S.sel) {
+      el.innerHTML = `<section class="sec"><h3>${esc(e.label)} by ${isOld(e) ? '2011 ' : ''}district</h3>
+        <p class="hint">${isOld(e) ? (e.layer ? 'This race used the 2012–2020 districts. To see its precincts inside one of today’s districts, switch to Precinct view, set District lines to Current, and click a district.' : 'This race used the 2012–2020 districts and has no precinct results, so it can’t be shown inside today’s districts.') : 'Click a district on the map, in a list, or pick one at the top to see its statistics.'}</p>
+        <table class="dtable"><thead><tr><th>Dist.</th><th>Dem.</th><th>Rep.</th><th>Votes</th><th>Margin</th>${swingOn() ? '<th>Swing</th>' : ''}</tr></thead><tbody>
+        ${DN.map(d => { const t = distTally(e, d); return `<tr class="r" data-d="${d}"><td>${d}</td>
+          <td class="num">${t.total ? pct(t.D / t.total) : '—'}</td><td class="num">${t.total ? pct(t.R / t.total) : '—'}</td>
+          <td class="num">${fmt(Math.round(t.total))}</td><td>${mchip(t)}</td>${swingOn() ? `<td>${swingChip(distSwing(d))}</td>` : ''}</tr>`; }).join('')}
+        </tbody></table></section>`;
+      d3.selectAll('#rightInner tr.r').on('click', function () { if (!isOld(cur())) select(+this.dataset.d); })
+        .on('mouseenter', function () { hover(+this.dataset.d, elecPlan()); }).on('mouseleave', () => hover(null));
+      return;
+    }
+    const d = S.sel, info = data.districts[d], t = isOld(e) ? null : distTally(e, d);
+    const layer = e.layer || 'p2024', ps = data.precincts[layer];
+    const inD = ps.filter(p => p.d[d]), split = inD.filter(p => Object.keys(p.d).length > 1).length;
+    const statewide = E.filter(x => !x.multi).map(x => distTally(x, d)).filter(x => x.contested);
+    const avgTwo = d3.mean(statewide, x => x.two), avgN = statewide.length;
+    const seats = ['su24', 'su22'].map(id => byId.get(id)).filter(Boolean).map(x => ({ e: x, t: distTally(x, d) }));
+    const dev = (info.pop - ideal) / ideal;
+    const demo = [['White', info.white], ['Black', info.black], ['Hispanic', info.hispanic], ['Asian', info.asian], ['Native', info.native]];
+    el.innerHTML = `
+      <div class="dhead"><div><h2>District ${d}</h2>
+        <div class="counties">${info.counties.map(c => esc(c.n) + (info.counties.length > 1 ? ` <span class="num">${pct(c.s, 0)}</span>` : '')).join(' · ')}</div></div>
+        <button class="xbtn" id="clearSel">All districts</button></div>
+      ${isOld(e) ? areaBlock(e, d) : `<section class="sec">
+        <h3>${esc(e.label)} in District ${d}</h3>
+        ${candBlock(t)}
+        <div class="totals"><span>${fmt(Math.round(t.total))} votes</span><span>${mchip(t)}</span></div>
+        ${swingOn() ? `<div class="totals" style="border:0;padding:0"><span>Swing since ${esc(baseE().label)} (${pct(twoOf(baseE(), d))} → ${pct(twoOf(e, d))})</span><span>${swingChip(distSwing(d))}</span></div>` : ''}
+      </section>`}
+      <section class="sec"><h3>Senators elected</h3>
+        <div class="seatlist">${seats.map(({ e: se, t: st2 }) => {
+          const w = st2.rows[0], ru = st2.rows[1];
+          return `<button class="seat" data-id="${se.id}">
+            <span class="chip c-${w.c.p in PARTY ? w.c.p : 'O'}">${w.c.p}</span>
+            <span class="who"><b>${esc(w.c.name)}</b><small>Elected ${se.year}, term ends ${se.year + 4} · ${st2.contested ? `${marginLabel(st2.margin)} over ${esc(ru.c.name)}` : ru ? `vs. ${esc(ru.c.name)} (${ru.c.p}), no Democrat` : 'unopposed'}</small></span>
+            <span class="num">${pct(w.v / st2.total)}</span></button>`; }).join('')}</div>
+        <p class="note">Each district elects two senators in staggered four-year terms. Shows who won the election, not later appointments.</p>
+      </section>
+      <section class="sec"><h3>District statistics</h3>
+        <div class="stats">
+          <div><span>Population 2020</span><b>${fmt(info.pop)}</b><small>${dev >= 0 ? '+' : ''}${(dev * 100).toFixed(2)}% from ideal ${fmt(Math.round(ideal))}</small></div>
+          <div><span>Voting-age pop.</span><b>${fmt(info.vap)}</b><small>${pct(info.vap / info.pop)} of residents</small></div>
+          <div><span>Area</span><b>${fmt(Math.round(info.sqmi))} sq mi</b><small>${fmt(Math.round(info.pop / info.sqmi))} people per sq mi</small></div>
+          <div><span>Precincts (${layer.slice(1)})</span><b>${fmt(inD.length)}</b><small>${split ? split + ' split with another district' : 'none split'}</small></div>
+          <div><span>Counties</span><b>${info.counties.length}</b><small>${info.counties.filter(c => c.s < 1).length && info.counties.length > 1 ? 'shares of voting-age pop.' : 'whole district in one county'}</small></div>
+          <div><span>Avg. two-party Dem.</span><b>${pct(avgTwo)}</b><small>${avgN} statewide races, 2008–2024</small></div>
+        </div>
+      </section>
+      <section class="sec"><h3>Voting-age population by race</h3>
+        <div class="hbars">${demo.map(([k, v]) => `<div class="hb"><span>${k}</span><div class="t"><i style="width:${v}%"></i></div><span class="v">${v.toFixed(1)}%</span></div>`).join('')}</div>
+        <p class="note">Hispanic of any race; the other groups are non-Hispanic, alone or in combination (DRA’s definitions).</p>
+      </section>
+      <section class="sec"><h3>Every election in District ${d}</h3>
+        <div class="key"><span><svg viewBox="0 0 18 10"><circle cx="9" cy="5" r="4" fill="var(--pD)"/></svg>District, two-party Dem.</span><span><svg viewBox="0 0 18 10"><line x1="9" x2="9" y1="0" y2="10" stroke="var(--accent)" stroke-width="2"/></svg>Statewide</span></div>
+        <div class="hist" id="hist"></div>
+        <p class="note">Click a row to map that election.</p>
+      </section>`;
+    document.getElementById('clearSel').onclick = () => select(null);
+    d3.selectAll('#rightInner .seat').on('click', function () { setElection(this.dataset.id); });
+    drawHistory(d);
+  }
+
+  // An old-map race inside one of today's districts: its precincts there, by old district
+  function areaBlock(e, d) {
+    const ps = data.precincts[e.layer], acc = e.cands.map(() => 0);
+    let n = 0;
+    ps.forEach((p, i) => { const sh = p.d[d], v = e.prec[i]; if (!sh || !v) return; n++; v.forEach((x, k) => { acc[k] += x * sh; }); });
+    const groups = d3.groups(e.cands.map((c, k) => ({ c, v: acc[k] })).filter(r => r.v >= .5), r => r.c.d)
+      .map(([od, rows]) => ({ od, t: tally({ cands: rows.map(r => r.c) }, rows.map(r => r.v)) }))
+      .sort((a, b) => b.t.total - a.t.total);
+    const all = d3.sum(groups, g => g.t.total);
+    return `<section class="sec">
+      <h3>${esc(e.label)} inside today’s District ${d}</h3>
+      <p class="hint">This race used the 2012–2020 districts. Today’s District ${d} takes in ${n} of its precincts, from ${groups.length} old ${groups.length === 1 ? 'district' : 'districts'}. Votes add up those precincts; split precincts count by their share of voting-age population.</p>
+      ${groups.map(g => `<div class="sec" style="gap:6px">
+        <div class="totals" style="border:0;padding:0"><b style="color:var(--ink)">2012–2020 District ${g.od}</b><span>${fmt(Math.round(g.t.total))} votes here (${pct(g.t.total / all, 0)})</span></div>
+        ${candBlock(g.t, { max: 3 })}
+        <div class="totals"><span>In this area</span><span>${mchip(g.t)}</span></div></div>`).join('')}
+    </section>`;
+  }
+
+  function drawHistory(d) {
+    const el = document.getElementById('hist');
+    let lastYear = null, html = '';
+    for (const e of E.filter(x => !isOld(x))) {
+      if (e.year !== lastYear) { html += `<div class="yearhd">${e.year}</div>`; lastYear = e.year; }
+      const t = distTally(e, d), st = stateTally(e);
+      html += `<button class="hrow${e.id === S.eid ? ' on' : ''}" data-id="${e.id}">
+        <span class="l">${esc(e.office)}</span>
+        <svg viewBox="0 0 100 14" preserveAspectRatio="none" data-two="${t.contested ? t.two : ''}" data-st="${isSU(e) ? '' : st.two ?? ''}" data-w="${t.winner || ''}"></svg>
+        <span class="v">${t.contested ? pct(t.two) : t.total ? 'unc.' : '—'}</span></button>`;
+    }
+    el.innerHTML = html;
+    d3.select(el).selectAll('svg').each(function () {
+      const s = d3.select(this), two = this.dataset.two, sv = this.dataset.st;
+      s.append('rect').attr('x', 0).attr('y', 6).attr('width', 100).attr('height', 2).attr('fill', 'var(--land)');
+      s.append('line').attr('x1', 50).attr('x2', 50).attr('y1', 2).attr('y2', 12).attr('stroke', 'var(--faint)').attr('stroke-dasharray', '1.5 1.5').attr('vector-effect', 'non-scaling-stroke');
+      if (sv !== '') s.append('line').attr('x1', +sv * 100).attr('x2', +sv * 100).attr('y1', 1).attr('y2', 13).attr('stroke', 'var(--accent)').attr('stroke-width', 2).attr('vector-effect', 'non-scaling-stroke');
+      if (two !== '') s.append('ellipse').attr('cx', +two * 100).attr('cy', 7).attr('rx', 2.6).attr('ry', 4.5).attr('fill', +two >= .5 ? 'var(--pD)' : 'var(--pR)').attr('stroke', 'var(--panel)').attr('stroke-width', 1).attr('vector-effect', 'non-scaling-stroke');
+      else if (this.dataset.w) s.append('rect').attr('x', 0).attr('y', 4).attr('width', 100).attr('height', 6).attr('fill', `url(#hatch-${this.dataset.w === 'D' ? 'D' : 'R'})`);
+    });
+    d3.select(el).selectAll('.hrow').on('click', function () { setElection(this.dataset.id); });
+  }
+
+  // ---------- actions ----------
+  function dropSelIfNeeded() { if (S.sel && !canSelect()) { S.sel = null; zoomTo(null); } }
+  function setElection(id) {
+    S.eid = id;
+    if (cur().live && S.eid !== S.prevLive) { S.mode = 'precinct'; S.sel = LIVE.district; zoomTo(LIVE.district); }
+    S.prevLive = cur().live ? S.eid : null;
+    if (!cur().layer && S.mode === 'precinct') S.mode = 'district';
+    dropSelIfNeeded();
+    renderAll();
+  }
+  function setMode(m) { S.mode = m; dropSelIfNeeded(); renderAll(); }
+  function setLines(l) { S.lines = l; dropSelIfNeeded(); renderAll(); }
+  function select(d) {
+    if (d && !canSelect()) return;   // a 2012–2020 race can be shown inside today's districts only in precinct view
+    S.sel = d || null; hideTip(); hover(null);
+    zoomTo(S.sel); renderAll();
+  }
+  function renderAll() {
+    renderControls(); renderLeft(); renderRight(); renderLegend(); renderMap();
+  }
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.sel) select(null); });
+  new ResizeObserver(() => { size(); renderLeft(); }).observe(document.getElementById('mapwrap'));
+  size();
+  if (liveE && liveCfg.default) setElection('su26'); else renderAll();
+  if (liveE) { pollLive(); setInterval(pollLive, LIVE.every); document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); }); }
+})().catch(err => {
+  document.getElementById('loading').hidden = false;
+  document.getElementById('loading').textContent = 'The map data could not load: ' + err.message + '. Reload the page to try again.';
+});
+</script>
+{% endraw %}
+</body>
+</html>

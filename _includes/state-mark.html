@@ -1,0 +1,12 @@
+{%- comment -%}
+  An inline state silhouette, sized to sit in a line of text.
+
+    {% include state-mark.html st="TX" %}
+
+  Shapes come from _data/state_shapes.yml, generated from daily-district's state
+  SVGs and simplified for this size -- see build_state_shapes.py. Decorative: the
+  sentence beside it always names the state, so it carries no meaning of its own
+  and is hidden from assistive technology.
+{%- endcomment -%}
+{%- assign shape = site.data.state_shapes[include.st] -%}
+{%- if shape -%}<svg class="state-mark" viewBox="{{ shape.viewBox }}" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet"><path d="{{ shape.d }}"/></svg>{%- endif -%}

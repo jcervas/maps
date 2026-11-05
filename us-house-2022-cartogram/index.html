@@ -1,0 +1,54 @@
+---
+layout: default
+title: U.S. House Election 2022 Cartogram
+description: "The 2022 U.S. House results on a cartogram that rescales each state to its seat count and splits it into equal-area districts, morphing to and from the geographic map. Built with mapshaper and base R."
+---
+
+<link rel="stylesheet" href="{{ '/us-house-2022-cartogram/cartogram.css' | relative_url }}?v=7263e8e0">
+
+<div class="cg" id="cg" data-src="{{ '/us-house-2022-cartogram/us-house-2022-cartogram.json' | relative_url }}?v=26d38bf3">
+  <div class="cg-head">
+    <h1>U.S. House Election 2022</h1>
+    <div class="cg-sub">
+      Equal-area district cartogram, 118th Congress &middot; after
+      <a href="https://observablehq.com/@karimdouieb/us-house-election-2022"
+         target="_blank" rel="noopener">Karim Douieb</a>.
+      Geometry built with mapshaper, analysis in base R.
+    </div>
+  </div>
+
+  <div class="cg-bar">
+    <button id="cg-toggle" type="button">Show cartogram</button>
+    <span class="cg-scrub">
+      <span>traditional</span>
+      <input id="cg-scrub" type="range" min="0" max="1" step="0.005" value="0"
+             aria-label="Morph progress">
+      <span>cartogram</span>
+    </span>
+    <label class="cg-chk"><input id="cg-nums" type="checkbox"> district no.</label>
+    <label class="cg-chk"><input id="cg-labels" type="checkbox" checked> state labels</label>
+    <button id="cg-reset" type="button" class="cg-ghost" hidden>Zoom out &#9099;</button>
+  </div>
+
+  <div class="cg-bar">
+    <div class="cg-legend" id="cg-legend"></div>
+    <span style="flex:1"></span>
+    <span class="cg-status" id="cg-status"></span>
+  </div>
+
+  <svg class="cg-map" id="cg-map" role="img" aria-label="U.S. House 2022 results,
+       morphing between a geographic map and an equal-area cartogram"></svg>
+
+  <div class="cg-foot">
+    Each state is rescaled so its <em>area</em> matches its <em>seat count</em>,
+    then subdivided into equal-area cells &mdash; one per district &mdash; so a
+    dense urban seat reads as loudly as an empty rural one. Drag the slider to
+    morph, click a state to zoom in, hover a district for the result.
+  </div>
+
+  <div class="cg-tip" id="cg-tip"></div>
+<p class="cg-updated" style="margin:18px 0 0;font-size:12.5px;opacity:.65">Updated <time datetime="2026-07-30T13:57:15-04:00">30 July 2026</time> · 2022 results from the New York Times, boundaries from Dave's Redistricting</p>
+</div>
+
+<script src="{{ '/us-house-2022-cartogram/vendor/flubber.min.js' | relative_url }}?v=5f04395e"></script>
+<script src="{{ '/us-house-2022-cartogram/cartogram.js' | relative_url }}?v=c63d9739" defer></script>

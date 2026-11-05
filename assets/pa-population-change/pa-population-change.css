@@ -1,0 +1,77 @@
+/* Pennsylvania population change page. All rules scoped under .pa-pop. */
+.pa-pop{
+  --bg:#f7f6f2; --panel:#ffffff; --fg:#1f2421; --muted:#5d645f; --rule:#d9dbd4;
+  --county-stroke:#ffffff; --state-stroke:#1f2421;
+  --loss3:#8c510a; --loss2:#d8a256; --loss1:#f1dcae;
+  --gain1:#c7e6df; --gain2:#5ab4a5; --gain3:#01665e;
+  --f-display:"Libre Franklin",system-ui,sans-serif;
+  --f-body:"Source Serif 4",Georgia,serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+html:not([data-theme="light"]) .pa-pop{
+  --bg:#141715; --panel:#1c201e; --fg:#e8eae6; --muted:#a2a9a4; --rule:#343a36;
+  --county-stroke:#141715; --state-stroke:#e8eae6;
+  --loss3:#b8752a; --loss2:#d8a256; --loss1:#efd9a8;
+  --gain1:#bfe2da; --gain2:#5ab4a5; --gain3:#1f8a7f; color-scheme:dark}
+}
+html[data-theme="dark"] .pa-pop{
+  --bg:#141715; --panel:#1c201e; --fg:#e8eae6; --muted:#a2a9a4; --rule:#343a36;
+  --county-stroke:#141715; --state-stroke:#e8eae6;
+  --loss3:#b8752a; --loss2:#d8a256; --loss1:#efd9a8;
+  --gain1:#bfe2da; --gain2:#5ab4a5; --gain3:#1f8a7f; color-scheme:dark}
+.pa-pop{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:17px;line-height:1.55}
+.pa-pop .wrap{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:40px 56px;display:flex;flex-direction:column;gap:28px}
+.pa-pop .eyebrow{font-family:var(--f-display);font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0}
+.pa-pop h1{font-family:var(--f-display);font-weight:800;font-size:clamp(28px,4.6vw,44px);line-height:1.08;letter-spacing:-.015em;margin:6px 0 0;text-wrap:balance}
+.pa-pop .lede{max-width:66ch;margin:12px 0 0;color:var(--fg)}
+.pa-pop .lede strong{font-weight:600}
+.pa-pop .k-loss{color:var(--loss3);font-weight:600}
+.pa-pop .k-gain{color:var(--gain3);font-weight:600}
+.pa-pop .stats{display:flex;flex-wrap:wrap;gap:12px 40px;font-family:var(--f-display)}
+.pa-pop .stat .n{font-size:34px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.pa-pop .stat .l{font-size:13px;color:var(--muted);margin-top:6px}
+.pa-pop .figure{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:12px;position:relative}
+.pa-pop .legend{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-family:var(--f-display);font-size:13px;color:var(--muted)}
+.pa-pop .legend .sw{display:inline-flex;align-items:center;gap:6px}
+.pa-pop .legend i{display:inline-block;width:18px;height:12px;border-radius:2px}
+.pa-pop #map{width:100%;height:auto;display:block}
+.pa-pop #map .county{stroke:var(--county-stroke);stroke-width:.8;cursor:pointer}
+.pa-pop #map .county:hover,.pa-pop #map .county.hi{stroke:var(--state-stroke);stroke-width:2}
+.pa-pop #map .outline{fill:none;stroke:var(--state-stroke);stroke-width:1.2}
+.pa-pop #map .lbl{font-family:var(--f-data);font-size:13px;font-weight:500;fill:var(--fg);paint-order:stroke;stroke:var(--panel);stroke-width:3px;pointer-events:none}
+.pa-pop .tip{position:absolute;pointer-events:none;background:var(--panel);color:var(--fg);border:1px solid var(--rule);border-radius:4px;padding:8px 10px;font-family:var(--f-display);font-size:13px;line-height:1.35;box-shadow:0 4px 14px rgba(0,0,0,.15);min-width:170px}
+.pa-pop .tip b{font-size:14px}
+.pa-pop .tip .v{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.pa-pop h2{font-family:var(--f-display);font-size:18px;font-weight:700;margin:0}
+.pa-pop .sub{font-size:14px;color:var(--muted);margin:2px 0 0;font-family:var(--f-display)}
+.pa-pop .strip-scroll{overflow-x:auto}
+.pa-pop #strip{display:block;width:100%;min-width:620px;height:auto}
+.pa-pop #strip text{font-family:var(--f-data);font-size:10px;fill:var(--muted)}
+.pa-pop #strip .axis line,.pa-pop #strip .axis path{stroke:var(--rule)}
+.pa-pop #strip .zero{stroke:var(--fg);stroke-width:1}
+.pa-pop #strip .bar{cursor:pointer}
+.pa-pop #strip .bar.hi{stroke:var(--fg);stroke-width:1.5}
+.pa-pop .head-row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+.pa-pop .toggle{display:inline-flex;border:1px solid var(--rule);border-radius:4px;overflow:hidden;font-family:var(--f-display);font-size:13px}
+.pa-pop .toggle button{appearance:none;border:0;background:transparent;color:var(--muted);padding:6px 12px;cursor:pointer;font:inherit}
+.pa-pop .toggle button[aria-pressed="true"]{background:var(--fg);color:var(--bg);font-weight:600}
+.pa-pop .toggle button:focus-visible,.pa-pop th button:focus-visible{outline:2px solid var(--gain2);outline-offset:-2px}
+.pa-pop .table-scroll{overflow-x:auto}
+.pa-pop table{width:100%;border-collapse:collapse;font-family:var(--f-display);font-size:14px;font-variant-numeric:tabular-nums}
+.pa-pop th{text-align:right;border-bottom:2px solid var(--fg);padding:0;white-space:nowrap}
+.pa-pop th:nth-child(-n+2),.pa-pop td:nth-child(-n+2){text-align:left}
+.pa-pop th button{all:unset;cursor:pointer;display:block;padding:6px 10px;font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pa-pop th[aria-sort] button{color:var(--fg)}
+.pa-pop th[aria-sort="descending"] button::after{content:" ▼";font-size:9px}
+.pa-pop th[aria-sort="ascending"] button::after{content:" ▲";font-size:9px}
+.pa-pop td{padding:5px 10px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.pa-pop td.num{font-family:var(--f-data);font-size:13px}
+.pa-pop td.rank{color:var(--muted);font-family:var(--f-data);font-size:12px;width:2.5em}
+.pa-pop tbody tr{cursor:default}
+.pa-pop tbody tr:hover,.pa-pop tbody tr.hi{background:color-mix(in srgb,var(--gain1) 35%,transparent)}
+.pa-pop td .chip{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:-1px}
+.pa-pop footer{font-family:var(--f-display);font-size:12.5px;color:var(--muted);border-top:1px solid var(--rule);padding-top:14px;max-width:80ch}
+@media (max-width:560px){
+.pa-pop .stat .n{font-size:28px}
+}

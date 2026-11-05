@@ -1,0 +1,652 @@
+---
+layout: null
+title: "2026 Senate Results by Precinct"
+description: "Precinct-level results from the eleven 2026 U.S. Senate races the New York Times has mapped."
+summary: "Every precinct the Times has returns for in eleven Senate races — though in Ohio those precincts hold only half the counted vote, so half that map is legitimately grey."
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026 Senate Results by Precinct</title>
+<meta name="description" content="Precinct-level results from the eleven 2026 U.S. Senate races the New York Times has mapped.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;600;700&display=swap">
+<style>
+  /* Same palette as the other map pages on this site: the Washington Post's
+     election blues and reds over their neutrals, exposed as custom properties
+     so the canvas can read them instead of hard-coding a second copy that
+     drifts. The one addition here is --ind: Nebraska's race is an independent
+     against a Republican, and painting Dan Osborn blue would say something
+     about that race that is not true. */
+  :root {
+    --paper: #ffffff;
+    --panel: #f7f7f7;
+    --ink: #2a2a2a;
+    --ink-soft: #595959;
+    --rule: #e9e9e9;
+    --link: #0088cc;
+    --dem: #1366b3;
+    --rep: #be2c25;
+    --ind: #a8761b;
+    /* A precinct the state has not reported yet. Warmer and darker than a
+       default grey so it reads as "no answer", not as a pale result -- and it
+       matters: whole counties are still empty in Alaska. */
+    --nodata: #bebcba;
+    --baseline: #dcdcd8;
+    --baseedge: #a8a8a3;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Libre Franklin", "Helvetica Neue", Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .gutter { padding-left: 16px; padding-right: 16px; }
+
+  header { padding-top: 22px; padding-bottom: 10px; }
+  h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.015em; }
+  .sub { margin: 5px 0 0; font-size: 14px; font-weight: 300; color: var(--ink-soft); max-width: 62ch; }
+
+  /* The state rail. Eleven states is few enough to show them all at once and
+     let the reader pick by name, which beats a dropdown that hides the fact
+     that twenty-four Senate races are missing. */
+  .states {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding-top: 14px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .st {
+    appearance: none; cursor: pointer;
+    border: 1px solid var(--rule); border-radius: 3px;
+    background: var(--paper); color: var(--ink);
+    font: inherit; font-size: 13px; line-height: 1;
+    padding: 7px 9px 7px 7px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .st:hover { border-color: var(--baseedge); }
+  .st[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+  /* A two-tone chip carrying the state's own margin, so the rail is a result
+     table as well as a set of buttons. */
+  .chip { width: 22px; height: 10px; border-radius: 1px; flex: none; display: flex; overflow: hidden; }
+  .chip i { display: block; height: 100%; }
+
+  /* Segmented control, same shape as the one on the other map pages here. */
+  .controls { display: flex; gap: 18px; flex-wrap: wrap; padding-top: 11px; padding-bottom: 11px; }
+  .ctl label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); margin-bottom: 4px; }
+  .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+  .seg button {
+    appearance: none; cursor: pointer; border: 0; border-left: 1px solid var(--rule);
+    background: var(--paper); color: var(--ink-soft);
+    font: inherit; font-size: 12.5px; line-height: 1; padding: 7px 10px;
+  }
+  .seg button:first-child { border-left: 0; }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); font-weight: 600; }
+
+  main { position: relative; }
+
+  /* Whatever is left under the rails, so the whole state is on screen without
+     scrolling on a laptop, and the map never collapses on a short window. */
+  .mapwrap {
+    position: relative;
+    width: 100%;
+    height: clamp(320px, calc(100vh - 330px), 700px);
+    background: var(--paper);
+  }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+  /* Statewide numbers as a strip above the map rather than a panel floated
+     over it: Nebraska and Iowa are wide enough to fill the canvas corner to
+     corner, and an overlay there covers the panhandle. */
+  .summary {
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 18px;
+    padding-top: 10px; padding-bottom: 10px;
+    border-top: 1px solid var(--rule);
+  }
+  .summary h2 { margin: 0; font-size: 17px; font-weight: 700; }
+  .cand { display: flex; align-items: baseline; gap: 6px; font-size: 13.5px; }
+  .cand .sw { width: 9px; height: 9px; border-radius: 1px; flex: none; align-self: center; }
+  .cand .pc { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cand.win .nm::after { content: " \2713"; color: var(--ink-soft); }
+  .reporting { font-size: 12px; color: var(--ink-soft); margin-left: auto; }
+
+  .readout {
+    position: absolute; pointer-events: none; z-index: 5;
+    background: var(--ink); color: #fff;
+    border-radius: 3px; padding: 7px 9px;
+    font-size: 12px; line-height: 1.4; max-width: 250px;
+    opacity: 0; transition: opacity .08s;
+  }
+  .readout.on { opacity: 1; }
+  .readout b { font-weight: 700; }
+  .readout .muted { color: #bdbdbd; }
+  .readout .num { font-variant-numeric: tabular-nums; }
+
+  .zoom-buttons { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; }
+  .zb {
+    width: 30px; height: 30px; cursor: pointer;
+    background: rgba(255,255,255,0.93); border: 1px solid var(--rule);
+    color: #6b6b6b; font: inherit; font-size: 16px; line-height: 1; padding: 0;
+  }
+  .zb:first-child { border-radius: 3px 3px 0 0; border-bottom: 0; }
+  .zb:last-child { border-radius: 0 0 3px 3px; }
+  .zb:hover { color: var(--ink); }
+
+  .legend { padding-top: 12px; padding-bottom: 4px; }
+  .lt { font-size: 12px; font-weight: 600; margin-bottom: 5px; }
+  .ramp { height: 10px; border-radius: 1px; max-width: 320px; }
+  .ends { display: flex; justify-content: space-between; max-width: 320px; font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+  .note { font-size: 11.5px; color: var(--ink-soft); margin-top: 7px; max-width: 62ch; line-height: 1.45; }
+  .note .key { display: inline-block; width: 9px; height: 9px; border-radius: 1px; background: var(--nodata); vertical-align: -1px; margin-right: 2px; }
+
+  .status { font-size: 12px; color: var(--ink-soft); padding-top: 8px; min-height: 1.3em; }
+
+  footer {
+    margin-top: 18px; padding-top: 12px; padding-bottom: 28px;
+    border-top: 1px solid var(--rule);
+    font-size: 11.5px; color: var(--ink-soft); line-height: 1.55;
+  }
+  footer a { color: var(--link); }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 21px; }
+    .gutter { padding-left: 12px; padding-right: 12px; }
+    .mapwrap { height: clamp(300px, calc(100vh - 300px), 460px); }
+    .summary { gap: 4px 12px; }
+    .summary h2 { flex-basis: 100%; }
+    .reporting { margin-left: 0; flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="gutter">
+  <h1>2026 Senate Results by Precinct</h1>
+  <p class="sub">Eleven of the thirty-five Senate races, at the smallest unit the states report.</p>
+</header>
+
+<nav class="states gutter" id="states" aria-label="State"></nav>
+
+<div class="controls gutter">
+  <div class="ctl">
+    <label id="l-shade">Shading</label>
+    <div class="seg" role="group" aria-labelledby="l-shade">
+      <button id="sDensity" aria-pressed="true">By voter density</button>
+      <button id="sFlat" aria-pressed="false">Margin only</button>
+    </div>
+  </div>
+</div>
+
+<div class="summary gutter" id="summary" hidden></div>
+
+<main>
+  <div class="mapwrap">
+    <canvas id="map"></canvas>
+    <div class="zoom-buttons">
+      <button class="zb" id="zin" title="Zoom in" aria-label="Zoom in">&plus;</button>
+      <button class="zb" id="zout" title="Zoom out" aria-label="Zoom out">&minus;</button>
+    </div>
+    <div class="readout" id="readout" role="status"></div>
+  </div>
+
+  <div class="legend gutter" id="legend" hidden>
+    <div class="lt" id="legendTitle"></div>
+    <div class="ramp" id="ramp"></div>
+    <div class="ends"><span id="lo"></span><span id="hi"></span></div>
+    <p class="note" id="shadeNote"></p>
+    <p class="note">
+      <span class="key"></span> no result reported yet.
+      Zoom in and the map swaps each county for a sharper copy of itself.
+    </p>
+  </div>
+
+  <div class="status gutter" id="status">Loading&hellip;</div>
+</main>
+
+<footer class="gutter">
+  Precinct boundaries and votes from <b>The New York Times</b>,
+  <a href="https://www.nytimes.com/interactive/2026/11/03/us/elections/results-senate-precinct-maps.html">Detailed Maps of the 2026 Senate Election Results</a>,
+  used under its Computational Use of Data Agreement.
+  The Times publishes these as vector tiles in an unpublished per-state projection; the boundaries here were
+  reprojected to WGS84 by fitting that projection against the Census 500k counties and inverting it, then
+  simplified for display. <span id="fitnote"></span>
+  &middot; <span id="build" title="Build date. If this is older than you expect, you are on a cached copy.">build &mdash;</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // Every data file is asked for with the build tag, so a cached page can never
+  // end up drawing a newer file than the code that reads it.
+  var BUILD = "2026-11-05";
+  document.getElementById("build").textContent = "build " + BUILD;
+  var bust = function (u) { return u + "?b=" + BUILD; };
+
+  var css = getComputedStyle(document.documentElement);
+  var COLOR = {
+    dem: css.getPropertyValue("--dem").trim(),
+    rep: css.getPropertyValue("--rep").trim(),
+    ind: css.getPropertyValue("--ind").trim(),
+    nodata: css.getPropertyValue("--nodata").trim(),
+    edge: css.getPropertyValue("--baseedge").trim(),
+    line: css.getPropertyValue("--baseline").trim()
+  };
+  var PARTY_LABEL = { dem: "Dem.", rep: "Rep.", ind: "Ind.", lib: "Lib.", grn: "Grn.", oth: "Oth." };
+
+  var cv = document.getElementById("map");
+  var ctx = cv.getContext("2d");
+  // A second canvas nobody sees: every precinct is drawn into it in a colour
+  // that is really its index, and a hover is one getImageData of one pixel.
+  // Hit-testing 9,318 Texas polygons in JavaScript on every mousemove is the
+  // alternative, and it is not fast enough to feel like a map.
+  var pick = document.createElement("canvas");
+  var pctx = pick.getContext("2d", { willReadFrequently: true });
+
+  var statusEl = document.getElementById("status");
+  var readout = document.getElementById("readout");
+  var summary = document.getElementById("summary");
+  var legend = document.getElementById("legend");
+
+  var meta = null;         // data/meta.json
+  var state = null;        // the postal code on screen
+  var view = null;         // everything about the state being drawn
+  var votes = null;        // data/votes/<ST>.json, keyed by geoid
+  var transform = d3.zoomIdentity;
+  var detail = {};         // county FIPS -> features, once fetched
+  var wanted = {};         // county FIPS -> true while its fetch is in flight
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var pickDirty = true;
+  var shading = "density";
+
+  // ---- votes --------------------------------------------------------------
+
+  // The shapes and the numbers are fetched separately -- geometry is permanent
+  // and cached hard, votes are rewritten every hour -- and joined here on the
+  // geoid, so everything downstream can go on reading one properties object.
+  function applyVotes(features) {
+    if (!votes) return features;
+    var f = votes.fields;
+    features.forEach(function (ft) {
+      var row = votes.rows[ft.properties.geoid];
+      if (!row) { ft.properties.votes = 0; return; }
+      for (var i = 0; i < f.length; i++) ft.properties[f[i]] = row[i];
+    });
+    return features;
+  }
+
+  // ---- colour -------------------------------------------------------------
+
+  // The ramp runs between the two leading candidates' parties rather than
+  // between blue and red always: in Nebraska the poles are gold and red, and
+  // in a race where both leaders share a party it collapses to one hue, which
+  // is the honest picture of a race the general election did not decide.
+  function ramp(a, b) {
+    var lo = d3.interpolateLab(COLOR[a] || COLOR.nodata, "#f4f4f2");
+    var hi = d3.interpolateLab("#f4f4f2", COLOR[b] || COLOR.nodata);
+    return function (t) {                       // t in [-1, 1], negative = a
+      return t < 0 ? lo(1 + t) : hi(t);
+    };
+  }
+
+  function fillFor(p) {
+    if (!p.votes) return COLOR.nodata;
+    var a = p[view.keys[0]] || 0;
+    var b = p[view.keys[1]] || 0;
+    if (!(a + b)) return COLOR.nodata;
+    var t = (b - a) / (a + b);
+    // Clamped at 60 points, where the scale stops telling you anything and
+    // every safe precinct would otherwise flatten into the same block of ink.
+    t = Math.max(-1, Math.min(1, t / 0.6));
+    var c = d3.color(view.ramp(t));
+    // Density carries the second variable, the way the Times's own maps do:
+    // a precinct with four voters per square mile should not read as loudly as
+    // a city block that cast four thousand votes. Worth being able to switch
+    // off -- weighting by density is an argument about what the map is for,
+    // and anyone reading a precinct map to find where the lines fall wants to
+    // see the lines, not the population.
+    if (shading === "density") c.opacity = view.alpha(p.density || 0);
+    return c + "";
+  }
+
+  function setShading(mode) {
+    shading = mode;
+    document.getElementById("sDensity").setAttribute("aria-pressed", String(mode === "density"));
+    document.getElementById("sFlat").setAttribute("aria-pressed", String(mode !== "density"));
+    document.getElementById("shadeNote").textContent = mode === "density"
+      ? "Lighter precincts have fewer voters per square mile, so a wide rural margin does not shout down a close city one."
+      : "Every precinct at full strength, whatever its population — the map of the lines rather than the map of the voters.";
+    if (!view) return;
+    view.fc.features.forEach(function (f) { f.fill = null; });
+    Object.keys(detail).forEach(function (k) {
+      detail[k].forEach(function (f) { f.fill = fillFor(f.properties); });
+    });
+    draw();
+  }
+
+  // ---- drawing ------------------------------------------------------------
+
+  function sizeCanvas() {
+    var r = cv.parentNode.getBoundingClientRect();
+    view && (view.w = r.width, view.h = r.height);
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    pick.width = cv.width; pick.height = cv.height;
+  }
+
+  // Which features to draw for a county: the sharp copy if it has been fetched
+  // and we are zoomed in far enough to be able to see the difference.
+  function featuresFor(fips) {
+    return (transform.k >= 4 && detail[fips]) ? detail[fips] : view.byCounty[fips];
+  }
+
+  function draw() {
+    var k = transform.k;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, view.w, view.h);
+    ctx.translate(transform.x, transform.y);
+    ctx.scale(k, k);
+
+    var path = view.path.context(ctx);
+    ctx.beginPath(); path(view.outline);
+    ctx.fillStyle = "#f2f2ef"; ctx.fill();
+
+    Object.keys(view.byCounty).forEach(function (fips) {
+      featuresFor(fips).forEach(function (f) {
+        ctx.beginPath(); path(f);
+        ctx.fillStyle = f.fill || (f.fill = fillFor(f.properties));
+        ctx.fill();
+      });
+    });
+
+    // Precinct hairlines only once they are worth more than the smudge they
+    // make: at the state view a 1px line between 9,000 shapes is a grey wash.
+    if (k >= 3) {
+      ctx.lineWidth = 0.4 / k;
+      ctx.strokeStyle = "rgba(255,255,255,0.75)";
+      Object.keys(view.byCounty).forEach(function (fips) {
+        featuresFor(fips).forEach(function (f) { ctx.beginPath(); path(f); ctx.stroke(); });
+      });
+    }
+
+    ctx.lineWidth = (k >= 3 ? 0.9 : 0.7) / k;
+    ctx.strokeStyle = COLOR.edge;
+    ctx.beginPath(); path(view.counties); ctx.stroke();
+
+    ctx.lineWidth = 1.1 / k;
+    ctx.strokeStyle = "#8a8a85";
+    ctx.beginPath(); path(view.outline); ctx.stroke();
+
+    ctx.restore();
+    pickDirty = true;
+  }
+
+  // The picking buffer is rebuilt lazily -- on the first hover after a redraw,
+  // not during the pan that caused it.
+  function buildPick() {
+    pctx.save();
+    pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    pctx.clearRect(0, 0, view.w, view.h);
+    pctx.translate(transform.x, transform.y);
+    pctx.scale(transform.k, transform.k);
+    var path = view.path.context(pctx);
+    view.index = [];
+    Object.keys(view.byCounty).forEach(function (fips) {
+      featuresFor(fips).forEach(function (f) {
+        var i = view.index.push(f);               // 1-based: 0 is the background
+        pctx.beginPath(); path(f);
+        pctx.fillStyle = "rgb(" + (i & 255) + "," + ((i >> 8) & 255) + "," + ((i >> 16) & 255) + ")";
+        pctx.fill();
+      });
+    });
+    pctx.restore();
+    pickDirty = false;
+  }
+
+  function at(x, y) {
+    if (pickDirty) buildPick();
+    var d = pctx.getImageData(Math.round(x * dpr), Math.round(y * dpr), 1, 1).data;
+    var i = d[0] | (d[1] << 8) | (d[2] << 16);
+    return i ? view.index[i - 1] : null;
+  }
+
+  // ---- county detail ------------------------------------------------------
+
+  // Zoomed in, swap each county on screen for the file built at four times the
+  // detail. Fetched once, kept, and only for the counties actually in view --
+  // Texas's 254 counties are 7 MB in full and nobody looks at all of them.
+  function loadVisible() {
+    if (transform.k < 4) return;
+    var inv = transform.invert.bind(transform);
+    var a = inv([0, 0]), b = inv([view.w, view.h]);
+    Object.keys(view.bounds).forEach(function (fips) {
+      if (detail[fips] || wanted[fips]) return;
+      var q = view.bounds[fips];
+      if (q[2] < a[0] || q[0] > b[0] || q[3] < a[1] || q[1] > b[1]) return;
+      wanted[fips] = true;
+      d3.json(bust("data/precincts/" + state + "/" + fips + ".json")).then(function (t) {
+        var fs = applyVotes(topojson.feature(t, t.objects.precincts).features);
+        fs.forEach(function (f) { f.fill = fillFor(f.properties); });
+        detail[fips] = fs;
+        draw();
+      }).catch(function () { detail[fips] = view.byCounty[fips]; });
+    });
+  }
+
+  // ---- state --------------------------------------------------------------
+
+  function show(st) {
+    state = st; detail = {}; wanted = {};
+    history.replaceState(null, "", "#" + st.toLowerCase());
+    Array.prototype.forEach.call(document.querySelectorAll(".st"), function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.st === st));
+    });
+    statusEl.textContent = "Loading " + meta.states[st].name + "…";
+
+    Promise.all([
+      // Shapes and numbers, side by side. The geometry is the same file every
+      // hour and caches; only the votes have to come down again.
+      d3.json(bust("data/precincts/" + st + ".topojson")),
+      d3.json(bust("data/votes/" + st + ".json"))
+    ]).then(function (both) {
+      var t = both[0];
+      votes = both[1];
+      var fc = topojson.feature(t, t.objects.precincts);
+      applyVotes(fc.features);
+      var m = meta.states[st];
+      var two = m.candidates.slice(0, 2);
+      // Poles in a fixed order so the ramp never flips between states: the
+      // left end is whichever of the two is not Republican, where there is one.
+      var poles = two.map(function (c) { return c.party; });
+      if (poles[0] === "rep" && poles[1] !== "rep") poles.reverse(), two.reverse();
+      if (poles.length < 2) poles = [poles[0] || "dem", "rep"];
+      // The votes file splits four ways -- dem, rep, ind, oth -- so a pole in
+      // any other party reads from the "oth" column.
+      var keys = poles.map(function (p) { return p === "dem" || p === "rep" || p === "ind" ? p : "oth"; });
+
+      // Albers turned to face the state, so Texas and Alaska are not drawn
+      // leaning the way a single national projection would lean them.
+      var proj = d3.geoAlbers().rotate([-d3.geoCentroid(fc)[0], 0]).fitExtent(
+        [[14, 14], [cv.parentNode.clientWidth - 14, cv.parentNode.clientHeight - 14]], fc);
+
+      view = {
+        fc: fc, poles: poles, keys: keys, two: two,
+        ramp: ramp(poles[0], poles[1]),
+        // voter_density arrives from the Times as a 0-100 index, already
+        // log-shaped and on the same scale in every state, so it needs no
+        // per-state percentile and very little curve. The floor matters more
+        // than the exponent: at 0.15 a thinly populated precinct still reads
+        // as a result rather than as blank paper, which is the line between
+        // weighting the map and hiding half of it.
+        alpha: function (d) { return 0.15 + 0.85 * Math.pow(Math.min(100, d) / 100, 1.1); },
+        proj: proj, path: d3.geoPath(proj),
+        counties: topojson.mesh(t, t.objects.precincts, function (a, b) {
+          return a.properties.county_fips !== b.properties.county_fips;
+        }),
+        // The state's own edge, drawn under the precincts as a pale fill and
+        // over them as a line: with the density weighting on, a rural county
+        // can fade almost to the page, and without an outline the map loses
+        // its shape at exactly the places that are least populated.
+        outline: topojson.merge(t, t.objects.precincts.geometries),
+        byCounty: d3.group(fc.features, function (f) { return f.properties.county_fips; }),
+        bounds: {}
+      };
+      view.byCounty = Object.fromEntries(view.byCounty);
+      Object.keys(view.byCounty).forEach(function (fips) {
+        var g = { type: "FeatureCollection", features: view.byCounty[fips] };
+        view.bounds[fips] = d3.geoPath(proj).bounds(g).flat();  // [x0,y0,x1,y1] on screen
+      });
+
+      transform = d3.zoomIdentity;
+      d3.select(cv).call(zoom.transform, transform);
+      sizeCanvas(); draw();
+      paintSummary(m); paintLegend(m);
+      var counted = 0;
+      Object.keys(votes.rows).forEach(function (k) { counted += votes.rows[k][0]; });
+      statusEl.textContent = m.precincts.toLocaleString() + " precincts · "
+        + counted.toLocaleString() + " votes counted in them · Times build "
+        + String(votes.vintage).replace(/(\d{4})(\d\d)(\d\d)_(\d\d)/, "$1-$2-$3 $4:00 UTC")
+        + ", pulled " + votes.fetched.replace("T", " ").replace("Z", " UTC");
+      document.getElementById("fitnote").textContent =
+        "Across these eleven states the fitted projection reproduces the Times's own stated precinct areas to within 0.05%.";
+    }).catch(function (e) {
+      statusEl.textContent = "Could not load " + st + ": " + e.message;
+    });
+  }
+
+  function paintSummary(m) {
+    // Four candidates is enough: below that in these races is write-ins and
+    // minor parties that never reach a point.
+    var rows = m.candidates.slice(0, 4).map(function (c) {
+      return '<span class="cand' + (c.leader && m.called === "called" ? " win" : "") + '">'
+        + '<span class="sw" style="background:' + (COLOR[c.party] || COLOR.nodata) + '"></span>'
+        + '<span class="nm">' + c.name + "</span>"
+        + '<span class="pc">' + (c.percent == null ? "—" : c.percent.toFixed(1) + "%") + "</span></span>";
+    }).join("");
+    // Two different completenesses, and conflating them would be the most
+    // misleading thing this page could do. eevp is how much of the state's
+    // vote is counted; coverage is how much of that counted vote the Times has
+    // actually broken out by precinct, which in Ohio is half and in Nebraska
+    // is all of it. A grey precinct can mean either.
+    var cover = (m.state_votes && m.precinct_votes)
+      ? Math.round(100 * m.precinct_votes / m.state_votes) : null;
+    var rep = m.eevp == null ? "" :
+      Math.round(m.eevp) + "% of the expected vote in"
+      + (m.called === "called" ? "" : " · not called")
+      + (cover == null ? "" : " · precincts cover " + cover + "% of it");
+    summary.innerHTML = "<h2>" + m.name + "</h2>" + rows
+      + '<span class="reporting">' + rep + "</span>";
+    summary.hidden = false;
+  }
+
+  function paintLegend(m) {
+    var stops = d3.range(0, 1.0001, 0.05).map(function (t) { return view.ramp(t * 2 - 1); });
+    document.getElementById("ramp").style.background =
+      "linear-gradient(to right," + stops.join(",") + ")";
+    document.getElementById("legendTitle").textContent = "Precinct margin";
+    document.getElementById("lo").textContent = "More " + (PARTY_LABEL[view.poles[0]] || view.poles[0]);
+    document.getElementById("hi").textContent = "More " + (PARTY_LABEL[view.poles[1]] || view.poles[1]);
+    legend.hidden = false;
+  }
+
+  // ---- interaction --------------------------------------------------------
+
+  var zoom = d3.zoom().scaleExtent([1, 220]).on("zoom", function (ev) {
+    transform = ev.transform;
+    draw();
+    loadVisible();
+  });
+  d3.select(cv).call(zoom);
+
+  document.getElementById("sDensity").onclick = function () { setShading("density"); };
+  document.getElementById("sFlat").onclick = function () { setShading("flat"); };
+
+  document.getElementById("zin").onclick = function () { d3.select(cv).transition().duration(220).call(zoom.scaleBy, 1.8); };
+  document.getElementById("zout").onclick = function () { d3.select(cv).transition().duration(220).call(zoom.scaleBy, 1 / 1.8); };
+
+  function pct(n, d) { return d ? (100 * n / d).toFixed(1) + "%" : "—"; }
+
+  cv.addEventListener("mousemove", function (ev) {
+    if (!view) return;
+    var r = cv.getBoundingClientRect();
+    var f = at(ev.clientX - r.left, ev.clientY - r.top);
+    if (!f) { readout.classList.remove("on"); return; }
+    var p = f.properties;
+    var name = p.geoid.slice(6) || p.geoid;
+    var lines = ["<b>" + name + "</b>", '<span class="muted">' + (p.fid_name || "") + "</span>"];
+    if (p.votes) {
+      view.two.forEach(function (c, i) {
+        var v = p[view.keys[i]] || 0;
+        lines.push('<span class="num">' + pct(v, p.votes) + "</span> " + c.name.split(" ").pop());
+      });
+      lines.push('<span class="muted num">' + p.votes.toLocaleString() + " votes</span>");
+      if (p.types) {
+        // Expanded from the abbreviations the votes file ships, using its own key.
+        lines.push('<span class="muted">' + p.types.split(",").map(function (k) {
+          return (votes.types[k] || k).replace(/_/g, " ");
+        }).join(", ") + "</span>");
+      }
+    } else {
+      lines.push('<span class="muted">no result reported</span>');
+    }
+    readout.innerHTML = lines.join("<br>");
+    readout.classList.add("on");
+    var x = ev.clientX - r.left + 14, y = ev.clientY - r.top + 14;
+    if (x + readout.offsetWidth > r.width) x = ev.clientX - r.left - readout.offsetWidth - 14;
+    if (y + readout.offsetHeight > r.height) y = ev.clientY - r.top - readout.offsetHeight - 14;
+    readout.style.left = x + "px"; readout.style.top = y + "px";
+  });
+  cv.addEventListener("mouseleave", function () { readout.classList.remove("on"); });
+
+  // show() writes the state into the hash, so the back button and a pasted
+  // link both have to come back the other way.
+  window.addEventListener("hashchange", function () {
+    var st = (location.hash || "").replace("#", "").toUpperCase();
+    if (meta && meta.states[st] && st !== state) show(st);
+  });
+
+  var resizeTimer;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { if (view) { show(state); } }, 160);
+  });
+
+  // ---- start --------------------------------------------------------------
+
+  d3.json(bust("data/meta.json")).then(function (m) {
+    meta = m;
+    var rail = document.getElementById("states");
+    Object.keys(m.states).forEach(function (st) {
+      var s = m.states[st], two = s.candidates.slice(0, 2);
+      var b = document.createElement("button");
+      b.className = "st"; b.dataset.st = st; b.type = "button";
+      b.setAttribute("aria-pressed", "false");
+      var wid = two.map(function (c) { return (c.percent || 0); });
+      var tot = (wid[0] || 0) + (wid[1] || 0) || 1;
+      b.innerHTML = '<span class="chip">'
+        + two.map(function (c, i) {
+            return '<i style="width:' + (100 * wid[i] / tot) + '%;background:' + (COLOR[c.party] || COLOR.nodata) + '"></i>';
+          }).join("")
+        + "</span>" + s.name;
+      b.onclick = function () { show(st); };
+      rail.appendChild(b);
+    });
+
+    setShading(shading);
+    var hash = (location.hash || "").replace("#", "").toUpperCase();
+    show(m.states[hash] ? hash : "GA");
+  }).catch(function (e) {
+    statusEl.textContent = "Could not load the index: " + e.message;
+  });
+})();
+</script>
+</body>
+</html>

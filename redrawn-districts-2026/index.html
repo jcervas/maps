@@ -1,0 +1,3747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Redrawn Districts Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;600;700&display=swap">
+<style>
+  /* Layout: a control rail, a flexible map canvas, and the legend as a band
+     beneath it. The page scrolls where that does not fit. */
+  :root {
+    /* Washington Post election palette, sampled from their 2024 results
+       pages: #1366b3 Democratic and #be2c25 Republican, with the Post's own
+       mid and light tints, over their neutrals. The diverging ramp is exposed
+       as --ramp0..--ramp6 so the canvas can read it and follow the theme
+       instead of hard-coding a scheme that only works in light mode. */
+    --paper: #ffffff;
+    --panel: #f7f7f7;
+    --ink: #2a2a2a;
+    --ink-soft: #595959;
+    --rule: #e9e9e9;
+    --accent: #2a2a2a;
+    --accent-soft: #f0f0f0;
+    --link: #0088cc;
+    --dem: #1366b3;
+    --rep: #be2c25;
+    --water: #ffffff;
+    /* path.region in the Post's own choropleth CSS: the fill for a shape with
+       no value. Darker and warmer than a default grey, and it matters here
+       because 7.8% of precincts have no reported result. */
+    --nodata: #bebcba;
+    --zoom-glyph: #6b6b6b;
+    /* The page color. States carry no fill of their own: their outlines do
+       the work, the way the Post's do, and the only fill on the map is a
+       value somebody is meant to read. */
+    --basefill: #ffffff;
+    --baseline: #dcdcd8;
+    --baseedge: #b9b9b4;
+    --ramp0: #be2c25; --ramp1: #d35f4f; --ramp2: #f9dddb; --ramp3: #f7f7f7;
+    --ramp4: #d3e7fa; --ramp5: #5784c5; --ramp6: #1366b3;
+    /* The Post's own Cook scale, which is not the election ramp: toss-ups get
+       a gold of their own rather than a pale red or blue, because a toss-up is
+       not a weak lean -- it is a different statement. Solid and likely sit on
+       the election blues and reds so the two modes still agree about which end
+       of the map is which. */
+    --cook-solidD:  #1366b3; --cook-likelyD: #5784c5; --cook-leanD: #a9c6e8;
+    --cook-toss:    #e0a63a;
+    --cook-leanR:   #eb9c92; --cook-likelyR: #d35f4f; --cook-solidR: #be2c25;
+    /* Behind the squares the nine states stay nearly as light as the rest of
+       the country: the squares are the subject, and the district lines are
+       cue enough that these are the states in scope. */
+    --chicfill: #e8e8e4;
+    /* The Post sets its charts in ITC Franklin Std, which is licensed and
+       served from their own CDN, so it cannot be loaded here. Libre Franklin
+       is a Franklin Gothic revival and the closest face on Google Fonts, which
+       is the only font host this page may use. */
+    --display: "Libre Franklin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --body: "Libre Franklin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: "Libre Franklin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #141414; --panel: #1f1f1f; --ink: #e7e7e7; --ink-soft: #a0a0a0;
+      --rule: #333333; --accent: #e7e7e7; --accent-soft: #242424;
+      --link: #4a9de2;
+      --dem: #5784c5; --rep: #d35f4f; --water: #141414; --nodata: #4a4a4a;
+      --zoom-glyph: #a0a0a0;
+      --basefill: #141414; --baseline: #333333; --baseedge: #4d4d4d;
+      --ramp0: #be2c25; --ramp1: #a8453d; --ramp2: #6b3a37; --ramp3: #1f1f1f;
+      --ramp4: #2f4c70; --ramp5: #5784c5; --ramp6: #8fbcea;
+      --cook-solidD:  #1f5fa8; --cook-likelyD: #2f6fc0; --cook-leanD: #7ea7d8;
+      --cook-toss:    #c08f2c;
+      --cook-leanR:   #d4877c; --cook-likelyR: #b93b32; --cook-solidR: #9e2a24;
+      --chicfill: #262626;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #141414; --panel: #1f1f1f; --ink: #e7e7e7; --ink-soft: #a0a0a0;
+    --rule: #333333; --accent: #e7e7e7; --accent-soft: #242424;
+    --link: #4a9de2;
+    --dem: #5784c5; --rep: #d35f4f; --water: #141414; --nodata: #4a4a4a;
+    --zoom-glyph: #a0a0a0;
+    --basefill: #141414; --baseline: #333333; --baseedge: #4d4d4d;
+    --ramp0: #be2c25; --ramp1: #a8453d; --ramp2: #6b3a37; --ramp3: #1f1f1f;
+    --ramp4: #2f4c70; --ramp5: #5784c5; --ramp6: #8fbcea;
+    --cook-solidD:  #1f5fa8; --cook-likelyD: #2f6fc0; --cook-leanD: #7ea7d8;
+    --cook-toss:    #c08f2c;
+    --cook-leanR:   #d4877c; --cook-likelyR: #b93b32; --cook-solidR: #9e2a24;
+    --chicfill: #262626;
+    color-scheme: dark;
+  }
+
+  /* The artifact host's skeleton supplies this, a plain file does not, and
+     .ctl{display:flex} would otherwise beat the default [hidden] rule. Declaring
+     it here keeps the local page and the published one behaving identically. */
+  [hidden] { display: none !important; }
+  /* The page is a page, not an app pinned to the viewport. html keeps a
+     height so body's percentage minimum has something to resolve against;
+     body takes a minimum rather than a height, so a short screen scrolls
+     instead of squeezing everything into one. */
+  html { height: 100%; }
+  body {
+    min-height: 100%;
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--body); font-size: 14px; line-height: 1.5;
+    display: flex; flex-direction: column;
+    /* The document scrolls, not the body: body was its own scroll container
+       back when it had a fixed height, and leaving that in place would hide
+       the page's overflow inside an element the browser does not treat as
+       the page. */
+    overflow-x: hidden;
+  }
+  .gutter {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  header { border-bottom: 1px solid var(--rule); padding-block: 0.8rem 0.7rem; flex: none; }
+  .hrow { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+  /* The Post's chart type scale: title 19.25/23.1 bold, notes 12.25/14.7,
+     small labels 10.5 uppercase, 14px base. */
+  h1 {
+    font-family: var(--display); font-size: 19.25px; line-height: 23.1px;
+    font-weight: 700; margin: 0; white-space: nowrap;
+  }
+  .sub { color: var(--ink-soft); font-size: 12.25px; line-height: 14.7px; margin: 0; }
+
+  .controls {
+    background: var(--panel);
+    padding-block: 0.7rem 0; flex: none;
+    display: flex; gap: 1.4rem 1.75rem; flex-wrap: wrap; align-items: flex-end;
+  }
+  /* The hint sits below the controls rather than inside them. As a flex item
+     it collapsed to nothing the moment the row stopped wrapping, and it is a
+     full-width line of prose in any case. */
+  .hintbar {
+    background: var(--panel); border-bottom: 1px solid var(--rule);
+    padding-block: 1rem 0.7rem; flex: none;
+  }
+  .ctl { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+  .ctl > label {
+    font-size: 10.5px; letter-spacing: 0.06em; font-weight: 600;
+    text-transform: uppercase; color: var(--ink-soft);
+  }
+  .seg { display: flex; border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; background: var(--paper); }
+  .seg button {
+    font: inherit; font-size: 0.86rem; border: 0; background: transparent;
+    color: var(--ink); padding: 0.33rem 0.7rem; cursor: pointer;
+    border-right: 1px solid var(--rule); white-space: nowrap;
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--paper); }
+  .seg button:disabled { color: var(--ink-soft); cursor: not-allowed; opacity: 0.5; }
+  /* A control can be both the current state and not yet changeable (precincts
+     before a state is picked). The normal active treatment puts muted text on
+     a full-strength background, which reads at about 2:1; mute the background
+     to match the text instead of leaving it unreadable. */
+  .seg button:disabled[aria-pressed="true"] {
+    background: var(--rule); color: var(--ink-soft); opacity: 1;
+  }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  /* The Chamber switch is a pair of links, not buttons: House and Senate are
+     separate pages, so moving between them is navigation and should behave
+     like it -- back button, open in a new tab, a URL you can send. Styled to
+     sit in a .seg beside the real buttons without looking different. */
+  .seg a {
+    font: inherit; font-size: 0.86rem; color: var(--ink); text-decoration: none;
+    padding: 0.33rem 0.7rem; border-right: 1px solid var(--rule);
+    white-space: nowrap; display: inline-flex; align-items: center;
+  }
+  .seg a:last-child { border-right: 0; }
+  .seg a[aria-current="page"] { background: var(--accent); color: var(--paper); }
+  .seg a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .hint { font-size: 12.25px; color: var(--ink-soft); font-style: italic; }
+  select.var {
+    font: inherit; font-size: 0.86rem; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--rule); border-radius: 3px; padding: 0.3rem 0.4rem; max-width: 17rem;
+  }
+  select.var:disabled { opacity: 0.5; cursor: not-allowed; }
+  .swatches { display: grid; grid-template-columns: repeat(2, auto); gap: 0.15rem 0.6rem; }
+  .sw { display: flex; align-items: center; gap: 0.33rem; white-space: nowrap; }
+  .sw i { width: 11px; height: 11px; border-radius: 4px; flex: none; }
+  /* The flip legend's chips carry a hatch angle, and an 11px chip is barely
+     two stripes wide -- too few to read a direction from. */
+  .legend.flip .sw i {
+    width: 16px; height: 16px; border-radius: 5px;
+    box-sizing: border-box; border: 2px solid transparent;
+  }
+
+  /* The Post's Cook bar: one band per rating, width by seat count, the count
+     printed inside. It is the legend and the tally at once, which is why it
+     replaces the ramp rather than sitting beside it. */
+  .legend.cook { max-width: 30rem; }
+  .cookbar { margin-bottom: 0.3rem; }
+  .cb-head {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-weight: 600; margin-bottom: 3px;
+  }
+  .cb-head .d { color: var(--dem); }
+  .cb-head .r { color: var(--rep); }
+  /* Every district, in proportion. Thin, because it is the shape of the
+     field rather than something to read values off. */
+  .cb-all { display: flex; height: 9px; margin-bottom: 5px; }
+  .cb-all .cb-seg { min-width: 2px; }
+  .cb-track { display: flex; height: 19px; }
+  .cb-seg {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+    min-width: 15px; box-sizing: border-box;
+  }
+  .cb-seg + .cb-seg { border-left: 1px solid var(--paper); }
+  .cb-foot { display: flex; margin-top: 3px; }
+  .cb-foot span {
+    font-size: 9.75px; color: var(--ink-soft); text-align: center;
+    overflow: hidden; white-space: nowrap; min-width: 0;
+  }
+  .cb-sum {
+    margin-top: 4px; font-size: 11px; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  /* The seat totals the ratings add up to: the line the bar is really for,
+     so it takes the page's own colours and sits above the race counts. */
+  .cb-seats {
+    display: block; font-size: 12.25px; color: var(--ink);
+    margin-bottom: 1px;
+  }
+  .cb-seats .d { color: var(--dem); font-weight: 600; }
+  .cb-seats .r { color: var(--rep); font-weight: 600; }
+  .cb-seats .muted { color: var(--ink-soft); font-weight: 400; }
+  .tier {
+    margin-top: 0.4rem; padding-top: 0.35rem; border-top: 1px solid var(--rule);
+    font-size: 12.25px; color: var(--ink-soft); line-height: 14.7px;
+  }
+  .tier.warn { color: var(--rep); }
+
+  .stage {
+    /* The map's minimum lives here, on the container, not on the canvas.
+       resize() used to floor the canvas at 260px while this box was free to
+       flex down to nothing: on a short landscape phone the stage computed to
+       10px, the 260px canvas was clipped by overflow:hidden, and the map
+       simply vanished.
+
+       The minimum is a readable map rather than the smallest one that fits.
+       Where the viewport cannot hold that and the chrome at once, the page
+       grows and scrolls; nothing is compressed to avoid a scrollbar. */
+    /* Grows into a tall screen so nothing is left hanging under the footer,
+       but never shrinks below its minimum: where the chrome and a readable
+       map will not both fit, the page gets longer rather than the map
+       smaller. */
+    position: relative; flex: 1 0 auto;
+    min-height: max(420px, 70vh); background: var(--water);
+    overflow: hidden;   /* belt and braces: the canvas must never paint over the footer */
+  }
+  /* Out of flow, or it sizes the stage instead of the other way round:
+     resize() gives the canvas an explicit pixel height taken from the stage,
+     and since the stage no longer shrinks that height became content it
+     could not get back under -- so every resize ratcheted it taller and it
+     never came down. */
+  canvas {
+    position: absolute; inset: 0;
+    display: block; width: 100%; height: 100%;
+    /* The map takes the gesture, because dragging it pans and pinching it
+       zooms. */
+    touch-action: none;
+  }
+  /* Except when it is split in two, which is the phone overview: there is no
+     panning or zooming there -- the controls for it are hidden -- so the
+     canvas has no use for the gesture, and taking it anyway left most of the
+     screen unable to scroll the page. */
+  .stage.split canvas { touch-action: pan-y; }
+
+  /* After the Post's own map controls: bottom-right, white rounded chips with
+     a soft shadow and grey glyphs, the reset control set apart above the
+     zoom pair rather than welded into one strip. */
+  .zoom-buttons {
+    position: absolute; right: 14px; bottom: 14px;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    z-index: 2;
+  }
+  .zb {
+    appearance: none; border: 0; padding: 0; cursor: pointer;
+    width: 34px; height: 34px; display: grid; place-items: center;
+    background: var(--paper); color: var(--zoom-glyph);
+    box-shadow: 0 1px 3px #0000002e;
+  }
+  .zb svg { width: 16px; height: 16px; display: block; }
+  .zb.solo { border-radius: 6px; }
+  .zb-pair {
+    display: flex; flex-direction: column;
+    border-radius: 6px; overflow: hidden;
+    box-shadow: 0 1px 3px #0000002e;
+  }
+  .zb-pair .zb { box-shadow: none; }
+  .zb-pair .zb:first-child { border-bottom: 1px solid var(--rule); }
+  .zb:hover { color: var(--ink); }
+  .zb:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+  /* The legend sits under the map rather than on it. As an overlay it hid a
+     piece of the thing it was explaining for as long as anyone read it, and
+     the "Changing hands" key -- four rows and a paragraph -- covered most of
+     a small screen. Below the map it costs the page height instead, which the
+     page can afford because it is allowed to scroll. */
+  .legend {
+    background: var(--paper); border-top: 1px solid var(--rule);
+    padding-block: 10px 12px; font-size: 12.25px; line-height: 14.7px;
+    max-width: 52rem; flex: none;
+  }
+
+  .legend .lt {
+    font-size: 10.5px; letter-spacing: 0.06em; font-weight: 600;
+    text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.4rem;
+  }
+  .ramp { height: 9px; border-radius: 0; margin-bottom: 0.25rem; }
+  .ends { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+
+  .readout {
+    position: absolute; right: 14px; top: 14px;
+    background: var(--paper); border: 1px solid var(--rule); border-radius: 3px;
+    padding: 10px 12px; font-size: 14px; min-width: 12.5rem; max-width: 17rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  /* Anchored in the corner the panel sits on one fixed piece of the map and
+     hides it for as long as you read. Following the cursor it covers only
+     what you have just moved past, and never the thing you are reaching for.
+     It must not take the pointer, or the canvas under it stops seeing the
+     mouse and the hover dies the moment the panel catches up. */
+  .readout.at-cursor { right: auto; top: auto; pointer-events: none; }
+
+  .readout .rt { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .readout dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 5px; margin: 0; font-variant-numeric: tabular-nums; }
+  .readout dt { color: var(--ink-soft); }
+  .readout dd { margin: 0; text-align: right; }
+  .readout .d { color: var(--dem); font-weight: 600; }
+  .readout .r { color: var(--rep); font-weight: 600; }
+  .readout .muted { color: var(--ink-soft); font-weight: 400; }
+  .readout .idle { color: var(--ink-soft); font-style: italic; }
+  .flag {
+    margin-top: 0.4rem; padding-top: 0.35rem; border-top: 1px solid var(--rule);
+    font-size: 0.76rem; color: var(--ink-soft);
+  }
+
+  /* Modelled on the Post's .keyboard-hint: a dark translucent chip that reads
+     over either a light or a dark map without needing a theme of its own. */
+  .status {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    font-size: 12px; color: #fff;
+    background: #4a4a4ae6; border: 1px solid #2e2e2e40;
+    border-radius: 0.375rem; padding: 7px 18px;
+    box-shadow: 0 2px 2px 0 #00000005, 0 2px 8px 0 #00000014;
+  }
+  footer {
+    border-top: 1px solid var(--rule); padding-block: 0.45rem;
+    font-size: 12.25px; line-height: 14.7px; color: var(--ink-soft); flex: none;
+  }
+  /* --------------------------------------------------------- landscape */
+  /* Held sideways there is no height to spare, and the chrome would push the
+     map below the fold. Rather than shrink the chrome, reorder: the map comes
+     first and the controls follow it, so the thing worth looking at leads and
+     the page scrolls to the rest. Source order is unchanged, so the controls
+     still come first for a keyboard or a screen reader. */
+  @media (orientation: landscape) and (max-height: 560px) {
+    header { order: 0; }
+    .stage { order: 1; }
+    .legend { order: 2; }
+    .controls { order: 3; border-top: 1px solid var(--rule); padding-top: 0.7rem; }
+    .hintbar { order: 4; }
+    footer { order: 5; }
+  }
+
+  /* ------------------------------------------------------------- phones */
+  /* The desktop layout puts the readout top-right and the legend
+     bottom-left, each a fixed width, which works while there is map either
+     side of them. On a phone they are most of the screen and they cover the
+     only thing worth looking at. So on narrow screens both span the width
+     and move to opposite ends, leaving a clear band of map between them,
+     and the control rail scrolls sideways rather than stacking into five
+     rows and eating the map's height. */
+  @media (max-width: 620px) {
+    h1 { font-size: 16.5px; line-height: 20px; white-space: normal; }
+    .sub { font-size: 11.5px; line-height: 14px; }
+    header { padding-block: 0.6rem 0.5rem; }
+
+    /* The rail used to scroll sideways, which hid half the controls behind
+       a gesture nothing on the page suggested: a reader could not see that
+       Cook rating or the state list were there at all. They wrap into cards
+       instead, each sized to its own contents, so a narrow screen gets two
+       to a row and a wide one more. Taller, and all of it visible. */
+    .controls {
+      flex-wrap: wrap; gap: 0.5rem; padding-block: 0.55rem 0.55rem;
+      align-items: stretch;
+    }
+    .hintbar { padding-block: 0.6rem 0.55rem; }
+    .hint { font-size: 11.5px; }
+    .ctl {
+      flex: 1 1 auto; justify-content: flex-end;
+      background: var(--paper); border: 1px solid var(--rule);
+      border-radius: 4px; padding: 0.4rem 0.5rem 0.45rem;
+    }
+    /* The two that carry a row of their own: four buttons and a long list of
+       state names both want the full width rather than half of it. */
+    .ctl:has(> .seg > button:nth-child(4)), #varWrap, .ctl:has(#stateSel) {
+      flex-basis: 100%;
+    }
+    /* Four named modes do not fit across a phone in one strip -- the last of
+       them was cut off at the edge of its card -- so they go two by two.
+       Grid rather than flex-wrap: equal cells, and the dividers land on the
+       lines between them instead of wherever the text happened to end. */
+    .ctl:has(> .seg > button:nth-child(4)) .seg {
+      display: grid; grid-template-columns: 1fr 1fr;
+    }
+    .ctl:has(> .seg > button:nth-child(4)) .seg button {
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      white-space: normal;
+    }
+    .ctl:has(> .seg > button:nth-child(4)) .seg button:nth-child(2n) {
+      border-right: 0;
+    }
+    .ctl:has(> .seg > button:nth-child(4)) .seg button:nth-last-child(-n+2) {
+      border-bottom: 0;
+    }
+    .ctl > label { font-size: 9.5px; }
+    .seg button, .seg a { font-size: 12.5px; padding: 0.3rem 0.5rem; }
+    .var { font-size: 12.5px; }
+
+    .readout {
+      left: 10px; right: 10px; top: 10px;
+      min-width: 0; max-width: none;
+      font-size: 12.5px; padding: 8px 10px;
+    }
+    .readout .rt { font-size: 13px; margin-bottom: 4px; }
+    .readout dl { gap: 2px 5px; }
+    .readout[data-idle] { display: none; }
+
+    .legend { font-size: 11.5px; max-width: none; }
+    .legend.cook { max-width: none; }
+    .swatches { grid-template-columns: repeat(2, 1fr); }
+    .cb-foot span { font-size: 9px; }
+
+    /* The source line and the legend's provenance note are the two blocks
+       of small print competing with the map for a short screen. */
+    footer { font-size: 11px; line-height: 13.5px; padding-block: 0.4rem; }
+    .legend .tier { font-size: 10.5px; line-height: 13px; }
+
+    /* A phone shows the overview as two stacked panels, so the stage is
+       carrying two maps in the space a desktop gives one. 420px split in
+       half is not a map, it is a diagram of one. The page scrolls, so take
+       the height from the screen rather than from what fits above the fold. */
+    .stage { min-height: max(420px, min(66vh, 600px)); }
+    /* Split in two, the stage carries two maps and needs the room for both.
+       buildPanels() measures what they actually come to and sets a floor
+       inline; this is what holds until it has. */
+    .stage.split { min-height: 70vh; }
+
+    .zoom-buttons { right: 10px; bottom: 10px; flex-direction: row; }
+    .zb { width: 30px; height: 30px; }
+    .zb-pair { flex-direction: row; }
+    .zb-pair .zb:first-child {
+      border-bottom: 0; border-right: 1px solid var(--rule);
+    }
+  }
+</style>
+</head>
+<body>
+
+<header class="gutter">
+  <div class="hrow">
+    <h1>Redrawn Districts Explorer</h1>
+    <p class="sub">All 435 districts, and the nine states that redrew their maps between 2024 and 2026</p>
+  </div>
+</header>
+
+<div class="controls gutter">
+  <div class="ctl">
+    <label id="l-ch">Chamber</label>
+    <div class="seg" role="group" aria-labelledby="l-ch">
+      <a href="./" aria-current="page">House</a>
+      <a href="senate.html">Senate</a>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <label id="l-map">Map</label>
+    <div class="seg" role="group" aria-labelledby="l-map">
+      <button id="m2024" aria-pressed="false">2024</button>
+      <button id="m2026" aria-pressed="true">2026</button>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <label id="l-color">Color by</label>
+    <div class="seg" role="group" aria-labelledby="l-color">
+      <button id="cElection" aria-pressed="false">2024 result</button>
+      <button id="cDemo" aria-pressed="false">Demographics</button>
+      <button id="cCook" aria-pressed="false">Cook rating</button>
+      <button id="cFlip" aria-pressed="true">Changing hands</button>
+    </div>
+  </div>
+
+  <div class="ctl" id="markWrap" hidden>
+    <label id="l-mark">Show as</label>
+    <div class="seg" role="group" aria-labelledby="l-mark">
+      <button id="kSquares" aria-pressed="true">Squares</button>
+      <button id="kFill" aria-pressed="false">Fill</button>
+    </div>
+  </div>
+
+  <div class="ctl" id="varWrap" hidden>
+    <label id="l-var">Variable</label>
+    <select class="var" id="demoVar" aria-labelledby="l-var"></select>
+  </div>
+
+  <div class="ctl">
+    <label id="l-prec">Precincts</label>
+    <div class="seg" role="group" aria-labelledby="l-prec">
+      <button id="pOff" aria-pressed="true" disabled>Off</button>
+      <button id="pOn" aria-pressed="false" disabled>On</button>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <label id="l-lines">District lines</label>
+    <div class="seg" role="group" aria-labelledby="l-lines">
+      <button id="lRedrawn" aria-pressed="true">Redrawn</button>
+      <button id="lAll" aria-pressed="false">All</button>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <label id="l-state">State</label>
+    <select class="var" id="stateSel" aria-labelledby="l-state"></select>
+  </div>
+
+</div>
+
+<div class="hintbar gutter">
+  <span class="hint" id="hint">Pick a state, or click one on the map, to zoom in, or turn precincts on for the whole country.</span>
+</div>
+
+<div class="stage" id="stage">
+  <canvas id="map"></canvas>
+  <div class="zoom-buttons" id="zoomButtons">
+    <button class="zb solo" id="zFit" aria-label="Reset zoom" title="Reset zoom">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M6.2 2.4 3.6 2.4 3.6 5M9.8 2.4 12.4 2.4 12.4 5M6.2 13.6 3.6 13.6 3.6 11M9.8 13.6 12.4 13.6 12.4 11"
+              fill="none" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="zb-pair">
+      <button class="zb" id="zIn" aria-label="Zoom in" title="Zoom in">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M8 3.6V12.4M3.6 8H12.4" fill="none" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="zb" id="zOut" aria-label="Zoom out" title="Zoom out">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M3.6 8H12.4" fill="none" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="readout" id="readout">
+    <div class="rt" id="rTitle">Hover the map</div>
+    <div class="idle" id="rIdle">Districts are shaded by the 2024 presidential vote.</div>
+    <dl id="rList"></dl>
+    <div class="flag" id="rFlag" hidden></div>
+  </div>
+  <div class="status" id="status">Loading districts&hellip;</div>
+</div>
+  <div class="legend gutter" id="legend" hidden>
+    <div class="lt" id="legendTitle"></div>
+    <div class="ramp" id="ramp"></div>
+    <div class="ends"><span id="lo"></span><span id="mid"></span><span id="hi"></span></div>
+    <div class="cookbar" id="cookBar" hidden>
+      <div class="cb-head"><span class="d">Democratic</span><span class="r">Republican</span></div>
+      <div class="cb-all" id="cbAll"></div>
+      <div class="cb-track" id="cbTrack"></div>
+      <div class="cb-foot" id="cbFoot"></div>
+      <div class="cb-sum" id="cbSum"></div>
+    </div>
+    <div class="swatches" id="swatches" hidden></div>
+    <div class="tier" id="tierNote" hidden></div>
+  </div>
+
+<footer class="gutter">
+  Census block equivalency files (119th and 120th Congress) &middot; 2024 presidential results via
+  Redistricting Data Hub &middot; geometry simplified for display
+  &middot; <span id="build" title="Build date. If this is older than you expect, you are on a cached copy.">build &mdash;</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script>
+(function () {
+  // Phones cache this page hard, and a stale copy is indistinguishable from a
+  // bug -- a reader once saw 144 squares that this build does not draw. Two
+  // defences: every data file is requested with the build tag, so code and
+  // data can never come from different builds, and the build date is printed
+  // in the footer so "is this current?" is answerable at a glance.
+  var BUILD = "2026-10-30e";
+  function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
+  "use strict";
+
+  // All fifty, since the map draws all 435 districts. Which nine the story is
+  // about is a fact about the data, not a list kept here -- redrawnStates()
+  // reads it off the districts themselves.
+  var STATE_NAME = {
+    AK: "Alaska", AL: "Alabama", AR: "Arkansas", AZ: "Arizona",
+    CA: "California", CO: "Colorado", CT: "Connecticut", DE: "Delaware",
+    FL: "Florida", GA: "Georgia", HI: "Hawaii", IA: "Iowa", ID: "Idaho",
+    IL: "Illinois", IN: "Indiana", KS: "Kansas", KY: "Kentucky",
+    LA: "Louisiana", MA: "Massachusetts", MD: "Maryland", ME: "Maine",
+    MI: "Michigan", MN: "Minnesota", MO: "Missouri", MS: "Mississippi",
+    MT: "Montana", NC: "North Carolina", ND: "North Dakota",
+    NE: "Nebraska", NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico",
+    NV: "Nevada", NY: "New York", OH: "Ohio", OK: "Oklahoma", OR: "Oregon",
+    PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+    SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah",
+    VA: "Virginia", VT: "Vermont", WA: "Washington", WI: "Wisconsin",
+    WV: "West Virginia", WY: "Wyoming"
+  };
+
+  // Only variables the demographics work rates usable, and the verdicts differ
+  // by geography: pct_cvap_nh_black and pct_cvap_nh_asian are sound for a
+  // district and not for a precinct, so they are marked districtOnly rather
+  // than offered everywhere. pct_unemployed, pct_noncitizen and
+  // pct_limited_english are absent at both levels: their margins of error make
+  // a single-precinct reading meaningless, and a choropleth is precisely the
+  // thing that would invite one.
+  //
+  // There is deliberately no "share of adults who are citizens": that column
+  // divides a 2020-2024 ACS numerator by an April 2020 decennial denominator
+  // and lands above 100% for a fifth to a half of precincts, with no
+  // coefficient of variation able to detect it. Use cvap_total as a count, and
+  // compare largest_race against largest_race_cvap to show the gap between who
+  // lives in a district and who can vote in it.
+  var DEMO_VARS = [
+    { k: "largest_race", label: "Largest group \u2014 population", kind: "cat", tier: "exact" },
+    { k: "largest_race_cvap", label: "Largest group \u2014 electorate (CVAP)", kind: "cat", tier: "safe" },
+    { k: "cvap_total", label: "Citizen voting-age population", kind: "num", tier: "safe" },
+    { k: "pct_hisp", label: "Hispanic (% of population)", kind: "pct", tier: "exact" },
+    { k: "pct_nh_white", label: "White, non-Hispanic (%)", kind: "pct", tier: "exact" },
+    { k: "pct_nh_black", label: "Black, non-Hispanic (%)", kind: "pct", tier: "exact" },
+    { k: "pop_density_sqmi", label: "Population density (per sq mi)", kind: "log", tier: "exact" },
+    { k: "pct_cvap_nh_white", label: "White, non-Hispanic (% of CVAP)", kind: "pct", tier: "safe" },
+    { k: "pct_cvap_hisp", label: "Hispanic (% of CVAP)", kind: "pct", tier: "limited" },
+    { k: "pct_cvap_nh_black", label: "Black, non-Hispanic (% of CVAP)", kind: "pct",
+      tier: "safe", districtOnly: true },
+    { k: "pct_cvap_nh_asian", label: "Asian, non-Hispanic (% of CVAP)", kind: "pct",
+      tier: "safe", districtOnly: true },
+    { k: "median_hh_income", label: "Median household income", kind: "money", tier: "safe" },
+    { k: "median_age", label: "Median age", kind: "num", tier: "safe" },
+    { k: "pct_owner_occupied", label: "Owner-occupied homes (%)", kind: "pct", tier: "safe" },
+    { k: "pct_ba_plus", label: "Bachelor's degree or higher (%)", kind: "pct", tier: "caution" },
+    { k: "pct_foreign_born", label: "Foreign-born (%)", kind: "pct", tier: "limited" }
+  ];
+  var TIER_NOTE = {
+    exact: "2020 census enumeration. No margin of error.",
+    safe: "ACS five-year estimate. Margin of error is modest at precinct level.",
+    caution: "ACS estimate. Sound for mapping and for comparing groups of precincts, "
+           + "not for a claim about one precinct.",
+    limited: "ACS estimate. Sound for districts; for precincts only in some "
+           + "states, and the note says so when it is not."
+  };
+  // Qualitative, chosen to stay distinguishable in both themes and to avoid
+  // red/blue, which on this map already mean something else.
+  var CAT_COLORS = ["#6a8fbf", "#b07aa1", "#e1a14c", "#4f9d8b",
+                    "#8d6e63", "#d38079", "#7a8b99", "#9c9c6b"];
+
+  // The map opens on the question it was built to answer: which of the
+  // redrawn seats changes hands. The ratings describe the 2026 map only, so
+  // that tab carries the year with it -- opening on the 2024 map with a 2026
+  // tab selected would be a contradiction the controls could not explain.
+  var state = {
+    year: "2026",        // which map
+    color: "flip",       // election | demo | cook | flip
+    precincts: false,
+    squares: true,       // rating modes: squares over a plain map, or filled districts
+    allLines: false,     // draw the lines of districts the redraw did not touch
+    focus: null,         // state abbreviation when zoomed in
+    district: null,      // district number when one is singled out
+    demoVar: "largest_race",
+    demoCache: {},       // ST -> { byId: Map, cats: [] }
+    incumbents: null,    // "ST-DD" -> sitting member of the 119th Congress
+    cook: null,          // "ST-DD" -> Cook Political Report rating, 2026 map
+    demoDistricts: null, // "ST-MAP-DD" -> district demographics
+    basemap: null,       // { states: [...], nation: [...] }
+    outlines: null,      // ST -> the state's border, dissolved from its districts
+    districts: { 2024: [], 2026: [] },
+    precinctCache: {},   // ST -> features
+    hover: null,         // a feature, when one is pointed at directly
+    hoverState: null,    // at national zoom, the state a click would open
+  };
+
+  // Promise cache so two toggles of the same layer share one request instead
+  // of racing each other.
+  var inflight = {};
+
+  var cv = document.getElementById("map");
+  var ctx = cv.getContext("2d");
+  // Offscreen twin: every shape is filled with a color encoding its index, so a
+  // single getImageData at the cursor identifies the feature under it. Exact,
+  // and O(1) instead of testing 24,000 polygons per mouse move.
+  var pick = document.createElement("canvas");
+  var pctx = pick.getContext("2d", { willReadFrequently: true });
+
+  // Per-state projections. One national Albers shears every state it is not
+  // centered on, and that shear is what a reader sees as a state leaning the
+  // wrong way. A State Plane zone is the cartographic answer, so each state is
+  // projected into its own official CRS -- the same EPSG code the R pipeline
+  // next door picks for its state outline SVGs (daily-district data/config.R,
+  // EPSG_STATE), so a state's shape here and its shape there are one shape.
+  //
+  // d3 carries no EPSG database, so each entry holds the parameters read off
+  // that code's own PROJ definition: transverse Mercator, Lambert conformal
+  // conic or Albers equal-area, with the central meridian and, for the conics,
+  // the standard parallels. Every remaining PROJ parameter -- latitude of
+  // origin, scale factor, false easting and northing -- shifts or uniformly
+  // scales the result and changes no shape, so fitExtent absorbs all of them;
+  // lat0 is carried only to record what the code says.
+  var STATE_PROJ = {
+    AL: { epsg: 2759, type: "tmerc", lon0: -85.833333, lat0: 30.5 },
+    AK: { epsg: 3338, type: "aea", lon0: -154, lat0: 50, parallels: [55, 65] },
+    AZ: { epsg: 2762, type: "tmerc", lon0: -111.916667, lat0: 31 },
+    AR: { epsg: 2764, type: "lcc", lon0: -92, lat0: 34.333333, parallels: [36.233333, 34.933333] },
+    CA: { epsg: 3311, type: "aea", lon0: -120, lat0: 0, parallels: [34, 40.5] },
+    CO: { epsg: 2773, type: "lcc", lon0: -105.5, lat0: 37.833333, parallels: [39.75, 38.45] },
+    CT: { epsg: 2775, type: "lcc", lon0: -72.75, lat0: 40.833333, parallels: [41.866667, 41.2] },
+    DE: { epsg: 2776, type: "tmerc", lon0: -75.416667, lat0: 38 },
+    FL: { epsg: 2777, type: "tmerc", lon0: -81, lat0: 24.333333 },
+    GA: { epsg: 2780, type: "tmerc", lon0: -82.166667, lat0: 30 },
+    HI: { epsg: 2784, type: "tmerc", lon0: -158, lat0: 21.166667 },
+    ID: { epsg: 2788, type: "tmerc", lon0: -114, lat0: 41.666667 },
+    IL: { epsg: 2790, type: "tmerc", lon0: -88.333333, lat0: 36.666667 },
+    IN: { epsg: 2792, type: "tmerc", lon0: -85.666667, lat0: 37.5 },
+    IA: { epsg: 2794, type: "lcc", lon0: -93.5, lat0: 41.5, parallels: [43.266667, 42.066667] },
+    KS: { epsg: 2796, type: "lcc", lon0: -98, lat0: 38.333333, parallels: [39.783333, 38.716667] },
+    KY: { epsg: 2798, type: "lcc", lon0: -84.25, lat0: 37.5, parallels: [37.966667, 38.966667] },
+    LA: { epsg: 2800, type: "lcc", lon0: -92.5, lat0: 30.5, parallels: [32.666667, 31.166667] },
+    ME: { epsg: 2802, type: "tmerc", lon0: -68.5, lat0: 43.666667 },
+    MD: { epsg: 2804, type: "lcc", lon0: -77, lat0: 37.666667, parallels: [39.45, 38.3] },
+    MA: { epsg: 2805, type: "lcc", lon0: -71.5, lat0: 41, parallels: [42.683333, 41.716667] },
+    MI: { epsg: 2808, type: "lcc", lon0: -84.366667, lat0: 43.316667, parallels: [45.7, 44.183333] },
+    MN: { epsg: 2811, type: "lcc", lon0: -94.25, lat0: 45, parallels: [47.05, 45.616667] },
+    MS: { epsg: 2813, type: "tmerc", lon0: -88.833333, lat0: 29.5 },
+    MO: { epsg: 2816, type: "tmerc", lon0: -92.5, lat0: 35.833333 },
+    MT: { epsg: 2818, type: "lcc", lon0: -109.5, lat0: 44.25, parallels: [49, 45] },
+    NE: { epsg: 2819, type: "lcc", lon0: -100, lat0: 39.833333, parallels: [43, 40] },
+    NV: { epsg: 2821, type: "tmerc", lon0: -116.666667, lat0: 34.75 },
+    NH: { epsg: 2823, type: "tmerc", lon0: -71.666667, lat0: 42.5 },
+    NJ: { epsg: 2824, type: "tmerc", lon0: -74.5, lat0: 38.833333 },
+    NM: { epsg: 2826, type: "tmerc", lon0: -106.25, lat0: 31 },
+    NY: { epsg: 2829, type: "tmerc", lon0: -76.583333, lat0: 40 },
+    NC: { epsg: 3358, type: "lcc", lon0: -79, lat0: 33.75, parallels: [36.166667, 34.333333] },
+    ND: { epsg: 2832, type: "lcc", lon0: -100.5, lat0: 47, parallels: [48.733333, 47.433333] },
+    OH: { epsg: 2834, type: "lcc", lon0: -82.5, lat0: 39.666667, parallels: [41.7, 40.433333] },
+    OK: { epsg: 2836, type: "lcc", lon0: -98, lat0: 35, parallels: [36.766667, 35.566667] },
+    OR: { epsg: 2838, type: "lcc", lon0: -120.5, lat0: 43.666667, parallels: [46, 44.333333] },
+    PA: { epsg: 3362, type: "lcc", lon0: -77.75, lat0: 40.166667, parallels: [41.95, 40.883333] },
+    RI: { epsg: 2840, type: "tmerc", lon0: -71.5, lat0: 41.083333 },
+    SC: { epsg: 3360, type: "lcc", lon0: -81, lat0: 31.833333, parallels: [34.833333, 32.5] },
+    SD: { epsg: 2841, type: "lcc", lon0: -100, lat0: 43.833333, parallels: [45.683333, 44.416667] },
+    TN: { epsg: 2843, type: "lcc", lon0: -86, lat0: 34.333333, parallels: [36.416667, 35.25] },
+    TX: { epsg: 2845, type: "lcc", lon0: -98.5, lat0: 31.666667, parallels: [33.966667, 32.133333] },
+    UT: { epsg: 2850, type: "lcc", lon0: -111.5, lat0: 38.333333, parallels: [40.65, 39.016667] },
+    VT: { epsg: 2852, type: "tmerc", lon0: -72.5, lat0: 42.5 },
+    VA: { epsg: 2853, type: "lcc", lon0: -78.5, lat0: 37.666667, parallels: [39.2, 38.033333] },
+    WA: { epsg: 2855, type: "lcc", lon0: -120.833333, lat0: 47, parallels: [48.733333, 47.5] },
+    WV: { epsg: 2857, type: "lcc", lon0: -79.5, lat0: 38.5, parallels: [40.25, 39] },
+    WI: { epsg: 2860, type: "lcc", lon0: -90, lat0: 43.833333, parallels: [45.5, 44.25] },
+    WY: { epsg: 2863, type: "tmerc", lon0: -107.333333, lat0: 40.5 }
+  };
+
+  // geoAlbersUsa, not a plain geoAlbers: its composite insets Alaska and Hawaii
+  // at the lower left. With a single conic they project thousands of miles off
+  // canvas, which is why an earlier version simply dropped them -- a US map
+  // without them reads as broken. Note geoAlbersUsa takes no rotate, center or
+  // parallels; the composite fixes its own.
+  function nationalProjection() {
+    return d3.geoAlbersUsa();
+  }
+
+  // What the national view is fitted to. The whole country, so the insets land
+  // on canvas: fitting to the nine states alone crops a band off every edge,
+  // and the insets sit at the lower left of the composite's own frame, so they
+  // would be the first thing to go.
+  function nationalExtent() {
+    var bm = state.basemap && state.basemap.nation;
+    return (bm && bm.length) ? bm : (state.districts[state.year] || []);
+  }
+  // Three families, because every state's official CRS is one of three: Albers
+  // for the two whose statewide CRS is equal-area (AK 3338, CA 3311), and the
+  // zone's own family -- transverse Mercator or Lambert -- for the rest.
+  function stateProjection(st) {
+    var c = STATE_PROJ[st];
+    if (!c) return nationalProjection();
+    var proj = c.type === "tmerc" ? d3.geoTransverseMercator()
+             : c.type === "aea"   ? d3.geoAlbers()
+                                  : d3.geoConicConformal();
+    proj.rotate([-c.lon0, 0]).center([0, c.lat0]);
+    if (c.parallels) proj.parallels(c.parallels);
+    return proj;
+  }
+
+  var projection = nationalProjection();
+  var path = d3.geoPath(projection, ctx);
+  var pickPath = d3.geoPath(projection, pctx);
+  // Both path generators bind the projection object, so swapping projections
+  // means rebuilding them; mutating `projection` alone would leave the old one
+  // in use and the map would silently keep drawing in the previous CRS.
+  function setProjection(next) {
+    projection = next;
+    path = d3.geoPath(projection, ctx);
+    pickPath = d3.geoPath(projection, pctx);
+  }
+  var transform = d3.zoomIdentity;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var W = 0, H = 0;
+
+  /* ---------------------------------------------------------------- scales */
+
+  // Canvas cannot use CSS custom properties, so the palette is read off :root
+  // once and cached. Without this the map would need its own hard-coded colors
+  // and would stop matching the page the moment the theme changed -- which is
+  // how the district strokes ended up invisible in dark mode.
+  var THEME = null;
+  function theme() {
+    if (THEME) return THEME;
+    var cs = getComputedStyle(document.documentElement);
+    var g = function (n) { return (cs.getPropertyValue(n) || "").trim(); };
+    var stops = [];
+    for (var i = 0; i < 7; i++) stops.push(g("--ramp" + i) || "#888");
+    THEME = {
+      election: d3.interpolateRgbBasis(stops),
+      stops: stops,
+      nodata: g("--nodata") || "#dcdcdc",
+      chicfill: g("--chicfill") || "#e8e8e4",
+      cook: {
+        "Solid Democrat":    g("--cook-solidD")  || "#1366b3",
+        "Likely Democrat":   g("--cook-likelyD") || "#5784c5",
+        "Lean Democrat":     g("--cook-leanD")   || "#a9c6e8",
+        "Toss Up":           g("--cook-toss")    || "#e0a63a",
+        "Lean Republican":   g("--cook-leanR")   || "#eb9c92",
+        "Likely Republican": g("--cook-likelyR") || "#d35f4f",
+        "Solid Republican":  g("--cook-solidR")  || "#be2c25"
+      },
+      ink: g("--ink") || "#111111",
+      paper: g("--paper") || "#ffffff",
+      water: g("--water") || "#ffffff",
+      basefill: g("--basefill") || "#f2f2f0",
+      baseline: g("--baseline") || "#d8d8d4",
+      baseedge: g("--baseedge") || "#b9b9b4"
+    };
+    return THEME;
+  }
+  function waterAlpha(a) {
+    var c = d3.color(theme().water);
+    if (!c) return "rgba(255,255,255," + a + ")";
+    c.opacity = a;
+    return c + "";
+  }
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    var onTheme = function () { THEME = null; updateLegend(); render(); };
+    if (mq.addEventListener) mq.addEventListener("change", onTheme);
+    else if (mq.addListener) mq.addListener(onTheme);
+  }
+
+  function demShare(p) {
+    var v = p.pres24_two_party_dem_share;
+    return (v === null || v === undefined) ? null : +v;
+  }
+
+  // The Post reports presidential results as a margin in points behind the
+  // leader's name -- "+10 Trump" -- rather than as a share, so the readout and
+  // the legend both speak in those terms. The underlying number is still the
+  // two-party Democratic share; margin is just 2s-1 expressed in points.
+  function marginPts(s) {
+    return (s === null || s === undefined) ? null : (2 * s - 1) * 100;
+  }
+  // Rounded to whole points, the way the Post prints it. Anything that rounds
+  // to zero is "Even": "+0 Harris" would claim a winner the rounding threw away.
+  function marginLabel(s) {
+    var m = marginPts(s);
+    if (m === null) return null;
+    var r = Math.round(Math.abs(m));
+    if (r === 0) return { text: "Even", cls: "" };
+    return m > 0
+      ? { text: "+" + r + " Harris", cls: "d" }
+      : { text: "+" + r + " Trump", cls: "r" };
+  }
+
+  // Diverging about 50%, red at 0 and blue at 1, so Democratic share maps the
+  // US convention directly. The stops are the Post's own election colors.
+  function electionColor(p) {
+    var s = demShare(p);
+    if (s === null) return null;
+    var t = Math.max(0, Math.min(1, (s - 0.25) / 0.5));
+    return theme().election(t);
+  }
+
+  var demoScale = null;
+  function currentVar() {
+    for (var i = 0; i < DEMO_VARS.length; i++) {
+      if (DEMO_VARS[i].k === state.demoVar) return DEMO_VARS[i];
+    }
+    return DEMO_VARS[0];
+  }
+
+  function demoValue(f) {
+    if (f.__demo) {
+      return f.__demo[state.demoVar] !== undefined ? f.__demo[state.demoVar] : null;
+    }
+    // Districts carry demographics too, aggregated from the same blocks, so
+    // the mode works in the nine-state view and not only inside a state.
+    var p = f.properties;
+    if (p && p.district && state.demoDistricts) {
+      var rec = state.demoDistricts[p.state + "-" + (p.map || state.year) + "-" + p.district];
+      if (rec && rec[state.demoVar] !== undefined) return rec[state.demoVar];
+    }
+    return null;
+  }
+
+  function buildDemoScale(features) {
+    var v = currentVar();
+    if (v.kind === "cat") { demoScale = null; return; }
+    var vals = features.map(demoValue)
+      .filter(function (x) { return x !== null && x !== undefined && isFinite(x); })
+      .sort(d3.ascending);
+    if (!vals.length) { demoScale = null; return; }
+    var lo = d3.quantileSorted(vals, 0.02);
+    var hi = d3.quantileSorted(vals, 0.98);
+    if (v.kind === "log") {
+      lo = Math.max(1, lo);
+      hi = Math.max(lo + 1, hi);
+      demoScale = d3.scaleSequentialLog(d3.interpolateYlGnBu).domain([lo, hi]).clamp(true);
+    } else {
+      if (hi === lo) hi = lo + 1;
+      demoScale = d3.scaleSequential(d3.interpolateYlGnBu).domain([lo, hi]).clamp(true);
+    }
+    demoScale.lo = lo; demoScale.hi = hi;
+  }
+
+  function demoColor(f) {
+    var v = currentVar();
+    var x = demoValue(f);
+    if (x === null || x === undefined) return null;
+    if (v.kind === "cat") {
+      return (x >= 0 && x < CAT_COLORS.length) ? CAT_COLORS[x] : null;
+    }
+    return demoScale ? demoScale(x) : null;
+  }
+
+  // Cook's seven categories, Democratic to Republican. Cook has a single Toss
+  // Up; splitting it into "Democratic Toss Up" and "Republican Toss Up" is a
+  // presentational device for showing who holds the seat, not a Cook rating,
+  // so the seat's party lives in its own field instead. Fills come from
+  // theme().cook, the Post's Cook palette rather than the election ramp.
+  var COOK_BANDS = [
+    { label: "Solid D",  cat: "Solid Democrat" },
+    { label: "Likely D", cat: "Likely Democrat" },
+    { label: "Lean D",   cat: "Lean Democrat" },
+    { label: "Toss-up",  cat: "Toss Up" },
+    { label: "Lean R",   cat: "Lean Republican" },
+    { label: "Likely R", cat: "Likely Republican" },
+    { label: "Solid R",  cat: "Solid Republican" }
+  ];
+  // Solid is the one tier Cook calls not competitive, and it is the line the
+  // squares are drawn on: a square marks a race worth watching, so 144 safe
+  // seats must not get one.
+  function cookCompetitive(f) {
+    var r = cookRating(f);
+    return !!r && r.rating.indexOf("Solid") !== 0;
+  }
+
+  // Cook's own "as of", formatted. It was typed into the sentence, which
+  // meant a refresh moved the ratings and left the date behind.
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+                "August", "September", "October", "November", "December"];
+  function cookAsOf() {
+    var d = state.cook && state.cook.as_of;
+    var m = d && /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    if (!m) return d || "current ratings";
+    return MONTHS[+m[2] - 1] + " " + (+m[3]) + ", " + m[1];
+  }
+
+  function cookRating(f) {
+    if (!state.cook || state.year !== "2026") return null;
+    var p = f.properties;
+    // A precinct carries its new district's rating: the rating is a property
+    // of the seat, and the precinct is in it.
+    var cd = p.district || p.district_2026;
+    if (!cd || !p.state) return null;
+    return state.cook.byKey[p.state + "-" + cd] || null;
+  }
+
+  // Squares carry the rating because a district is a few pixels across and the
+  // shape cannot hold a color. Zoomed into one district that stops being true:
+  // there is a single shape on the screen, as large as the map, and the square
+  // over it marks the only thing it could be marking. So the district in focus
+  // takes its own rating as its fill, and the backdrop rule applies to
+  // everything else. Read off the feature's district rather than a flag, so a
+  // precinct inside the district is filled with it too.
+  function singledOut(f) {
+    return !!state.district && districtOf(f.properties) === state.district;
+  }
+
+  function cookColor(f) {
+    if (chicletMode() && !singledOut(f)) return null;   // the square carries it
+    var r = cookRating(f);
+    return r ? (theme().cook[r.rating] || null) : null;
+  }
+
+  // At national zoom a rated district is a few pixels across, so the fill has
+  // nowhere to land. The Post answers this with one square per race, sized for
+  // the eye rather than for the geography, over plain state outlines. Inside a
+  // state there is room for the real shapes, so the squares are national only.
+  // Squares at every zoom, not just the national view. A district is never
+  // filled with its rating: the fill says whether the redraw touched it, the
+  // square says what Cook makes of the race. Keeping them separate means a
+  // seat that is competitive but was not redrawn -- FL-07, NC-11, NC-13 --
+  // still shows its rating while still reading as context.
+  // Which seats the redraw puts in play. Cook rates each 2026 seat and names
+  // the party sitting for it now, so the pair of fields is already the
+  // comparison this mode wants: a rating for the party that does not hold the
+  // seat is a flip, and a Toss Up is a seat Cook will not call either way.
+  // Incumbency enters twice -- the held party is the member's, and an open
+  // seat is one with no incumbent on the ballot, which is why a Likely rating
+  // counts as in play where the same rating with a member running does not.
+  //
+  // A seat whose holder Cook does not record cannot be judged against the
+  // rating at all, so it is left out rather than counted as safe.
+  // Redrawn districts whose seat is no longer Cook's to give the party that
+  // holds it: rated for the other party, or called a toss-up. A seat the
+  // sitting party is still favoured to keep is not here however thin the
+  // margin -- "held narrowly" was a hedge that blurred what the map is for.
+  //
+  // Three channels. The fill is the Cook rating itself, the same tone the
+  // Cook tab gives that district, so a Democratic seat rated Solid Republican
+  // is simply that red and a toss-up is Cook's gold. The ring is the party
+  // holding the seat now, which the fill can no longer say once it follows
+  // the rating. Hatching marks the seats rated to change hands, leaving the
+  // gold toss-ups plain.
+  var FLIP_BANDS = [
+    { cat: "loseD", label: "D seat \u2192 R",    held: "D", side: "R", fate: "lose" },
+    { cat: "loseR", label: "R seat \u2192 D",    held: "R", side: "D", fate: "lose" },
+    { cat: "tossD", label: "D seat, toss-up", held: "D", side: "D", fate: "toss" },
+    { cat: "tossR", label: "R seat, toss-up", held: "R", side: "R", fate: "toss" }
+  ];
+
+  // Only the seats that change hands are hatched. A toss-up needs no stripes
+  // of its own now: Cook's gold already sets it apart from every other
+  // rating, and the ring still says whose seat is being fought over.
+  var FLIP_HATCH = { lose: 1 };
+
+  var FLIP_TONE = { D: "Solid Democrat", R: "Solid Republican" };
+
+  var FLIP_PARTY = { D: "Democratic", R: "Republican" };
+
+  var FLIP_PHRASE = {
+    loseD: "Democratic seat, now rated Republican",
+    loseR: "Republican seat, now rated Democratic",
+    tossD: "Democratic seat, now a toss-up",
+    tossR: "Republican seat, now a toss-up",
+    safe: "Still rated for the party that holds it",
+    unchanged: "Lines unchanged",
+    unknown: "Not judged"
+  };
+
+  function flipInfo(f) {
+    var r = cookRating(f);
+    if (!r || !r.rating) return null;
+    // This mode is about what the redraw did, so a seat whose lines survived
+    // intact is out of scope however competitive it is: it is in play on its
+    // own account, not because of anything the new map changed.
+    var pre = predecessor(f);
+    var held = pre && (pre.held === "D" || pre.held === "R") ? pre.held : null;
+    var base = { rating: r.rating, held: held, open: !!r.open,
+                 heldNote: pre ? pre.note : null,
+                 from: pre ? pre.from : null,
+                 fromShare: pre ? pre.share : null,
+                 fromMember: pre ? pre.member : null };
+    // Scoped to the redraw, a district whose lines survived is out of the
+    // comparison: it is in play on its own account, not because of anything
+    // the new map did. "All district lines" asks for the whole year instead,
+    // and then it is judged like every other seat.
+    if (f.__same && !state.allLines) {
+      base.cat = base.fate = "unchanged";
+      base.side = held;      // no square is drawn, but the readout still colors
+      base.label = FLIP_PHRASE.unchanged;
+      return base;
+    }
+    var want = /Democrat$/.test(r.rating) ? "D"
+             : /Republican$/.test(r.rating) ? "R" : null;
+    var fate;
+    if (!held) fate = "unknown";             // nothing to judge the rating against
+    else if (!want) fate = "toss";           // Cook will not call it either way
+    else if (want !== held) fate = "lose";
+    else fate = "safe";
+    base.fate = fate;
+    base.cat = (fate === "safe" || fate === "unknown") ? fate : fate + held;
+    base.side = want || held;
+    base.label = FLIP_PHRASE[base.cat];
+    return base;
+  }
+
+  function flipInPlay(f) {
+    var i = flipInfo(f);
+    return !!i && (i.fate === "lose" || i.fate === "toss");
+  }
+
+  // The rating's own color, exactly as the Cook tab paints it.
+  function flipFill(info) {
+    var T = theme();
+    return (info && info.rating && T.cook[info.rating]) || T.nodata;
+  }
+
+  // The ring: who holds the seat going in.
+  function flipRing(info) {
+    var T = theme();
+    return (info && info.held && T.cook[FLIP_TONE[info.held]]) || T.baseedge;
+  }
+
+  // Diagonal stripes in the holder's color, cut by the page tone. Built at
+  // device resolution and mapped back down, or the stripes blur on a retina
+  // screen; keyed by color and theme so a theme switch cannot serve stale
+  // tiles.
+  var hatchCache = {};
+  function hatchFor(color, dir) {
+    var T = theme(), key = color + "|" + T.paper + "|" + dpr + "|" + dir;
+    if (hatchCache[key]) return hatchCache[key];
+    var step = 6, tile = document.createElement("canvas");
+    tile.width = tile.height = Math.max(1, Math.round(step * dpr));
+    var t = tile.getContext("2d");
+    t.scale(dpr, dpr);
+    t.fillStyle = color;
+    t.fillRect(0, 0, step, step);
+    t.strokeStyle = T.paper;
+    // Thin enough that the rating color carries the square and the stripes
+    // read as texture on it. At 1.8 of a 6px step the square was a third
+    // paper and the color it was supposed to show got lost at chiclet size.
+    t.lineWidth = 1.1;
+    t.beginPath();
+    // Lines spaced one tile apart along their intercept, which is what makes
+    // a square tile repeat seamlessly at 45 degrees; drawn well past the
+    // edges so each stripe meets its neighbour across the seam.
+    for (var c = -step; c <= step * 2; c += step) {
+      if (dir > 0) {                                  // "/"
+        t.moveTo(-step, c + step); t.lineTo(step * 2, c - step * 2);
+      } else {                                        // "\\"
+        t.moveTo(-step, c - step); t.lineTo(step * 2, c + step * 2);
+      }
+    }
+    t.stroke();
+    var pat = ctx.createPattern(tile, "repeat");
+    if (pat && pat.setTransform && window.DOMMatrix) {
+      pat.setTransform(new DOMMatrix([1 / dpr, 0, 0, 1 / dpr, 0, 0]));
+    }
+    hatchCache[key] = pat;
+    return pat;
+  }
+
+  // Same exception as the Cook tab, and the same limit as Fill mode: this tab
+  // colors the seats in play and nothing else, so a safe district stays a
+  // backdrop however far it is zoomed in.
+  function flipColor(f) {
+    if (chicletMode() && !singledOut(f)) return null;   // the square carries it
+    var i = flipInfo(f);
+    return flipInPlay(f) ? flipFill(i) : null;
+  }
+
+  // The two rating tabs, which the ratings only describe on the 2026 map.
+  function ratingMode() {
+    return (state.color === "cook" || state.color === "flip") &&
+      state.year === "2026";
+  }
+
+  // Squares are the Post's answer to a rated district being a few pixels
+  // across, and they cost the district its own color: the shape is a backdrop
+  // and the marker carries the reading. Filling the districts instead trades
+  // that back -- the geography is the data again, legible at state zoom and a
+  // scatter of specks at national. Which of the two is wanted is the reader's
+  // call, so it is a control rather than a rule, and every path that asks
+  // "squares or not" already asked chicletMode().
+  function chicletMode() {
+    return ratingMode() && state.squares;
+  }
+
+  // Both rating modes put squares on the map; they differ in which seats earn
+  // one and what color it takes.
+  //
+  // "Redrawn" is a claim about the new map in every mode, so a seat whose
+  // lines came through untouched does not take a square under it: its rating
+  // is Cook's news rather than the redraw's, and the Cook tab was answering
+  // the control by ignoring it -- every competitive seat in the country got
+  // one either way. Changing hands already reads the control, inside
+  // flipInfo. Inside a state the redraw never touched there is nothing to
+  // tell apart, so the squares stay: the same exception the greying makes.
+  function wantsSquare(f) {
+    if (state.color === "flip") return flipInPlay(f);
+    return cookCompetitive(f) && (!f.__same || !greyUnredrawn());
+  }
+
+  function squareFill(f) {
+    if (state.color === "flip") return flipFill(flipInfo(f));
+    var r = cookRating(f);
+    return (r && theme().cook[r.rating]) || theme().nodata;
+  }
+
+  /* --------------------------------------------- a point inside the shape */
+  // The centroid of a district drawn to be awkward is regularly outside it,
+  // and a marker sitting outside the thing it marks is worse than none. This
+  // is the pole of inaccessibility: the interior point furthest from any
+  // edge, found by sampling a grid over the largest ring and tightening
+  // around the best sample. Computed once per district, in lon/lat, so it
+  // survives every projection and zoom the page puts it through.
+  function ringsOfPoly(geom) {
+    var c = geom && geom.coordinates;
+    if (!c) return [];
+    if (geom.type === "Polygon") return [c];
+    if (geom.type === "MultiPolygon") return c;
+    return [];
+  }
+
+  function ringArea(r) {
+    var a = 0;
+    for (var i = 0, m = r.length - 1; i < m; i++) {
+      a += r[i][0] * r[i + 1][1] - r[i + 1][0] * r[i][1];
+    }
+    return Math.abs(a / 2);
+  }
+
+  function inRing(x, y, r) {
+    var inside = false;
+    for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
+      var xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1];
+      if ((yi > y) !== (yj > y) &&
+          x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+
+  function edgeDist(x, y, r) {
+    var best = Infinity;
+    for (var i = 0, j = r.length - 1; i < r.length; j = i++) {
+      var ax = r[j][0], ay = r[j][1], dx = r[i][0] - ax, dy = r[i][1] - ay;
+      var t = (dx || dy) ? ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy) : 0;
+      t = t < 0 ? 0 : t > 1 ? 1 : t;
+      var px = ax + t * dx - x, py = ay + t * dy - y;
+      var d = px * px + py * py;
+      if (d < best) best = d;
+    }
+    return Math.sqrt(best);
+  }
+
+  function innerPoint(f) {
+    if (f.__pole !== undefined) return f.__pole;
+    var polys = ringsOfPoly(f.geometry), big = null, bigA = -1;
+    for (var i = 0; i < polys.length; i++) {
+      var a = ringArea(polys[i][0]);
+      if (a > bigA) { bigA = a; big = polys[i]; }
+    }
+    if (!big) return (f.__pole = null);
+    var outer = big[0], holes = big.slice(1);
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (var p = 0; p < outer.length; p++) {
+      var q = outer[p];
+      if (q[0] < x0) x0 = q[0];
+      if (q[0] > x1) x1 = q[0];
+      if (q[1] < y0) y0 = q[1];
+      if (q[1] > y1) y1 = q[1];
+    }
+    function score(x, y) {
+      if (!inRing(x, y, outer)) return -1;
+      for (var h = 0; h < holes.length; h++) if (inRing(x, y, holes[h])) return -1;
+      var d = edgeDist(x, y, outer);
+      for (var g = 0; g < holes.length; g++) {
+        var dh = edgeDist(x, y, holes[g]);
+        if (dh < d) d = dh;
+      }
+      return d;
+    }
+    var bx = (x0 + x1) / 2, by = (y0 + y1) / 2, bs = score(bx, by);
+    var spanX = (x1 - x0) / 2, spanY = (y1 - y0) / 2;
+    for (var round = 0; round < 4; round++) {
+      var n = round ? 4 : 12, cx = bx, cy = by, found = false, fx = 0, fy = 0;
+      for (var ix = -n; ix <= n; ix++) {
+        for (var iy = -n; iy <= n; iy++) {
+          var x = cx + spanX * ix / n, y = cy + spanY * iy / n;
+          var sc = score(x, y);
+          if (sc > bs) { bs = sc; fx = x; fy = y; found = true; }
+        }
+      }
+      if (found) { bx = fx; by = fy; }
+      spanX /= 3; spanY /= 3;
+    }
+    // A district too thin for any sample to land inside falls back to the
+    // spherical centroid, which is at least deterministic.
+    f.__pole = bs > 0 ? [bx, by] : d3.geoCentroid(f);
+    return f.__pole;
+  }
+
+  var CHIC = 17, CHIC_R = 5, CHIC_GAP = 2.5;
+  var chiclets = null, chicletKey = "";
+
+  // Anchored on each district's projected centroid and then pushed apart until
+  // they stop overlapping. Warm-started from the previous frame, so a zoom
+  // separates them smoothly instead of re-solving into a different packing
+  // every frame.
+  function layoutChiclets() {
+    var ds = state.districts["2026"] || [];
+    var want = [];
+    for (var i = 0; i < ds.length; i++) {
+      // Inside a state, only that state's: the others project somewhere
+      // arbitrary under its CRS and would be squares pointing at nothing.
+      if (state.focus && ds[i].properties.state !== state.focus) continue;
+      if (wantsSquare(ds[i])) want.push(ds[i]);
+    }
+    // The lines control changes which seats are wanted, and two different
+    // sets can be the same size, so it is part of the key rather than left
+    // to the count to notice.
+    var key = state.color + ":" + state.year + ":" + state.allLines + ":" +
+      (state.focus || "-") + ":" + want.length;
+    if (!chiclets || chicletKey !== key) {
+      chiclets = want.map(function (f) { return { f: f, x: 0, y: 0, seeded: false }; });
+      chicletKey = key;
+    }
+    for (var j = 0; j < chiclets.length; j++) {
+      var c = chiclets[j];
+      var pn = panelOf(c.f);
+      var ll = innerPoint(c.f);
+      var ctr = (pn && ll) ? pn.proj(ll) : null;
+      if (!pn || !ctr || !isFinite(ctr[0])) { c.dead = true; continue; }
+      c.dead = false;
+      c.pn = pn;
+      c.ax = pn.t.applyX(ctr[0]);
+      c.ay = pn.t.applyY(ctr[1]);
+      if (!c.seeded) { c.x = c.ax; c.y = c.ay; c.seeded = true; }
+    }
+    var live = chiclets.filter(function (c) { return !c.dead; });
+    var sep = CHIC + CHIC_GAP;
+    for (var it = 0; it < 90; it++) {
+      for (var a = 0; a < live.length; a++) {
+        var p1 = live[a];
+        p1.x += (p1.ax - p1.x) * 0.06;   // keep pulling back to the district
+        p1.y += (p1.ay - p1.y) * 0.06;
+        for (var b = a + 1; b < live.length; b++) {
+          var p2 = live[b];
+          var dx = p2.x - p1.x, dy = p2.y - p1.y;
+          var dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist >= sep) continue;
+          if (dist < 0.01) { dx = (a % 2 ? 1 : -1) * 0.5; dy = 0.5; dist = 0.71; }
+          var push = (sep - dist) / dist / 2;
+          p1.x -= dx * push; p1.y -= dy * push;
+          p2.x += dx * push; p2.y += dy * push;
+        }
+      }
+      for (var q = 0; q < live.length; q++) clampTo(live[q], live[q].pn, CHIC / 2);
+    }
+    return live;
+  }
+
+  // Split panels are separate maps stacked on one canvas, so anything the
+  // relaxation pushes has to stay inside the panel it belongs to.
+  function clampTo(o, pn, pad) {
+    if (!pn) return;
+    o.x = Math.min(Math.max(o.x, pn.x + pad + 2), pn.x + pn.w - pad - 2);
+    o.y = Math.min(Math.max(o.y, pn.y + pad + 2), pn.y + pn.h - pad - 2);
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    if (c.roundRect) { c.beginPath(); c.roundRect(x, y, w, h, r); return; }
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  // AP style: Ohio, Texas and Utah are never abbreviated, the rest are.
+  // The Post's state abbreviations. Only the redrawn states are labelled on
+  // the national view, but a focused state reads its own name from here too.
+  // Precinct geography and 2024 precinct results were collected for the nine
+  // states whose map changed; nowhere else has a file to load, so the control
+  // stays off there rather than offering a fetch that can only 404. Spelled
+  // out rather than derived from the districts: this is about which data was
+  // gathered, which is not the same question as which lines moved.
+  var PRECINCT_STATES = {
+    AL: 1, CA: 1, FL: 1, LA: 1, NC: 1, OH: 1, TN: 1, TX: 1, UT: 1
+  };
+
+  var STATE_ABBR = {
+    AK: "Alaska", AL: "Ala.", AR: "Ark.", AZ: "Ariz.", CA: "Calif.",
+    CO: "Colo.", CT: "Conn.", DE: "Del.", FL: "Fla.", GA: "Ga.",
+    HI: "Hawaii", IA: "Iowa", ID: "Idaho", IL: "Ill.", IN: "Ind.",
+    KS: "Kan.", KY: "Ky.", LA: "La.", MA: "Mass.", MD: "Md.", ME: "Maine",
+    MI: "Mich.", MN: "Minn.", MO: "Mo.", MS: "Miss.", MT: "Mont.",
+    NC: "N.C.", ND: "N.D.", NE: "Neb.", NH: "N.H.", NJ: "N.J.",
+    NM: "N.M.", NV: "Nev.", NY: "N.Y.", OH: "Ohio", OK: "Okla.",
+    OR: "Ore.", PA: "Pa.", RI: "R.I.", SC: "S.C.", SD: "S.D.",
+    TN: "Tenn.", TX: "Texas", UT: "Utah", VA: "Va.", VT: "Vt.",
+    WA: "Wash.", WI: "Wis.", WV: "W.Va.", WY: "Wyo."
+  };
+  var LABEL_FONT = '600 12.5px "Libre Franklin","Helvetica Neue",Helvetica,Arial,sans-serif';
+
+  // Anchored on each state's centroid, then pushed clear of the squares and of
+  // each other along whichever axis they are least overlapped on, so a label
+  // moves as little as it has to. Boxes rather than circles: a label is much
+  // wider than it is tall and a circular test would shove it far too far.
+  // The nine the redraw touched, read off the districts rather than listed:
+  // a state is in if any of its districts did not keep its lines.
+  function redrawnStates() {
+    var ds = state.districts["2026"] || [], out = {};
+    for (var i = 0; i < ds.length; i++) {
+      if (!ds[i].__same) out[ds[i].properties.state] = true;
+    }
+    return out;
+  }
+
+  function layoutStateLabels(live) {
+    var ds = state.districts["2026"] || [];
+    // Only the redrawn states are named. The map draws all 435 districts so
+    // that the nine can be read against the House they sit in, but fifty
+    // abbreviations scattered over the country buries the nine it is about.
+    var want = redrawnStates();
+    var byState = {};
+    for (var i = 0; i < ds.length; i++) {
+      var st = ds[i].properties.state;
+      if (!want[st]) continue;
+      (byState[st] = byState[st] || []).push(ds[i]);
+    }
+    ctx.font = LABEL_FONT;
+    var labels = [];
+    Object.keys(byState).forEach(function (st) {
+      var pn = panelOf(byState[st][0]);
+      if (!pn) return;
+      var c = pn.path.centroid({ type: "FeatureCollection", features: byState[st] });
+      if (!isFinite(c[0])) return;
+      var text = STATE_ABBR[st] || st;
+      labels.push({
+        st: st, text: text, pn: pn,
+        x: pn.t.applyX(c[0]), y: pn.t.applyY(c[1]),
+        hw: ctx.measureText(text).width / 2 + 3, hh: 8
+      });
+    });
+
+    var ch = CHIC / 2 + 3;
+    for (var it = 0; it < 60; it++) {
+      for (var a = 0; a < labels.length; a++) {
+        var L = labels[a];
+        for (var b = 0; b < live.length; b++) {
+          if (live[b].pn === L.pn) separate(L, live[b], ch, ch, 1);
+        }
+        for (var d = 0; d < labels.length; d++) {
+          if (d !== a && labels[d].pn === L.pn) {
+            separate(L, labels[d], labels[d].hw, labels[d].hh, 0.5);
+          }
+        }
+        L.x = Math.min(Math.max(L.x, L.pn.x + L.hw + 4), L.pn.x + L.pn.w - L.hw - 4);
+        L.y = Math.min(Math.max(L.y, L.pn.y + L.hh + 4), L.pn.y + L.pn.h - L.hh - 4);
+      }
+    }
+    return labels;
+  }
+
+  function separate(L, o, ohw, ohh, share) {
+    var dx = L.x - o.x, dy = L.y - o.y;
+    var ox = (L.hw + ohw) - Math.abs(dx);
+    var oy = (L.hh + ohh) - Math.abs(dy);
+    if (ox <= 0 || oy <= 0) return;           // not overlapping
+    if (ox / (L.hw + ohw) < oy / (L.hh + ohh)) {
+      L.x += (dx >= 0 ? ox : -ox) * share;    // least penetration: sideways
+    } else {
+      L.y += (dy >= 0 ? oy : -oy) * share;    // least penetration: vertically
+    }
+  }
+
+  function drawStateLabels(live) {
+    var labels = layoutStateLabels(live), T = theme();
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = LABEL_FONT;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    for (var i = 0; i < labels.length; i++) {
+      var L = labels[i];
+      ctx.lineWidth = 3.5;                 // halo, so the type survives any fill
+      ctx.strokeStyle = T.paper;
+      ctx.strokeText(L.text, L.x, L.y);
+      ctx.fillStyle = T.ink;
+      ctx.fillText(L.text, L.x, L.y);
+    }
+    ctx.restore();
+  }
+
+  function drawChiclets() {
+    var live = layoutChiclets();
+    var T = theme(), h = CHIC / 2;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // A connector where a square has been pushed clear of its own district,
+    // so the square is never read as sitting somewhere it does not.
+    ctx.strokeStyle = T.baseedge;
+    ctx.lineWidth = 1;
+    for (var k = 0; k < live.length; k++) {
+      var c = live[k];
+      if (Math.hypot(c.x - c.ax, c.y - c.ay) < CHIC * 0.8) continue;
+      ctx.beginPath(); ctx.moveTo(c.ax, c.ay); ctx.lineTo(c.x, c.y); ctx.stroke();
+    }
+    for (var m = 0; m < live.length; m++) {
+      var d = live[m];
+      var base = squareFill(d.f);
+      var fi = state.color === "flip" ? flipInfo(d.f) : null;
+      // Hatched where the seat changes hands.
+      var dir = fi && FLIP_HATCH[fi.fate];
+      var paint = (dir && hatchFor(base, dir)) || base;
+      roundRect(ctx, d.x - h, d.y - h, CHIC, CHIC, CHIC_R);
+      ctx.fillStyle = paint;
+      ctx.fill();
+      var on = state.hover === d.f;
+      // In the flip mode the border carries the holding party, so it is drawn
+      // heavier and in that party's color rather than as a hairline.
+      ctx.strokeStyle = on ? T.ink : fi ? flipRing(fi) : T.baseedge;
+      ctx.lineWidth = (on || fi) ? 2.6 : 1;
+      ctx.stroke();
+    }
+    ctx.restore();
+    return live;
+  }
+
+  // Squares sit above the map, so they are hit-tested before it.
+  function chicletAt(px, py) {
+    if (!chicletMode() || !chiclets) return null;
+    var h = CHIC / 2;
+    for (var i = chiclets.length - 1; i >= 0; i--) {
+      var c = chiclets[i];
+      if (c.dead || !c.seeded) continue;
+      if (px >= c.x - h && px <= c.x + h && py >= c.y - h && py <= c.y + h) return c.f;
+    }
+    return null;
+  }
+
+  function baseFill(p, f) {
+    if (state.color === "election") return electionColor(p);
+    if (state.color === "cook") return cookColor(f);
+    if (state.color === "flip") return flipColor(f);
+    return demoColor(f);
+  }
+
+  // With one district singled out, the rest drop to grey at their own
+  // lightness rather than a flat slab, so the surrounding pattern is still
+  // legible without competing with the district in focus.
+  function desaturate(col) {
+    var c = d3.color(col);
+    if (!c) return theme().nodata;
+    var r = c.rgb();
+    var l = 0.299 * r.r + 0.587 * r.g + 0.114 * r.b;
+    var m = Math.round(l * 0.35 + 190 * 0.65);
+    return "rgb(" + m + "," + m + "," + m + ")";
+  }
+
+  // Districts are the subject of this map and precincts are a way of seeing
+  // inside them, so a precinct answers the same question a district does:
+  // which district am I in, on the map currently shown. That makes the
+  // single-district view work the same either way.
+  function districtOf(p) {
+    if (!p) return null;
+    if (p.district) return p.district;
+    return state.year === "2026" ? p.district_2026 : p.district_2024;
+  }
+
+  // "Redrawn" greys the districts the new map did not touch. Inside a state
+  // the redraw did not touch at all -- forty-one of them -- that greys the
+  // whole state, and clicking into Pennsylvania landed on an empty canvas.
+  // There is nothing for the control to tell apart there, so it does not try.
+  var greyCache = null;
+  function greyUnredrawn() {
+    if (state.allLines) return false;
+    if (!state.focus) return true;
+    var key = state.focus + "|" + state.year;
+    if (greyCache && greyCache.k === key) return greyCache.v;
+    var ds = state.districts[state.year] || [], v = false;
+    for (var i = 0; i < ds.length; i++) {
+      if (ds[i].properties.state === state.focus && !ds[i].__same) { v = true; break; }
+    }
+    greyCache = { k: key, v: v };
+    return v;
+  }
+
+  function fillFor(p, f) {
+    var picked = state.district && districtOf(p) === state.district;
+    // Unredrawn districts fall back to context in every color mode, because
+    // the map is about the mid-decade redraw throughout and a district the
+    // redraw did not touch is context whatever is being shaded. The lines
+    // control is the way out: "All" asks for the whole map of that year, and
+    // a district drawn in outline but left grey is not on the map in any
+    // sense a reader would recognise -- so it takes its own color there too.
+    // Not in the rating modes: there the squares carry the data and the
+    // districts are a backdrop, so shading the unredrawn ones differently
+    // tinted the nine redrawn states and left the other forty-one pale --
+    // a distinction the Cook tab does not draw and does not mean.
+    if (f && f.__same && !picked && greyUnredrawn() && !chicletMode()) {
+      return theme().basefill;
+    }
+    var col = baseFill(p, f);
+    // Anything that is not the district in focus greys out, including the
+    // 1,235 precincts carrying no district assignment at all -- mostly empty
+    // geography. Letting those stay lit would make them the brightest thing
+    // on a single-district view.
+    if (state.district && districtOf(p) !== state.district) {
+      return col ? desaturate(col) : theme().nodata;
+    }
+    return col;
+  }
+
+  // A hovered district outlines itself in a deeper shade of its own fill, not
+  // in ink: pointing at it should read as that district lifting off the map
+  // rather than a black line laid across it. Dark fills brighten instead,
+  // since darker has nowhere left to go against them.
+  //
+  // In the rating modes there is no fill to deepen from -- the district is a
+  // backdrop and the square has the color -- so the outline takes the
+  // square's own color and is drawn a little heavier than the hairline the
+  // choropleth modes use, which ties the shape to its square without
+  // painting over the map underneath it.
+  // How far the rating line fades when nothing is pointing at it, and how far
+  // it deepens when something is.
+  var RATED_ALPHA = 0.45;
+  function deepen(col) {
+    var c = d3.color(col);
+    return c ? String(c.darker(0.8)) : col;
+  }
+
+  function hoverStroke(f) {
+    if (chicletMode()) return squareFill(f);
+    var c = f && d3.color(fillFor(f.properties, f) || "");
+    if (!c) return theme().ink;
+    var r = c.rgb();
+    var l = (0.299 * r.r + 0.587 * r.g + 0.114 * r.b) / 255;
+    return String(l < 0.35 ? c.brighter(0.9) : c.darker(1.1));
+  }
+
+  /* --------------------------------------------- national precinct layer */
+
+  // At national zoom the precinct layer is an image rather than geometry. The
+  // renderer draws California's 24,197 precincts in 397ms, which extrapolates
+  // to 2.9 seconds a frame and 78MB of geometry for the whole country -- and
+  // buys nothing at that scale, where a precinct is smaller than a pixel and
+  // carries no tooltip. scripts/raster_build.html pre-draws them once.
+  //
+  // Placing the image is exact, not approximate: geoAlbersUsa at a given scale
+  // and translate is affine in screen space, so an image drawn at one
+  // canonical fit lands at any other under a plain drawImage. Measured across
+  // the lower 48, the Aleutians and Hawaii, the two agree to 6e-13 of a pixel.
+  var RASTER = { manifest: null, pending: null, imgs: {} };
+
+  // The one variable baked into the image is the 2024 margin, so this is the
+  // election layer and nothing else. Demographics exist for nine states and
+  // do not survive being drawn into a picture.
+  function rasterMode() {
+    return !state.focus && state.precincts && state.color === "election";
+  }
+
+  function themeKey() {
+    var set = document.documentElement.getAttribute("data-theme");
+    if (set === "dark" || set === "light") return set;
+    return (window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches)
+      ? "dark" : "light";
+  }
+
+  function ensureRaster() {
+    if (RASTER.manifest) return Promise.resolve(RASTER.manifest);
+    if (RASTER.pending) return RASTER.pending;
+    RASTER.pending = fetch(dataUrl("precinct_raster.json")).then(function (r) {
+      if (!r.ok) throw new Error("raster manifest " + r.status);
+      return r.json();
+    }).then(function (m) {
+      RASTER.manifest = m; RASTER.pending = null; return m;
+    }).catch(function (e) {
+      RASTER.pending = null; throw e;
+    });
+    return RASTER.pending;
+  }
+
+  // Hands back the image only once it has decoded. Until then the caller falls
+  // back to the district choropleth, so the map is never blank, and the load
+  // handler redraws when the pixels arrive. The theme picks which of the two
+  // versions is wanted, so switching to dark fetches the dark one on demand.
+  function rasterImage(group) {
+    var m = RASTER.manifest;
+    if (!m) return null;
+    var key = group + "_" + themeKey(), meta = m.images[key];
+    if (!meta) return null;
+    var img = RASTER.imgs[key];
+    if (!img) {
+      img = RASTER.imgs[key] = new Image();
+      img.onload = function () { render(); };
+      img.onerror = function () { setStatus("Could not load the precinct layer"); };
+      img.src = dataUrl(meta.file);
+    }
+    return (img.complete && img.naturalWidth) ? { img: img, meta: meta } : null;
+  }
+
+  // Each panel draws its own group's image. On a phone the two halves are
+  // separate images rather than one clipped twice: the eastern panel's
+  // projection is centred on eastern states, so a national image placed in it
+  // would hang western states into the frame with nothing to mask them.
+  function drawRaster(pn) {
+    var got = rasterImage(pn.group || "national");
+    if (!got) return false;
+    var m = RASTER.manifest, k = pn.proj.scale() / m.scale, t = pn.proj.translate();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(got.img,
+                  t[0] + k * (got.meta.x - m.translate[0]),
+                  t[1] + k * (got.meta.y - m.translate[1]),
+                  got.meta.w * k, got.meta.h * k);
+    return true;
+  }
+
+  /* ----------------------------------------------------------------- draw */
+
+  function visibleFeatures() {
+    if (state.focus && state.precincts && state.precinctCache[state.focus]) {
+      return state.precinctCache[state.focus];
+    }
+    var ds = state.districts[state.year] || [];
+    return state.focus ? ds.filter(function (f) { return f.properties.state === state.focus; }) : ds;
+  }
+
+  function backdrop() {
+    // District outlines always draw, so a precinct view still reads as a map.
+    return (state.districts[state.year] || []).filter(function (f) {
+      return !state.focus || f.properties.state === state.focus;
+    });
+  }
+
+  function idxToColor(i) {
+    var n = i + 1;
+    return "rgb(" + (n & 255) + "," + ((n >> 8) & 255) + "," + ((n >> 16) & 255) + ")";
+  }
+  function colorToIdx(r, g, b) { return (r | (g << 8) | (b << 16)) - 1; }
+
+  var current = [];
+  var pickDirty = true;
+
+  /* ------------------------------------------------------- split (phones) */
+  // The country is wide and short and a phone is narrow and tall, so fitting
+  // the whole of it leaves the map at a third of the available height with
+  // everything in it too small to aim at. Cutting it in two and stacking the
+  // halves roughly doubles the scale, because the width each half has to
+  // cover is halved.
+  //
+  // Every state is in one of the two. It used to be only the nine, which was
+  // right while they were the only districts drawn and wrong the moment the
+  // map went national: a district in a state on neither list belongs to no
+  // panel, and inPanel() then quietly refused to draw it. "All district
+  // lines" on a phone showed the nine states and nothing else.
+  //
+  // The cut follows state lines, not the river: the western half ends at the
+  // western borders of Minnesota, Iowa, Missouri, Arkansas and Louisiana,
+  // which divides the seats 279 to 156. Even halves would be the wrong aim --
+  // width is what sets the scale on a phone, so what matters is that the
+  // halves are about equally wide.
+  //
+  // Following the river itself is what it did first, and it left a hole:
+  // Arkansas is west of the Mississippi while Missouri and Louisiana, on
+  // either side of it, are east of it only by this list. Arkansas came out of
+  // the eastern map as a state-shaped gap and reappeared stranded on the edge
+  // of the western one. A half has to be a contiguous piece of country, which
+  // is a stronger constraint than any one line on a map.
+  //
+  // East above west, which is the order the Post uses: it is where most of
+  // the competitive seats are, so it is what a reader should meet first.
+  // Alaska and Hawaii ride along in the western group -- the AlbersUsa
+  // composite keeps its insets at the lower left however it is fitted, and
+  // they land in that panel's empty corner.
+  var SPLIT_GROUPS = [
+    ["AL", "AR", "CT", "DE", "FL", "GA", "IA", "IL", "IN", "KY", "LA", "MA",
+     "MD", "ME", "MI", "MN", "MO", "MS", "NC", "NH", "NJ", "NY", "OH", "PA",
+     "RI", "SC", "TN", "VA", "VT", "WI", "WV"],
+    ["AK", "AZ", "CA", "CO", "HI", "ID", "KS", "MT", "ND", "NE", "NM",
+     "NV", "OK", "OR", "SD", "TX", "UT", "WA", "WY"]
+  ];
+  var SPLIT_MAX_W = 620;
+  // The panel rect is also the clip, so this is what keeps the surrounding
+  // states from running flat into the edge of the screen. The sides get more
+  // than the top and bottom: a panel is the full width of a phone, and with
+  // only a hairline of gutter the map reads as a crop of a map rather than a
+  // map. Between the two panels the gap does that job already.
+  var SPLIT_PAD_X = 20;
+  var SPLIT_PAD_Y = 13;
+  // And the same for the single-panel view, where the country was fitted
+  // twelve pixels from its own canvas edge and read as cropped rather than
+  // placed.
+  var MAP_PAD = 22;
+  // A margin that reads as generous at 1200px wastes an eighth of the width
+  // at 375, where the width is the only thing setting a wide state's scale.
+  function mapPad() { return W <= SPLIT_MAX_W ? 11 : MAP_PAD; }
+
+  function mapExtent() {
+    var q = mapPad();
+    return [[q, q], [W - q, H - q]];
+  }
+  var splitPanels = null;
+
+  function splitMode() {
+    return !state.focus && W <= SPLIT_MAX_W &&
+           (state.districts[state.year] || []).length > 0;
+  }
+
+  function buildPanels() {
+    splitPanels = null;
+    var want = splitMode(), stage = document.getElementById("stage");
+    stage.classList.toggle("split", want);
+    if (!want) { stage.style.removeProperty("min-height"); return; }
+    var ds = state.districts[state.year] || [];
+    var gap = 14, out = [], groups = [];
+    for (var i = 0; i < SPLIT_GROUPS.length; i++) {
+      var grp = SPLIT_GROUPS[i];
+      var feats = ds.filter(function (f) {
+        return grp.indexOf(f.properties.state) >= 0;
+      });
+      if (!feats.length) {                   // all or nothing
+        stage.classList.remove("split");
+        stage.style.removeProperty("min-height");
+        return;
+      }
+      groups.push({ grp: grp, feats: feats });
+    }
+
+    // Each group is fitted to the full panel width, and each gets the scale
+    // that takes. They used to share one -- the smaller of the two -- so that
+    // a district in one panel drew the same size as a district in the other.
+    // That is the right instinct on a wide screen and the wrong trade on a
+    // phone: the western group is much the wider of the two, so it set the
+    // scale for both, and the eastern panel drew its map at 206px inside a
+    // 335px box. Two thirds of the size, to protect a comparison between
+    // panels that nothing on the page asks a reader to make -- the squares
+    // and the readout carry every cross-state comparison there is. Fitted
+    // apart, each group fills the width it is given, which at phone widths
+    // is the only thing that sets how big the map can be.
+    //
+    // Height then follows the content rather than the screen. Width sets the
+    // scale, so a panel taller than its map is dead space underneath it, and
+    // two of those is why this needed doing.
+    var pw = W - 2 * SPLIT_PAD_X;
+    for (var g = 0; g < groups.length; g++) {
+      var q = groups[g];
+      var fc = { type: "FeatureCollection", features: q.feats };
+      var fit = d3.geoAlbersUsa().fitWidth(pw, fc);
+      var b = d3.geoPath(fit).bounds(fc);
+      q.k = fit.scale();
+      q.h = Math.max(80, Math.ceil(b[1][1] - b[0][1]));
+    }
+
+    var needed = groups[0].h + groups[1].h + gap + 2 * SPLIT_PAD_Y;
+    // The stage is a flex item, so this is a floor and not a height: the CSS
+    // minimum still wins where it is larger. Written as an inline style
+    // because it is a measurement, not a rule -- it depends on the width and
+    // on which states are drawn, neither of which CSS can see.
+    var px = needed + "px";
+    if (stage.style.minHeight !== px) {
+      stage.style.minHeight = px;
+      var r = stage.getBoundingClientRect();     // may have just grown
+      if (Math.abs(Math.floor(r.height) - H) > 1) { resize(); return; }
+    }
+
+    // Any height the stage has beyond what the two maps need is shared out
+    // between them, so the gap between the panels stays in proportion rather
+    // than collecting at the bottom.
+    var slack = Math.max(0, H - needed);
+    var hs = [groups[0].h + Math.round(slack / 2),
+              groups[1].h + (slack - Math.round(slack / 2))];
+
+    var y = SPLIT_PAD_Y;
+    for (var j = 0; j < groups.length; j++) {
+      var p = groups[j], ph = hs[j];
+      out.push({ x: SPLIT_PAD_X, y: y, w: pw, h: ph, states: p.grp,
+                 group: j === 0 ? "east" : "west",
+                 t: d3.zoomIdentity, proj: null, path: null, pick: null });
+      var proj = centreOn(p.feats, p.k, SPLIT_PAD_X, y, pw, ph);
+      out[j].proj = proj;
+      out[j].path = d3.geoPath(proj, ctx);
+      out[j].pick = d3.geoPath(proj, pctx);
+      y += ph + gap;
+    }
+    splitPanels = out;
+  }
+
+  // A projection at a given scale, shifted so the features sit in the middle
+  // of the rectangle. Translate moves the whole composite, so measuring the
+  // bounds at the origin and offsetting by the difference is exact.
+  function centreOn(feats, k, x, y, w, h) {
+    var proj = d3.geoAlbersUsa().scale(k).translate([0, 0]);
+    var b = d3.geoPath(proj).bounds({ type: "FeatureCollection", features: feats });
+    return proj.translate([
+      x + w / 2 - (b[0][0] + b[1][0]) / 2,
+      y + h / 2 - (b[0][1] + b[1][1]) / 2
+    ]);
+  }
+
+  // One panel covering the stage is the ordinary case; the split is the
+  // exception, so everything downstream can just loop over whatever this
+  // returns and never ask which mode it is in.
+  function panelsFor() {
+    if (splitPanels) return splitPanels;
+    return [{ x: 0, y: 0, w: W, h: H, states: null, group: "national",
+              t: transform, proj: projection, path: path, pick: pickPath }];
+  }
+
+  function inPanel(pn, f) {
+    return !pn.states || pn.states.indexOf(f.properties.state) >= 0;
+  }
+
+  function panelOf(f) {
+    var ps = panelsFor();
+    if (ps.length === 1) return ps[0];
+    for (var i = 0; i < ps.length; i++) if (inPanel(ps[i], f)) return ps[i];
+    return null;
+  }
+
+  // The drawing code reads the module-level `path` and `transform`, so a panel
+  // installs its own for the duration rather than every call site growing an
+  // argument it does not need in the ordinary single-panel case.
+  function withPanel(pn, c, pathRef, draw) {
+    var sp = path, st = transform;
+    path = pathRef; transform = pn.t;
+    c.save();
+    c.beginPath(); c.rect(pn.x, pn.y, pn.w, pn.h); c.clip();
+    c.translate(pn.t.x, pn.t.y); c.scale(pn.t.k, pn.t.k);
+    draw(pn);
+    c.restore();
+    path = sp; transform = st;
+  }
+
+  function render() {
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    current = visibleFeatures();
+    var ps = panelsFor();
+    for (var pi = 0; pi < ps.length; pi++) withPanel(ps[pi], ctx, ps[pi].path, drawLayers);
+    ctx.restore();
+    var squares = chicletMode() ? drawChiclets() : [];
+    if (!state.focus) drawStateLabels(squares);
+    pickDirty = true;
+  }
+
+  function drawLayers(pn) {
+    // True for either precinct layer, geometry or image: both want every
+    // district outlined, because over precincts the district line is the only
+    // thing saying where one district ends.
+    var showingPrecincts = (state.focus && state.precincts &&
+      state.precinctCache[state.focus]) || rasterMode();
+
+    // The country's fill goes behind the data; its borders go over it. They
+    // used to go behind as well, which worked only while the nine states
+    // were the only districts drawn -- everywhere else the basemap showed
+    // through and kept its state lines. Now that all 435 are drawn, a
+    // district fill covers every border it touches, and a country with no
+    // state lines in it is not a map.
+    if (state.basemap) {
+      ctx.fillStyle = theme().basefill;
+      for (var b = 0; b < state.basemap.nation.length; b++) {
+        ctx.beginPath(); path(state.basemap.nation[b]); ctx.fill();
+      }
+    }
+
+    // Fills. At national zoom with precincts on, the image is the fill layer
+    // and the districts underneath it are not drawn; until it has decoded,
+    // the districts are, so turning precincts on never shows a blank country.
+    var raster = rasterMode() && drawRaster(pn);
+    if (!raster) {
+      // The backdrop tone belongs to the tab, not to the marker: it must not
+      // jump a shade when the squares are swapped for fills.
+      var blank = ratingMode() ? theme().chicfill : theme().nodata;
+      for (var i = 0; i < current.length; i++) {
+        var f = current[i];
+        if (!inPanel(pn, f)) continue;
+        var col = fillFor(f.properties, f);
+        ctx.beginPath();
+        path(f);
+        if (col) {
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = col;
+        } else {
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = blank;  // no data: visibly absent, not zero
+        }
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // State and national borders, over the fills. Never hit-tested -- the
+    // picker canvas only ever holds the data layer.
+    if (state.basemap) {
+      ctx.lineWidth = 0.6 / transform.k;
+      ctx.strokeStyle = theme().baseline;
+      for (var t = 0; t < state.basemap.states.length; t++) {
+        ctx.beginPath(); path(state.basemap.states[t]); ctx.stroke();
+      }
+      ctx.lineWidth = 1 / transform.k;
+      ctx.strokeStyle = theme().baseedge;
+      for (var u = 0; u < state.basemap.nation.length; u++) {
+        ctx.beginPath(); path(state.basemap.nation[u]); ctx.stroke();
+      }
+    }
+
+    // Hairlines between precincts only once zoomed enough to tell them apart.
+    // Not over the image, where `current` is districts and these would outline
+    // the wrong thing -- and where the hairlines are already drawn in.
+    if (showingPrecincts && !raster && transform.k > 3) {
+      ctx.lineWidth = 0.3 / transform.k;
+      ctx.strokeStyle = waterAlpha(0.55);
+      for (var j = 0; j < current.length; j++) {
+        if (!inPanel(pn, current[j])) continue;
+        ctx.beginPath(); path(current[j]); ctx.stroke();
+      }
+    }
+
+    // District borders on top
+    // District lines are drawn in the water color, which reads as a parting
+    // between two filled districts. A district left unfilled -- one the redraw
+    // did not touch -- needs the opposite: a line that shows against the page,
+    // the same grey the state borders use.
+    //
+    // Those unfilled districts hold their line back by default: the map is
+    // about the redraw, and an outline around a district the redraw skipped
+    // puts it back into the comparison it is meant to sit outside of. The
+    // lines control draws the full set when you want the whole map. Over
+    // precincts they stay, since there the district line is the only thing
+    // saying where one district ends.
+    var bd = backdrop();
+    ctx.lineWidth = (showingPrecincts ? 1.6 : 1.1) / transform.k;
+    for (var k = 0; k < bd.length; k++) {
+      if (!inPanel(pn, bd[k])) continue;
+      if (bd[k].__same && greyUnredrawn() && !showingPrecincts) continue;
+      ctx.strokeStyle = (bd[k].__same && !state.district)
+        ? theme().baseline : theme().water;
+      ctx.beginPath(); path(bd[k]); ctx.stroke();
+    }
+
+    // In the rating modes a district that earns a square takes that square's
+    // color as its own outline, so the shape on the map and the marker over
+    // it make one statement instead of two.
+    //
+    // The line is inset -- the path clipped to itself, then stroked at twice
+    // the width so only the inside half survives -- because a centered stroke
+    // is half outside the district. Where two rated districts share a border
+    // their lines would overlap, the later one painting over the earlier, and
+    // a border between a Lean R seat and a Solid D one can only be one of
+    // those two colors. Inset, each district keeps its own.
+    //
+    // The line is held back to a whisper so the squares stay the first thing
+    // read, and the district under the cursor brings its own up to full
+    // strength and a shade deeper. That is the hover emphasis in these modes:
+    // the line that answers is the line that was already there.
+    if (chicletMode()) {
+      var ratedLw = (showingPrecincts ? 2.2 : 1.8) / transform.k;
+      for (var q = 0; q < bd.length; q++) {
+        if (!inPanel(pn, bd[q]) || !wantsSquare(bd[q])) continue;
+        var onq = state.hover === bd[q], col = squareFill(bd[q]);
+        ctx.save();
+        ctx.beginPath(); path(bd[q]);
+        ctx.clip();                       // clip keeps the path for the stroke
+        ctx.lineWidth = ratedLw * 2;
+        ctx.strokeStyle = onq ? deepen(col) : col;
+        ctx.globalAlpha = onq ? 1 : RATED_ALPHA;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // The district in focus keeps a hard outline so it stays separate from
+    // the greyed field around it, and its counterpart on the other map is
+    // drawn dashed over the top. Seeing both lines at once is the whole point
+    // of the comparison: the gap between them is what the redraw did.
+    if (state.district) {
+      var sel = districtFeature(state.district);
+      if (sel) {
+        var other = state.year === "2024" ? "2026" : "2024";
+        var cp = counterpartOf(state.district, state.year);
+        // An unchanged district's counterpart is the same line, so the dashes
+        // would land exactly on the solid outline and read as a rendering
+        // fault rather than as "nothing moved".
+        var cpf = (cp && !sel.__same) ? districtFeature(cp, other) : null;
+        if (cpf) {
+          // Cased, like a printed map. A bare dark dash is legible over the
+          // grey field and invisible the moment it crosses the district it is
+          // being compared against -- which is most of its length, and the
+          // part that matters. The paper-colored casing under it means the
+          // line reads over any fill, and inverts correctly in dark mode.
+          ctx.save();
+          ctx.lineJoin = "round";
+          ctx.lineWidth = 4.5 / transform.k;
+          ctx.strokeStyle = theme().paper;
+          ctx.beginPath(); path(cpf); ctx.stroke();
+          ctx.lineWidth = 1.9 / transform.k;
+          ctx.strokeStyle = theme().ink;
+          ctx.setLineDash([7 / transform.k, 5 / transform.k]);
+          ctx.beginPath(); path(cpf); ctx.stroke();
+          ctx.restore();
+        }
+        ctx.lineWidth = 2 / transform.k;
+        ctx.strokeStyle = theme().ink;
+        ctx.beginPath(); path(sel); ctx.stroke();
+      }
+    }
+
+    // Hover emphasis. At national zoom a click opens the state, whatever the
+    // cursor is actually over, so the state outlines itself to show what the
+    // click would do -- in every colour mode, squares included. The readout
+    // still answers with the district: the outline is the affordance, not a
+    // second kind of answer. It is the state dissolved from its own districts,
+    // so only the border thickens and the districts inside stay as they were.
+    if (state.hoverState) {
+      var so = stateOutline(state.hoverState);
+      if (so && inPanel(pn, so)) {
+        ctx.lineWidth = 2 / transform.k;
+        ctx.strokeStyle = theme().ink;
+        ctx.beginPath(); path(so); ctx.stroke();
+      }
+    }
+    // A rated district has already answered with its own line, deepened
+    // above; a second outline over the top would only blur it.
+    if (state.hover && inPanel(pn, state.hover) &&
+        !(chicletMode() && wantsSquare(state.hover))) {
+      ctx.lineWidth = (chicletMode() ? 1.5 : 1.1) / transform.k;
+      ctx.strokeStyle = hoverStroke(state.hover);
+      ctx.beginPath(); path(state.hover); ctx.stroke();
+    }
+  }
+
+  function renderPick() {
+    pctx.save();
+    pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    pctx.clearRect(0, 0, W, H);
+    var ps = panelsFor();
+    for (var p = 0; p < ps.length; p++) {
+      var pn = ps[p], saved = pickPath;
+      pickPath = pn.pick;
+      pctx.save();
+      pctx.beginPath(); pctx.rect(pn.x, pn.y, pn.w, pn.h); pctx.clip();
+      pctx.translate(pn.t.x, pn.t.y); pctx.scale(pn.t.k, pn.t.k);
+      for (var i = 0; i < current.length; i++) {
+        if (!inPanel(pn, current[i])) continue;
+        pctx.fillStyle = idxToColor(i);
+        pctx.beginPath(); pickPath(current[i]); pctx.fill();
+      }
+      pctx.restore();
+      pickPath = saved;
+    }
+    pctx.restore();
+    pickDirty = false;
+  }
+
+  /* --------------------------------------------------------------- layout */
+
+  // Zoom handling follows daily-district: compute a target transform from the
+  // feature's bounds in *projected* space and tween the transform, instead of
+  // re-fitting the projection, which can only ever jump. Note the tween is a
+  // plain requestAnimationFrame loop rather than a d3 transition -- the same
+  // choice daily-district landed on, after a d3 transition tween silently
+  // failed to drive zoom.transform.
+  function boundsTransform(features, margin, maxScale) {
+    return boundsTransformFor(path, features, margin, maxScale);
+  }
+
+  // The same, under a projection that has not been installed yet: entering a
+  // state straight onto one of its districts has to know where that district
+  // will land before the swap happens.
+  function boundsTransformFor(pathGen, features, margin, maxScale) {
+    var fc = { type: "FeatureCollection", features: features };
+    var b = pathGen.bounds(fc);
+    var x0 = b[0][0], y0 = b[0][1], x1 = b[1][0], y1 = b[1][1];
+    var bw = x1 - x0, bh = y1 - y0;
+    if (!(bw > 0) || !(bh > 0)) return d3.zoomIdentity;
+    var k = Math.min(maxScale || 60,
+                     (margin || 0.85) / Math.max(bw / W, bh / H));
+    return d3.zoomIdentity
+      .translate(W / 2, H / 2)
+      .scale(k)
+      .translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
+  }
+
+  // Entering or leaving a state swaps the projection, and two projections have
+  // nothing to interpolate between -- a zoom tween cannot cover it. So hold the
+  // last frame as an image and fade it out over the newly projected scene.
+  var fadeCanvas = document.createElement("canvas");
+  var fadeAnim = null;
+  function snapshot() {
+    fadeCanvas.width = cv.width;
+    fadeCanvas.height = cv.height;
+    fadeCanvas.getContext("2d").drawImage(cv, 0, 0);
+  }
+  function crossFade(dur, done) {
+    dur = dur || 340;
+    if (fadeAnim) { cancelAnimationFrame(fadeAnim); fadeAnim = null; }
+    var ease = d3.easeCubicInOut;
+    var start = performance.now();
+    (function frame() {
+      var e = performance.now() - start;
+      var t = Math.min(e / dur, 1);
+      render();
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalAlpha = 1 - ease(t);
+      ctx.drawImage(fadeCanvas, 0, 0);
+      ctx.restore();
+      if (t < 1) { fadeAnim = requestAnimationFrame(frame); }
+      else { fadeAnim = null; if (done) done(); }
+    })();
+  }
+
+  var zoomAnim = null;
+  function animateZoomTo(target, dur, done) {
+    if (!target) { if (done) done(); return; }
+    dur = dur || 650;
+    if (zoomAnim) { cancelAnimationFrame(zoomAnim); zoomAnim = null; }
+    var sel = d3.select(cv);
+    var k0 = transform.k, x0 = transform.x, y0 = transform.y;
+    var k1 = target.k, x1 = target.x, y1 = target.y;
+    if (Math.abs(k1 - k0) < 1e-6 && Math.abs(x1 - x0) < 0.5 && Math.abs(y1 - y0) < 0.5) {
+      if (done) done();
+      return;
+    }
+    var ease = d3.easeCubicInOut;
+    var start = performance.now();
+    (function frame() {
+      var e = performance.now() - start;
+      var t = ease(Math.min(e / dur, 1));
+      zoom.transform(sel, d3.zoomIdentity
+        .translate(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)
+        .scale(k0 + (k1 - k0) * t));
+      if (e < dur) { zoomAnim = requestAnimationFrame(frame); }
+      else { zoomAnim = null; if (done) done(); }
+    })();
+  }
+
+  function fitTo(features) {
+    var fc = { type: "FeatureCollection", features: features };
+    projection.fitExtent(mapExtent(), fc);
+    transform = d3.zoomIdentity;
+    d3.select(cv).call(zoom.transform, d3.zoomIdentity);
+  }
+
+  function resize() {
+    var r = document.getElementById("stage").getBoundingClientRect();
+    // Match the box we were given. The minimums are the stage's job (CSS), so
+    // these guards only need to keep the canvas from being zero-sized during
+    // layout transitions.
+    W = Math.max(1, Math.floor(r.width));
+    H = Math.max(1, Math.floor(r.height));
+    [cv, pick].forEach(function (c) {
+      c.width = Math.floor(W * dpr); c.height = Math.floor(H * dpr);
+      c.style.width = W + "px"; c.style.height = H + "px";
+    });
+    var base = state.focus
+      ? (state.districts[state.year] || []).filter(function (f) { return f.properties.state === state.focus; })
+      : nationalExtent();
+    if (base.length) {
+      var fc = { type: "FeatureCollection", features: base };
+      projection.fitExtent(mapExtent(), fc);
+    }
+    buildPanels();
+    syncZoomControls();
+    render();
+  }
+
+  var zoom = d3.zoom().scaleExtent([1, 220])
+    // touch-action alone does not free the gesture: d3-zoom calls
+    // preventDefault on touchstart, so it has to be told not to take it.
+    // Split in two there is no single transform to apply anyway.
+    .filter(function (ev) {
+      if (splitPanels) return false;
+      return (!ev.ctrlKey || ev.type === "wheel") && !ev.button;
+    })
+    .on("zoom", function (ev) {
+      transform = ev.transform;
+      render();
+    });
+
+  /* ------------------------------------------------------------ interaction */
+
+  function fmt(n) { return n === null || n === undefined ? "\u2014" : d3.format(",")(Math.round(n)); }
+  function pct(v) { return v === null || v === undefined ? "\u2014" : d3.format(".1%")(v); }
+
+  function cvapOf(f) {
+    if (f.__demo && f.__demo.cvap_total !== undefined) return f.__demo.cvap_total;
+    var p = f.properties;
+    if (p && p.district && state.demoDistricts) {
+      var rec = state.demoDistricts[p.state + "-" + (p.map || state.year) + "-" + p.district];
+      if (rec && rec.cvap_total !== undefined) return rec.cvap_total;
+    }
+    return null;
+  }
+
+  function showReadout(f) {
+    var rt = document.getElementById("rTitle");
+    var idle = document.getElementById("rIdle");
+    var list = document.getElementById("rList");
+    var flag = document.getElementById("rFlag");
+    if (!f) {
+      document.getElementById("readout").setAttribute("data-idle", "");
+      rt.textContent = state.focus ? STATE_NAME[state.focus] : "Hover the map";
+      idle.hidden = false;
+      idle.textContent = state.color === "election"
+        ? "Shaded by the 2024 presidential vote."
+        : state.color === "cook" ? "Shaded by the Cook Political Report rating."
+        : state.color === "flip"
+          ? (state.squares ? "Squares mark " : "Shading marks ")
+            + (state.allLines ? "" : "redrawn ")
+            + "seats Cook no longer rates for the party that holds them."
+        : "Shaded by " + currentVar().label.toLowerCase() + ".";
+      list.innerHTML = ""; flag.hidden = true;
+      return;
+    }
+    var p = f.properties;
+    document.getElementById("readout").removeAttribute("data-idle");
+    idle.hidden = true;
+    var rows = [];
+    if (p.precinct_id) {
+      rt.textContent = p.precinct_id;
+      rows.push(["State", STATE_NAME[p.state] || p.state]);
+      if (p.county_name) rows.push(["County", p.county_name]);
+      rows.push(["District 2024", p.district_2024 || "\u2014"]);
+      rows.push(["District 2026", p.district_2026 || "\u2014"]);
+    } else {
+      rt.textContent = (STATE_NAME[p.state] || p.state) + " \u2014 District " + p.district;
+      rows.push(["Map", p.map]);
+      if (p.map === "2024" && state.incumbents) {
+        var inc = state.incumbents[p.state + "-" + p.district];
+        if (inc && inc.vacant) {
+          rows.push(["Represented by", "<em>vacant</em>"]);
+        } else if (inc && inc.name) {
+          var cls = inc.party === "Democrat" ? "d" : inc.party === "Republican" ? "r" : "";
+          var initial = inc.party ? inc.party.charAt(0) : "";
+          rows.push(["Represented by", inc.name +
+            (initial ? ' <span class="' + cls + '">(' + initial + ")</span>" : "")]);
+        }
+      }
+      if (f.__same) {
+        rows.push(["Lines", '<span class="muted">unchanged since 2024</span>']);
+      }
+      if (p.old_district_best_match) {
+        rows.push(["Most of old CD", p.old_district_best_match +
+          " (" + pct(p.overlap_share_of_new) + ")"]);
+      }
+      if (p.new_district_best_successor) {
+        rows.push(["Mostly becomes CD", p.new_district_best_successor +
+          " (" + pct(p.share_of_old_retained) + ")"]);
+      }
+    }
+    // CVAP rather than total population: it is the denominator that matters
+    // for an electorate, and district populations are equalised by design so
+    // they carry almost no information here.
+    var ck = cookRating(f);
+    if (ck) {
+      var ccls = /Democrat$/.test(ck.rating) ? "d"
+               : /Republican$/.test(ck.rating) ? "r" : "";
+      var aside = [];
+      if (ck.open) aside.push(ck.note ? "open \u2014 " + ck.note : "open seat");
+      else if (ck.note) aside.push(ck.note);
+      rows.push(["Cook rating",
+        '<span class="' + ccls + '">' + ck.rating + "</span>" +
+        (aside.length ? ' <span class="muted">(' + aside.join("; ") + ")</span>" : "")]);
+    }
+    if (state.color === "flip") {
+      var fi = flipInfo(f);
+      if (fi) {
+        // Whose seat it is going in, and the seat that makes it theirs. The
+        // rating is one row up and the square's fill and ring carry both, so
+        // the pairing is not repeated here. The predecessor is shown because
+        // it is what the verdict rests on, and for a renumbered seat it is
+        // the only thing that explains the answer.
+        var fcls = fi.held === "D" ? "d" : fi.held === "R" ? "r" : "";
+        var held = [];
+        if (fi.fromMember) held.push(fi.fromMember);
+        if (fi.open) held.push("open seat");
+        if (fi.heldNote) held.push(fi.heldNote);
+        rows.push(["Incumbent party", fi.held
+          ? '<span class="' + fcls + '">' + FLIP_PARTY[fi.held] + "</span>" +
+            (held.length ? ' <span class="muted">(' + held.join("; ") + ")</span>" : "")
+          : '<span class="muted">not recorded</span>']);
+        if (fi.from) {
+          rows.push(["Succeeds 2024 CD", fi.from +
+            ' <span class="muted">(' + pct(fi.fromShare) +
+            " of this seat's people)</span>"]);
+        }
+      }
+    }
+    rows.push(["Citizen voting-age pop.", fmt(cvapOf(f))]);
+    var s = demShare(p);
+    if (s !== null) {
+      // Counts for the nine states, which are built from blocks; elsewhere
+      // the published district figure is a share and there are no totals to
+      // print. Two empty rows read as a data fault rather than as a source
+      // that reports a different thing, so they are left out.
+      if (p.pres24_dem != null && p.pres24_rep != null) {
+        rows.push(["Harris", '<span class="d">' + fmt(p.pres24_dem) + "</span>"]);
+        rows.push(["Trump", '<span class="r">' + fmt(p.pres24_rep) + "</span>"]);
+      }
+      var mg = marginLabel(s);
+      rows.push(["2024 margin",
+        '<span class="' + mg.cls + '">' + mg.text + "</span>"]);
+    } else {
+      rows.push(["2024 vote", "no data"]);
+    }
+    if (state.color === "demo") {
+      var dv = currentVar();
+      var x = demoValue(f);
+      var txt;
+      if (x === null || x === undefined) {
+        txt = "no data";
+      } else if (dv.kind === "cat") {
+        var cats = ((state.demoCache[state.focus] || {}).cats)
+                   || state.demoCats || [];
+        txt = cats[x] || "\u2014";
+      } else if (dv.kind === "money") {
+        txt = d3.format("$,.0f")(x);
+      } else if (dv.kind === "pct") {
+        txt = d3.format(".1f")(x) + "%";
+      } else {
+        txt = d3.format(",.1f")(x);
+      }
+      rows.push([dv.label, txt]);
+    }
+    list.innerHTML = rows.map(function (r) {
+      return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>";
+    }).join("");
+
+    var notes = [];
+    if (p.district_changed === "Y") notes.push("District number changed between maps.");
+    if (p.renumbered === "Y") notes.push("Renumbered: its predecessor carries a different number.");
+    if (p.mutual_best_match === "N") notes.push("One-way match \u2014 see methodology.");
+    if (s === null && p.precinct_id) notes.push("No results reported for this precinct.");
+    if (state.color === "demo" && f.__demo && f.__demo.one_tract &&
+        currentVar().tier !== "exact") {
+      notes.push("Every ACS value here comes from a single tract, so this is a "
+               + "tract measurement under a precinct's name.");
+    }
+    flag.hidden = notes.length === 0;
+    flag.textContent = notes.join(" ");
+  }
+
+  function featureAt(ev) {
+    if (!current.length) return null;
+    if (pickDirty) renderPick();
+    var r = cv.getBoundingClientRect();
+    var x = Math.floor((ev.clientX - r.left) * dpr);
+    var y = Math.floor((ev.clientY - r.top) * dpr);
+    if (x < 0 || y < 0 || x >= pick.width || y >= pick.height) return null;
+    var d = pctx.getImageData(x, y, 1, 1).data;
+    if (!d[3]) return null;
+    var i = colorToIdx(d[0], d[1], d[2]);
+    return (i >= 0 && i < current.length) ? current[i] : null;
+  }
+
+  // At national zoom the unit you are pointing at is a state: a district there
+  // is a few pixels wide and picking one is an accident, not a choice. The
+  // squares are the exception, because each one *is* a district and was put
+  // there to be aimed at.
+  // In the rating modes the squares are the content and a district without
+  // one is context: the Cook tab draws a square only where Cook does not say
+  // "Solid", and Changing hands only where a seat is leaving the party that
+  // holds it. Lighting up the rest offered a reader a panel of figures about
+  // a seat the view has nothing to say about -- and over a canvas that is
+  // wall-to-wall districts, that is most of the map.
+  //
+  // Precincts are exempt. Inside a state they are a way of looking within a
+  // district rather than a set of seats to rate, so reading one is still the
+  // point of pointing at it.
+  function hoverable(h) {
+    var f = h && h.f;
+    if (!f) return null;
+    // At national zoom a district is not the thing a reader is pointing at --
+    // it is one of 435 shapes a few pixels across, and the panel would chase
+    // the cursor across all of them. Only a square answers up there. Inside a
+    // state, where a district is the subject, any of them does.
+    if (!state.focus) return h.chiclet ? f : null;
+    if (!chicletMode()) return f;
+    if (state.precincts && state.precinctCache[state.focus]) return f;
+    return wantsSquare(f) ? f : null;
+  }
+
+  function stateOutline(st) {
+    return (state.outlines && state.outlines[st]) || null;
+  }
+
+  function hitAt(ev) {
+    var r = cv.getBoundingClientRect();
+    var c = chicletAt(ev.clientX - r.left, ev.clientY - r.top);
+    if (c) return { f: c, chiclet: true };
+    return { f: featureAt(ev), chiclet: false };
+  }
+
+  // Only where there is a real pointer: on a touch screen the panel is the
+  // record of what was tapped, and parking it under the finger would put it
+  // exactly where it cannot be read.
+  var canHover = !window.matchMedia ||
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  function placeReadout(ev) {
+    var el = document.getElementById("readout");
+    // Idle, or nothing to point at: back to the corner, where the hint reads
+    // as part of the furniture rather than as a label for whatever is under
+    // the cursor.
+    if (!canHover || !ev || el.hasAttribute("data-idle")) {
+      el.classList.remove("at-cursor");
+      el.style.left = el.style.top = "";
+      return;
+    }
+    el.classList.add("at-cursor");
+    var box = document.getElementById("stage").getBoundingClientRect();
+    var x = ev.clientX - box.left, y = ev.clientY - box.top;
+    var w = el.offsetWidth, h = el.offsetHeight, pad = 12, gap = 18;
+    var lx = x + gap, ty = y + gap;
+    if (lx + w > box.width - pad) lx = x - gap - w;     // flip to the left
+    if (ty + h > box.height - pad) ty = y - gap - h;    // and above
+    el.style.left = Math.max(pad, Math.min(lx, box.width - w - pad)) + "px";
+    el.style.top = Math.max(pad, Math.min(ty, box.height - h - pad)) + "px";
+  }
+
+  var moveTimer = null;
+  cv.addEventListener("mousemove", function (ev) {
+    if (moveTimer) return;
+    moveTimer = setTimeout(function () { moveTimer = null; }, 24);
+    // Whatever is under the cursor is a district, here as inside a state.
+    // The national view used to answer with the state instead, and a square
+    // with the district -- so the same gesture told you different kinds of
+    // thing depending on where it landed, and the figures a reader came for
+    // were behind a click.
+    var hit = hitAt(ev);
+    var f = hoverable(hit);
+    // The state a click would open follows the raw hit, not the hoverable
+    // one. Up here most districts answer a hover with nothing -- all of them
+    // in the rating modes -- and every one of them is still a way into its
+    // state, so the outline would go missing on the tabs that need it most.
+    var st = (!state.focus && hit.f) ? hit.f.properties.state : null;
+    // The contents only change when the thing under the cursor does, but the
+    // panel has to keep up with the cursor either way, so placement sits
+    // outside that test rather than behind an early return.
+    if (f !== state.hover || st !== state.hoverState) {
+      state.hover = f; state.hoverState = st;
+      // The cursor says the same thing as the outline, in the one place a
+      // reader is already looking: there is somewhere to go from here. Inside
+      // a state the district already in focus is the exception -- clicking it
+      // again does nothing.
+      cv.style.cursor = (!state.focus ? !!hit.f
+        : !!(f && districtOf(f.properties) !== state.district))
+        ? "pointer" : "";
+      render();
+      showReadout(f);
+    }
+    placeReadout(ev);
+  });
+  // Leaving the map drops the hover, but not the selection. A tap on a touch
+  // screen ends with a mouseleave, so clearing the panel here wiped the
+  // district the tap had just singled out; on a desktop it threw away the
+  // selection's figures the moment the pointer moved to the controls.
+  cv.addEventListener("mouseleave", function () {
+    state.hover = null; state.hoverState = null;
+    cv.style.cursor = "";
+    render();
+    var sel = state.district ? districtFeature(state.district) : null;
+    showReadout(sel);
+    placeReadout(null);          // the selection goes back to the corner
+  });
+
+  cv.addEventListener("click", function (ev) {
+    var hit = hitAt(ev);
+    var f = hit.f;
+    if (!f) return;
+    var p = f.properties;
+    if (!state.focus && p.state) {
+      // A Cook square identifies a district; anywhere else on the national
+      // map identifies only a state.
+      focusState(p.state, hit.chiclet ? districtOf(p) : null);
+      return;
+    }
+    // Inside a state, a click singles out a district -- including a click on a
+    // precinct, which singles out the district that precinct is in. Reading one
+    // precinct is what hovering is for.
+    if (state.focus) {
+      var cd = districtOf(p);
+      if (cd && cd !== state.district) focusDistrict(cd);
+    }
+  });
+
+  function districtFeature(cd, year, st) {
+    var who = st || state.focus;
+    var list = state.districts[year || state.year] || [];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].properties.state === who &&
+          list[i].properties.district === cd) return list[i];
+    }
+    return null;
+  }
+
+  // Frame the district together with the counterpart drawn dashed over it:
+  // the comparison is the reason both are on screen, so neither should be
+  // cropped. Where there is no counterpart this is just the district.
+  function districtFrame(cd, year, st) {
+    var yr = year || state.year;
+    var f = districtFeature(cd, yr, st);
+    if (!f) return [];
+    var other = yr === "2024" ? "2026" : "2024";
+    var cp = counterpartOf(cd, yr, st);
+    var cpf = cp ? districtFeature(cp, other, st) : null;
+    return cpf ? [f, cpf] : [f];
+  }
+
+  function focusDistrict(cd) {
+    var f = districtFeature(cd);
+    if (!f) return;
+    state.district = cd;
+    syncStateSelect();
+    refreshScales();
+    render();
+    animateZoomTo(boundsTransform(districtFrame(cd), 0.82, 60));
+    showReadout(f);
+    updateHint();
+  }
+
+  function clearDistrict() {
+    state.district = null;
+    refreshScales(); render(); showReadout(null); updateHint();
+    // The projection is still fitted to the state, so the state view is just
+    // the identity transform -- tween back to it rather than refitting.
+    animateZoomTo(d3.zoomIdentity);
+  }
+
+  // What the Map toggle means depends on what is in focus. With a district
+  // singled out it follows the crosswalk to that district's counterpart --
+  // the district on the other map that shares the most people with it --
+  // rather than jumping to whatever happens to carry the same number.
+  function counterpartOf(cd, fromYear, st) {
+    var f = districtFeature(cd, fromYear, st);
+    if (!f) return null;
+    var p = f.properties;
+    return fromYear === "2024"
+      ? (p.new_district_best_successor || null)
+      : (p.old_district_best_match || null);
+  }
+
+  function updateHint() {
+    var h = document.getElementById("hint");
+    if (state.district) {
+      var other = state.year === "2024" ? "2026" : "2024";
+      h.textContent = STATE_NAME[state.focus] + " district " + state.district +
+        " \u2014 the dashed outline is the " + other +
+        " district it most overlaps. Switch the map to follow it across" +
+        (state.precincts ? " and watch which precincts come with it" : "") +
+        "; back clears it.";
+    } else if (state.focus) {
+      h.textContent = STATE_NAME[state.focus] + " \u2014 click a " +
+        (state.precincts ? "precinct to single out the district it is in."
+         : PRECINCT_STATES[state.focus]
+           ? "district to single it out, or turn precincts on."
+           : "district to single it out.");
+    } else if (state.precincts) {
+      // Precincts are on but nothing is hoverable up here, so the hint says
+      // what the next move is rather than inviting a click that does nothing.
+      h.textContent = "Every precinct in the country, shaded by the 2024 " +
+        "vote. Pick a state to read them one by one.";
+    } else {
+      h.textContent = "Pick a state, or click one on the map, to zoom in" +
+        (precinctsAvailable() ? ", or turn precincts on for the whole country."
+         : ".");
+    }
+  }
+
+  /* ------------------------------------------------------------- data load */
+
+  function setStatus(msg) {
+    var el = document.getElementById("status");
+    if (!msg) { el.hidden = true; return; }
+    el.hidden = false; el.textContent = msg;
+  }
+
+  // Not every district in these nine states was redrawn. North Carolina moved
+  // two of fourteen; 34 of the 173 came through with the same lines. Drawing
+  // those at full strength says the redraw touched them, which it did not, so
+  // they fall back to the basemap fill and read as context, like the other 41
+  // states.
+  //
+  // Unchanged means nobody moved: the district keeps its number, every person
+  // in the old one is in the new one, and every person in the new one came
+  // from the old one. The two districts that come closest without qualifying
+  // moved 145 people (TN-02) and 4,140 (CA-24) -- small, but not nothing, and
+  // a threshold that called them unchanged would be asserting something false.
+  function markUnchanged() {
+    var a = state.districts["2024"] || [], b = state.districts["2026"] || [];
+    var byNew = {};
+    for (var i = 0; i < b.length; i++) {
+      var q = b[i].properties;
+      byNew[q.state + "-" + q.district] = b[i];
+    }
+    for (var j = 0; j < a.length; j++) {
+      var f = a[j], p = f.properties;
+      var nf = byNew[p.state + "-" + p.new_district_best_successor];
+      var same = p.new_district_best_successor === p.district && nf &&
+                 +p.share_of_old_retained >= 1 &&
+                 +nf.properties.overlap_share_of_new >= 1;
+      f.__same = !!same;
+      if (nf) nf.__same = !!same;
+    }
+  }
+
+
+  // Who sits for each district now. These members were elected in November
+  // 2024, so they belong to the 2024 map; the 2026 districts have no
+  // representatives yet, and showing one there would assert an election that
+  // has not happened.
+  function loadIncumbents() {
+    return fetch(dataUrl("incumbents.json"))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { state.incumbents = j; })
+      .catch(function () { state.incumbents = null; });
+  }
+
+  // Which 2024 seat each 2026 district succeeds, matched on shared 2020
+  // population, one old seat to one new. This is where "whose seat is this"
+  // comes from -- not the district number, which a redraw reassigns freely,
+  // and not the ratings file, which names the candidate running rather than
+  // the constituents inherited. scripts/build_predecessors.py has the why.
+  function loadPredecessors() {
+    return fetch(dataUrl("predecessors.json"))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { state.predecessors = j; })
+      .catch(function () { state.predecessors = null; });
+  }
+
+  function predecessor(f) {
+    if (!state.predecessors || state.year !== "2026") return null;
+    var p = f.properties;
+    var cd = p.district || p.district_2026;
+    if (!cd || !p.state) return null;
+    return state.predecessors[p.state + "-" + cd] || null;
+  }
+
+  function loadCook() {
+    return fetch(dataUrl("cook.json"))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { state.cook = j; })
+      .catch(function () { state.cook = null; });
+  }
+
+  function loadDemoDistricts() {
+    if (state.demoDistricts) return Promise.resolve(state.demoDistricts);
+    return fetch(dataUrl("demo_districts.json"))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        state.demoDistricts = j ? j.byKey : null;
+        if (j && j.cats) state.demoCats = j.cats;
+        return state.demoDistricts;
+      });
+  }
+
+  function loadBasemap() {
+    return fetch(dataUrl("basemap.json"))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (topo) {
+        if (!topo) return;
+        state.basemap = {
+          states: topojson.feature(topo, topo.objects.states).features,
+          nation: topojson.feature(topo, topo.objects.nation).features
+        };
+        // Re-fit, not just redraw: the national view is framed on the country,
+        // so until this file lands there is nothing to frame it on. Whichever
+        // of the two payloads finished last used to win the fit, which is why
+        // the Alaska and Hawaii insets came and went between loads.
+        resize();
+      })
+      .catch(function () { state.basemap = null; });
+  }
+
+  // The border a hovered state lights up with, dissolved from the districts
+  // the map actually draws -- the same construction the basemap uses for the
+  // nine, so the line lands exactly on them. Done here because topojson.merge
+  // works on the topology, which is gone a moment later, and done for all
+  // fifty because the basemap carries an identity only for the nine while a
+  // click opens any of them. Fifty merges cost about 6ms.
+  function buildStateOutlines(topo) {
+    var keys = Object.keys(topo.objects);
+    var k = keys.filter(function (n) { return /2024/.test(n); })[0] || keys[0];
+    var geoms = (topo.objects[k] || {}).geometries || [], by = {};
+    for (var i = 0; i < geoms.length; i++) {
+      var st = geoms[i].properties && geoms[i].properties.state;
+      if (st) (by[st] = by[st] || []).push(geoms[i]);
+    }
+    var out = {};
+    Object.keys(by).forEach(function (st) {
+      out[st] = { type: "Feature", properties: { state: st },
+                  geometry: topojson.merge(topo, by[st]) };
+    });
+    state.outlines = out;
+  }
+
+  function loadDistricts() {
+    return fetch(dataUrl("districts.json")).then(function (r) {
+      if (!r.ok) throw new Error("districts " + r.status);
+      return r.json();
+    }).then(function (topo) {
+      var keys = Object.keys(topo.objects);
+      keys.forEach(function (k) {
+        var fc = topojson.feature(topo, topo.objects[k]);
+        var yr = /2026/.test(k) ? "2026" : "2024";
+        state.districts[yr] = fc.features;
+      });
+      buildStateOutlines(topo);
+      markUnchanged();
+      setStatus(null);
+      resize();
+      refreshScales();
+      render();
+      showReadout(null);
+    });
+  }
+
+  // Going in and out of a state changes the projection. A zoom transform
+  // cannot cross that -- the two CRSs share no scale or rotation -- but the
+  // picture still can, because the change is continuous in the only place that
+  // matters: every vertex has a screen position under the old projection and
+  // one under the new, and the straight line between them is a perfectly good
+  // path. So project each ring twice, in pixels, and walk from one to the
+  // other. The map bends into the new projection while it zooms, and nothing
+  // has to be hidden behind a fade.
+  //
+  // This is the idea behind d3's path-tween, applied to the easy case: both
+  // ends come from the same geometry, so the vertices already correspond and
+  // there is nothing to resample.
+  function ringsOf(geom) {
+    var out = [];
+    if (!geom) return out;
+    var c = geom.coordinates;
+    if (geom.type === "Polygon") {
+      for (var i = 0; i < c.length; i++) out.push(c[i]);
+    } else if (geom.type === "MultiPolygon") {
+      for (var j = 0; j < c.length; j++) {
+        for (var k = 0; k < c[j].length; k++) out.push(c[j][k]);
+      }
+    }
+    return out;
+  }
+
+  // The draw list for a transition, always built as the national view: the
+  // other states have to be on screen at the start of the way in and at the
+  // end of the way out. `keep` is the state being entered or left, whose
+  // districts stay at full strength throughout; the rest fade, out on the way
+  // in and in on the way out, because the focused view does not draw them.
+  function morphList(keep, fadeIn) {
+    var T = theme(), out = [], i;
+    if (state.basemap) {
+      for (i = 0; i < state.basemap.nation.length; i++) {
+        out.push({ f: state.basemap.nation[i], fill: T.basefill, a0: 1, a1: 1 });
+      }
+      for (i = 0; i < state.basemap.states.length; i++) {
+        out.push({ f: state.basemap.states[i], stroke: T.baseline, lw: 0.6, a0: 1, a1: 1 });
+      }
+      for (i = 0; i < state.basemap.nation.length; i++) {
+        out.push({ f: state.basemap.nation[i], stroke: T.baseedge, lw: 1, a0: 1, a1: 1 });
+      }
+    }
+    var ds = state.districts[state.year] || [];
+    for (i = 0; i < ds.length; i++) {
+      var f = ds[i], mine = f.properties.state === keep, a = 1;
+      // Same backdrop tone the steady-state renderer uses. It used to fall
+      // back to nodata here regardless, so every district in a rating tab --
+      // where fillFor returns null because the square carries the color --
+      // darkened to #4a4a4a for the length of the zoom and settled back
+      // afterwards. The tone belongs to the tab, not to the frame.
+      var blankTone = ratingMode() ? T.chicfill : T.nodata;
+      out.push({ f: f, fill: fillFor(f.properties, f) || blankTone,
+                 a0: mine ? a : (fadeIn ? 0 : a),
+                 a1: mine ? a : (fadeIn ? a : 0) });
+    }
+    for (i = 0; i < ds.length; i++) {
+      var g = ds[i], his = g.properties.state === keep;
+      out.push({ f: g, stroke: T.water, lw: 1.1,
+                 a0: his ? 1 : (fadeIn ? 0 : 1),
+                 a1: his ? 1 : (fadeIn ? 1 : 0) });
+    }
+    return out;
+  }
+
+  // Both endpoints in screen pixels: projection, then the zoom transform that
+  // will be in force at that end. Rings a projection rejects are dropped --
+  // geoAlbers returns null nowhere in the lower 48, but a state projection
+  // asked about a far-away point can.
+  function morphPlan(projA, tA, projB, tB, items) {
+    var plan = [];
+    for (var m = 0; m < items.length; m++) {
+      var it = items[m], rings = ringsOf(it.f.geometry), keep = [];
+      for (var r = 0; r < rings.length; r++) {
+        var ring = rings[r], n = ring.length, ok = true;
+        var ax = new Float64Array(n), ay = new Float64Array(n);
+        var bx = new Float64Array(n), by = new Float64Array(n);
+        // A point a state projection is not meant for still projects, just
+        // enormously far away -- Alaska through a Texas conic is thousands of
+        // canvases off. Those rings are dropped rather than swept across the
+        // screen; they are off canvas at both ends anyway.
+        var BOUND = 50 * Math.max(W, H);
+        for (var i = 0; i < n; i++) {
+          var pa = projA(ring[i]), pb = projB(ring[i]);
+          if (!pa || !pb || !isFinite(pa[0]) || !isFinite(pb[0])) { ok = false; break; }
+          if (Math.abs(pb[0]) > BOUND || Math.abs(pb[1]) > BOUND) { ok = false; break; }
+          ax[i] = tA.applyX(pa[0]); ay[i] = tA.applyY(pa[1]);
+          bx[i] = tB.applyX(pb[0]); by[i] = tB.applyY(pb[1]);
+        }
+        if (ok) keep.push({ n: n, ax: ax, ay: ay, bx: bx, by: by });
+      }
+      if (keep.length) {
+        plan.push({ rings: keep, fill: it.fill, stroke: it.stroke,
+                    lw: it.lw, a0: it.a0, a1: it.a1 });
+      }
+    }
+    return plan;
+  }
+
+  // Drawn straight in screen pixels, so line widths are the on-screen widths
+  // render() arrives at after dividing by the zoom scale.
+  function drawPlan(plan, u) {
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);   // transparent, exactly as render() leaves it
+    for (var p = 0; p < plan.length; p++) {
+      var o = plan[p], a = o.a0 + (o.a1 - o.a0) * u;
+      if (a <= 0.002) continue;
+      ctx.beginPath();
+      for (var r = 0; r < o.rings.length; r++) {
+        var g = o.rings[r];
+        for (var i = 0; i < g.n; i++) {
+          var x = g.ax[i] + (g.bx[i] - g.ax[i]) * u;
+          var y = g.ay[i] + (g.by[i] - g.ay[i]) * u;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+      }
+      ctx.globalAlpha = a;
+      if (o.fill) { ctx.fillStyle = o.fill; ctx.fill(); }
+      if (o.stroke) { ctx.strokeStyle = o.stroke; ctx.lineWidth = o.lw; ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  var morphAnim = null;
+  function runMorph(plan, dur, done) {
+    if (morphAnim) { cancelAnimationFrame(morphAnim); morphAnim = null; }
+    if (zoomAnim) { cancelAnimationFrame(zoomAnim); zoomAnim = null; }
+    if (fadeAnim) { cancelAnimationFrame(fadeAnim); fadeAnim = null; }
+    var ease = d3.easeCubicInOut, start = performance.now();
+    (function frame() {
+      var e = performance.now() - start;
+      var u = ease(Math.min(e / dur, 1));
+      drawPlan(plan, u);
+      if (e < dur) { morphAnim = requestAnimationFrame(frame); }
+      else { morphAnim = null; done(); }
+    })();
+  }
+
+  // The morph ends on geometry identical to the first real frame after it, so
+  // the hand-back is a cross-fade over a still picture: it carries only the
+  // color change from rescaling to the new set of features, never a jump.
+  function settle(apply) {
+    snapshot();
+    apply();
+    render();
+    crossFade(200);
+  }
+
+  function fitProjection(proj, features) {
+    proj.fitExtent(mapExtent(),
+                   { type: "FeatureCollection", features: features });
+    return proj;
+  }
+
+  // `cd` enters the state already singled out on that district, in one
+  // motion rather than a flight to the state followed by a second flight to
+  // the district inside it. A Cook square is a particular race, so clicking
+  // one should arrive at that race; stopping at the state first is a step the
+  // click did not ask for.
+  //
+  // The projection is still fitted to the whole state, so the identity
+  // transform keeps meaning "this state" and clearing the district can tween
+  // back to it. Only the transform the morph ends on changes.
+  function focusState(st, cd) {
+    var base = (state.districts[state.year] || []).filter(function (f) {
+      return f.properties.state === st;
+    });
+    if (!base.length) return;
+    var projB = fitProjection(stateProjection(st), base);
+    var endT = d3.zoomIdentity;
+    if (cd) {
+      var frame = districtFrame(cd, state.year, st);
+      if (frame.length) {
+        endT = boundsTransformFor(d3.geoPath(projB), frame, 0.82, 60);
+      } else {
+        cd = null;
+      }
+    }
+    var apply = function () {
+        state.focus = st;
+        state.district = cd || null;
+        state.hover = null; state.hoverState = null;
+        setProjection(projB);
+        transform = endT;
+        d3.select(cv).call(zoom.transform, endT);
+        syncStateSelect();
+        // Precincts carry across the zoom rather than switching themselves
+        // off: a reader who turned them on at national zoom asked to see
+        // precincts, and clicking a state is asking to see them closer. The
+        // layer changes underneath -- image to geometry -- but the answer to
+        // "are precincts on" should not.
+        var keep = state.precincts && !!PRECINCT_STATES[st];
+        syncPrecinctControls();
+        if (keep) {
+          ensurePrecincts(st).then(function () {
+            return ensureDemographics(st);
+          }).then(function () {
+            rebuildVarOptions(); refreshScales(); render();
+          }).catch(function () {
+            state.precincts = false;
+            setPressed("pOff", "pOn", false);
+            syncLayerControls(); render();
+          });
+        }
+        syncLayerControls();
+        // The mirror of unfocus(): leaving the split needs the panels torn
+        // down before anything is drawn. Without this the canvas kept
+        // rendering through the two stale panels while the projection under
+        // them had already become one state's -- a phone showed the old
+        // nine-state view with the focused state smeared across it, and the
+        // zoom never appeared to happen at all.
+        buildPanels();
+        syncZoomControls();
+        refreshScales();
+        showReadout(cd ? districtFeature(cd) : null);
+        updateHint();
+    };
+    if (splitPanels) { settle(apply); return; }   // two maps, nothing to tween
+    var plan = morphPlan(projection, transform, projB, endT,
+                         morphList(st, false));
+    runMorph(plan, 760, function () { settle(apply); });
+  }
+
+  function unfocus() {
+    var from = state.focus;
+    var all = state.districts[state.year] || [];
+    if (!all.length) return;
+    var projB = fitProjection(nationalProjection(), nationalExtent());
+    var apply = function () {
+        state.focus = null; state.district = null;
+        state.hover = null; state.hoverState = null;
+        // Same bargain in the other direction: zooming back out keeps
+        // precincts on, now as the national image. syncPrecinctControls turns
+        // them off if the current color mode has no image to show.
+        var keep = state.precincts;
+        syncPrecinctControls();
+        if (state.precincts) {
+          ensureRaster().then(render).catch(function () {
+            state.precincts = false;
+            setPressed("pOff", "pOn", false);
+            syncLayerControls(); render();
+          });
+        } else if (keep) {
+          setPressed("pOff", "pOn", false);
+        }
+        syncStateSelect();
+        syncLayerControls();
+        setProjection(projB);
+        transform = d3.zoomIdentity;
+        d3.select(cv).call(zoom.transform, d3.zoomIdentity);
+        rebuildVarOptions();
+        if (state.color === "demo") loadDemoDistricts();
+        buildPanels();          // back to the split, if the screen is narrow
+        syncZoomControls();
+        refreshScales();
+        showReadout(null);
+        updateHint();
+    };
+    // Going back to a split is the same problem in reverse: the destination is
+    // two maps, so there is no single framing to land on.
+    if (W <= SPLIT_MAX_W) { settle(apply); return; }
+    var plan = morphPlan(projection, transform, projB, d3.zoomIdentity,
+                         morphList(from, true));
+    runMorph(plan, 760, function () { settle(apply); });
+  }
+
+  // Pan and zoom drive one transform, which means nothing when the canvas is
+  // carrying two maps. The controls go away rather than sitting there inert.
+  function syncZoomControls() {
+    document.getElementById("zoomButtons").hidden = !!splitPanels;
+  }
+
+  function ensurePrecincts(st) {
+    if (state.precinctCache[st]) return Promise.resolve(state.precinctCache[st]);
+    if (inflight["p" + st]) return inflight["p" + st];
+    setStatus("Loading " + STATE_NAME[st] + " precincts\u2026");
+    inflight["p" + st] = fetch(dataUrl("precincts_" + st + ".json")).then(function (r) {
+      if (!r.ok) throw new Error("precincts " + r.status);
+      return r.json();
+    }).then(function (topo) {
+      var k = Object.keys(topo.objects)[0];
+      var fc = topojson.feature(topo, topo.objects[k]);
+      // The web tier drops fields the map can rebuild, to keep California's
+      // download down: state is constant per file, and these two are derived.
+      // Precincts RDH draws but reports no blocks for get no county from the
+      // join. Their ids still carry one: "CACHE-:-LEW00:I" names its county,
+      // and California's "06001200100" is state+county+srprec. Recover the
+      // proper spelling from precincts in the same county that did join,
+      // rather than showing a bare uppercase prefix.
+      var byPrefix = {}, byFips = {};
+      fc.features.forEach(function (f) {
+        var q = f.properties;
+        if (!q.county_name) return;
+        var id = q.precinct_id || "";
+        var cut = id.indexOf("-:-");
+        if (cut > 0) byPrefix[id.slice(0, cut).toUpperCase()] = q.county_name;
+        if (/^\d{5}/.test(id)) byFips[id.slice(0, 5)] = q.county_name;
+      });
+      fc.features.forEach(function (f) {
+        var q = f.properties;
+        q.state = st;
+        if (!q.county_name) {
+          var id = q.precinct_id || "";
+          var cut = id.indexOf("-:-");
+          if (cut > 0) q.county_name = byPrefix[id.slice(0, cut).toUpperCase()] || null;
+          else if (/^\d{5}/.test(id)) q.county_name = byFips[id.slice(0, 5)] || null;
+        }
+        q.district_changed =
+          (q.district_2024 && q.district_2026 && q.district_2024 !== q.district_2026)
+            ? "Y" : "N";
+        var tp = (q.pres24_dem || 0) + (q.pres24_rep || 0);
+        q.pres24_two_party_dem_share = tp > 0 ? q.pres24_dem / tp : null;
+      });
+      state.precinctCache[st] = fc.features;
+      attachDemographics(st);
+      setStatus(null);
+      inflight["p" + st] = null;
+      return state.precinctCache[st];
+    }).catch(function (e) {
+      inflight["p" + st] = null;
+      setStatus("Could not load precincts for " + st);
+      setTimeout(function () { setStatus(null); }, 2600);
+      throw e;
+    });
+    return inflight["p" + st];
+  }
+
+  function ensureDemographics(st) {
+    if (state.demoCache[st]) return Promise.resolve(state.demoCache[st]);
+    setStatus("Loading " + STATE_NAME[st] + " demographics\u2026");
+    return fetch(dataUrl("demo_" + st + ".json")).then(function (r) {
+      if (!r.ok) throw new Error("demographics " + r.status);
+      return r.json();
+    }).then(function (j) {
+      var byId = {};
+      for (var i = 0; i < j.ids.length; i++) {
+        var rec = { largest_race: j.cat[i], one_tract: j.one_tract[i] };
+        if (j.cat_cvap) rec.largest_race_cvap = j.cat_cvap[i];
+        for (var k in j.values) { rec[k] = j.values[k][i]; }
+        byId[j.ids[i]] = rec;
+      }
+      // `limited` names the fields that are NOT sound in this state, and the
+      // states where they are. Driving the warning off this rather than a
+      // hard-coded list means the data decides.
+      state.demoCache[st] = { byId: byId, cats: j.cats, limited: j.limited || {} };
+      attachDemographics(st);
+      setStatus(null);
+      return state.demoCache[st];
+    }).catch(function (e) {
+      setStatus("Could not load demographics for " + st);
+      setTimeout(function () { setStatus(null); }, 2600);
+      throw e;
+    });
+  }
+
+  // Demographics arrive keyed by precinct id, not as feature properties, so the
+  // join happens once here rather than on every frame.
+  function attachDemographics(st) {
+    var cache = state.demoCache[st], feats = state.precinctCache[st];
+    if (!cache || !feats) return;
+    var hit = 0;
+    for (var i = 0; i < feats.length; i++) {
+      var d = cache.byId[feats[i].properties.precinct_id];
+      if (d) { feats[i].__demo = d; hit++; }
+    }
+    cache.matched = hit;
+    cache.total = feats.length;
+  }
+
+  /* ------------------------------------------------------------- legend/UI */
+
+  // Which states a variable IS sound in, when it is not sound in this one.
+  // Comes from the payload, not from a list in this file, so the data decides.
+  // Districts are large enough that nothing is flagged there.
+  function limitedStates(key) {
+    if (state.focus && state.precincts) {
+      var c = state.demoCache[state.focus];
+      if (c && c.limited && c.limited[key]) return c.limited[key];
+    }
+    return null;
+  }
+
+  function atPrecinctLevel() {
+    return !!(state.focus && state.precincts);
+  }
+
+  // Some CVAP race shares hold up for a district and not for a precinct, so
+  // the menu changes with the level rather than offering a variable that
+  // cannot support the view it would be drawn in.
+  function rebuildVarOptions() {
+    var sel = document.getElementById("demoVar");
+    var prec = atPrecinctLevel();
+    var avail = DEMO_VARS.filter(function (v) { return !(v.districtOnly && prec); });
+    sel.innerHTML = "";
+    avail.forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v.k; o.textContent = v.label;
+      sel.appendChild(o);
+    });
+    if (!avail.some(function (v) { return v.k === state.demoVar; })) {
+      state.demoVar = avail[0].k;
+    }
+    sel.value = state.demoVar;
+  }
+
+  function refreshScales() {
+    // Squares or fills is a question only the rating tabs ask, and only of
+    // the map the ratings describe, so the control goes with them.
+    document.getElementById("markWrap").hidden = !ratingMode();
+    if (state.color === "demo") buildDemoScale(visibleFeatures());
+    updateLegend();
+    buildPanels();
+    syncZoomControls();
+  }
+
+  function rampCss(interp, n) {
+    var stops = [];
+    for (var i = 0; i <= n; i++) stops.push(interp(i / n));
+    return "linear-gradient(to right," + stops.join(",") + ")";
+  }
+
+  function updateLegend() {
+    var box = document.getElementById("legend");
+    var title = document.getElementById("legendTitle");
+    var ramp = document.getElementById("ramp");
+    var lo = document.getElementById("lo");
+    var hi = document.getElementById("hi");
+    var mid = document.getElementById("mid");
+    mid.textContent = "";
+    box.hidden = false;
+    var sw = document.getElementById("swatches");
+    var note = document.getElementById("tierNote");
+    var bar = document.getElementById("cookBar");
+    sw.hidden = true; note.hidden = true; ramp.hidden = false; bar.hidden = true;
+    box.classList.toggle("cook", state.color === "cook" || state.color === "flip");
+    box.classList.toggle("flip", state.color === "flip");
+    document.getElementById("lo").parentNode.hidden = false;
+
+    if (state.color === "demo") {
+      var v = currentVar();
+      title.textContent = v.label;
+      note.hidden = false;
+      note.className = "tier";
+      var txt = TIER_NOTE[v.tier];
+      var lim = limitedStates(v.k);
+      if (lim) {
+        note.className = "tier warn";
+        txt = "Not reliable for precincts in " + STATE_NAME[state.focus] +
+              ". Sound only in " + lim.map(function (x) {
+                return STATE_NAME[x] || x;
+              }).join(", ") + ".";
+      }
+      note.textContent = txt;
+      if (v.kind === "cat") {
+        ramp.hidden = true;
+        document.getElementById("lo").parentNode.hidden = true;
+        var cats = (state.focus && state.precincts && state.demoCache[state.focus])
+          ? state.demoCache[state.focus].cats
+          : (state.demoCats || []);
+        sw.hidden = false;
+        sw.innerHTML = cats.map(function (c, i) {
+          return '<span class="sw"><i style="background:' + CAT_COLORS[i] + '"></i>' + c + "</span>";
+        }).join("");
+      } else {
+        ramp.style.background = rampCss(d3.interpolateYlGnBu, 24);
+        if (demoScale) {
+          var f = v.kind === "money" ? d3.format("$,.0f")
+                : v.kind === "pct" ? d3.format(".0f")
+                : d3.format(",.0f");
+          lo.textContent = f(demoScale.lo) + (v.kind === "pct" ? "%" : "");
+          hi.textContent = f(demoScale.hi) + (v.kind === "pct" ? "%" : "");
+        } else { lo.textContent = ""; hi.textContent = ""; }
+      }
+    } else if (state.color === "cook") {
+      title.textContent = "Cook Political Report rating";
+      ramp.hidden = true;
+      document.getElementById("lo").parentNode.hidden = true;
+      note.hidden = false;
+      note.className = "tier";
+      if (state.year !== "2026") {
+        note.className = "tier warn";
+        note.textContent = "Cook rates the seats as they will be contested, "
+          + "so these apply to the 2026 map. Switch the map to 2026.";
+      } else {
+        drawCookBar();
+        bar.hidden = false;
+        // The source line and nothing else. How many are rated and which get
+        // a square is on the bar and on the map; saying it here as well was
+        // a third telling.
+        note.textContent = (state.cook ? state.cook.source : "Cook Political Report")
+          + ", " + cookAsOf() + ".";
+      }
+    } else if (state.color === "flip") {
+      title.textContent = "Changing hands";
+      ramp.hidden = true;
+      document.getElementById("lo").parentNode.hidden = true;
+      note.hidden = false;
+      note.className = "tier";
+      if (state.year !== "2026") {
+        note.className = "tier warn";
+        note.textContent = "The ratings describe the seats as they will be "
+          + "contested, so this reads the 2026 map. Switch the map to 2026.";
+      } else {
+        var tally = flipTally();
+        sw.hidden = false;
+        sw.innerHTML = FLIP_BANDS.map(function (b) {
+          // A category spans several Cook tiers, so the chip shows that side's
+          // strongest tone; the squares themselves carry the exact rating.
+          var T = theme();
+          var col = b.fate === "toss" ? T.cook["Toss Up"] : T.cook[FLIP_TONE[b.side]];
+          var chip = FLIP_HATCH[b.fate]
+            ? "repeating-linear-gradient(135deg," + col + " 0 3px,"
+              + T.paper + " 3px 4.6px)"
+            : col;
+          return '<span class="sw"><i style="background:' + chip +
+            ";border-color:" + T.cook[FLIP_TONE[b.held]] + '"></i>' +
+            b.label + ' <span class="muted">' + (tally[b.cat] || 0) + "</span></span>";
+        }).join("");
+        var moving = (tally.loseD || 0) + (tally.loseR || 0);
+        var open = (tally.tossD || 0) + (tally.tossR || 0);
+        // Inside a single state these counts are regularly 0 or 1, so the
+        // sentence has to survive both: it once read "0 redrawn seats ... and
+        // 1 more are toss-ups" in North Carolina.
+        //
+        // What it does not do is restate the swatches above it. They already
+        // carry the split by side, and the line under the legend already
+        // accounts for the districts that kept their lines, so this says the
+        // totals, the leftover, and what the three marks mean.
+        var seat = state.allLines ? " seat" : " redrawn seat";
+        var moved = moving === 0
+          ? "No" + seat + " here is rated to change hands"
+          : moving === 1 ? "One" + seat + " is rated to change hands"
+          : moving + seat + "s are rated to change hands";
+        var toss = open === 0 ? "none is a toss-up"
+          : open === 1 ? (moving ? "one more is" : "one is") + " a toss-up"
+          : (moving ? open + " more are" : open + " are") + " toss-ups";
+        var safe = tally.safe === 0 ? ""
+          : tally.safe === 1
+            ? "; the other stays with its sitting party"
+            : "; the other " + tally.safe + " stay with their sitting party";
+        note.textContent = moved + ", " + toss + safe
+          + (state.squares
+             ? ". Fill is the Cook rating, the ring is who holds the seat "
+               + "now, and hatching marks the ones changing hands."
+             : ". Shading is the Cook rating; who holds each seat and which "
+               + "are changing hands are on the squares.");
+      }
+    } else if (state.color === "election") {
+      title.textContent = "2024 presidential margin";
+      ramp.style.background = "linear-gradient(to right," + theme().stops.join(",") + ")";
+      lo.textContent = "+50 Trump"; hi.textContent = "+50 Harris";
+      mid.textContent = "Even";
+    }
+  }
+
+  // Counted over the same set the squares are laid out from, so the legend
+  // tallies what is on screen: nine states nationally, one state inside it.
+  function flipTally() {
+    var out = { safe: 0, unknown: 0, unchanged: 0 };
+    var ds = state.districts["2026"] || [];
+    for (var i = 0; i < ds.length; i++) {
+      if (state.focus && ds[i].properties.state !== state.focus) continue;
+      var fi = flipInfo(ds[i]);
+      if (fi) out[fi.cat] = (out[fi.cat] || 0) + 1;
+    }
+    return out;
+  }
+
+  // Counts come from whatever is on screen, so the bar is the tally for the
+  // nine states nationally and for one state once you are inside it. The foot
+  // labels carry the same flex ratios as the bands, so each sits under its own.
+  // The Post's two-tier bar. The top one is every district, so the solid
+  // blocks dominate it and the competitive middle is a sliver -- which is the
+  // point, and why they draw a second bar underneath showing only that
+  // middle, at a width where the counts can be read. We could not build the
+  // top tier until Cook's solid ratings were in hand.
+  function drawCookBar() {
+    var all = document.getElementById("cbAll");
+    var track = document.getElementById("cbTrack");
+    var foot = document.getElementById("cbFoot");
+    var sum = document.getElementById("cbSum");
+    var T = theme();
+    var ds = (state.districts["2026"] || []).filter(function (f) {
+      return !state.focus || f.properties.state === state.focus;
+    });
+    var counts = COOK_BANDS.map(function (b) {
+      return ds.reduce(function (acc, f) {
+        var r = cookRating(f);
+        return acc + (r && r.rating === b.cat ? 1 : 0);
+      }, 0);
+    });
+    var rated = counts.reduce(function (a, b) { return a + b; }, 0);
+
+    if (!rated) {
+      all.innerHTML = track.innerHTML = '<div class="cb-seg" style="flex:1;background:' +
+        T.nodata + ';color:var(--ink-soft)">\u2014</div>';
+      foot.innerHTML = "";
+      sum.textContent = ds.length + " districts, none rated";
+      return;
+    }
+
+    // Top tier: all of them, in proportion, no numbers -- the solid blocks
+    // would be the only ones with room and labelling just those would read as
+    // if the rest were nothing.
+    all.innerHTML = COOK_BANDS.map(function (b, i) {
+      return counts[i] ? '<div class="cb-seg" style="flex:' + counts[i] +
+             ";background:" + T.cook[b.cat] + '"></div>' : "";
+    }).join("");
+
+    // Bottom tier: the competitive middle only, which is what the bracket on
+    // the Post's version points at.
+    var mid = COOK_BANDS.filter(function (b) { return b.cat.indexOf("Solid") !== 0; });
+    var midCounts = mid.map(function (b) {
+      return counts[COOK_BANDS.indexOf(b)];
+    });
+    var watch = midCounts.reduce(function (a, b) { return a + b; }, 0);
+    var solid = rated - watch;
+
+    track.innerHTML = mid.map(function (b, i) {
+      if (!midCounts[i]) return "";
+      var pale = b.label !== "Likely D" && b.label !== "Likely R";
+      return '<div class="cb-seg" style="flex:' + midCounts[i] + ";background:" +
+             T.cook[b.cat] + ";color:" + (pale ? "#222222" : "#ffffff") + '">' +
+             midCounts[i] + "</div>";
+    }).join("");
+
+    foot.innerHTML = mid.map(function (b, i) {
+      return midCounts[i] ? '<span style="flex:' + midCounts[i] + '">' + b.label + "</span>" : "";
+    }).join("");
+
+    // What the ratings come to if each one holds: the three solid-to-lean
+    // bands a side, with the toss-ups left out of both because that is what
+    // Cook is saying about them. Nationally the majority line is worth
+    // printing beside it -- 218 of 435 -- and inside a state it is not.
+    var dem = counts[0] + counts[1] + counts[2];
+    var rep = counts[4] + counts[5] + counts[6];
+    var toss = counts[3];
+    var seats = '<span class="d">' + dem + " Democratic</span> \u00b7 " +
+                '<span class="r">' + rep + " Republican</span>" +
+                (toss ? ' \u00b7 <span class="muted">' + toss + " toss-up" +
+                        (toss === 1 ? "" : "s") + "</span>" : "");
+    if (!state.focus && rated === 435) {
+      seats += ' <span class="muted">(218 for a majority)</span>';
+    }
+    sum.innerHTML = '<span class="cb-seats">' + seats + "</span>" +
+      (watch
+        ? watch + " race" + (watch === 1 ? "" : "s") + " to watch  \u00b7  " +
+          solid + " solid"
+        : rated + " districts, all solid");
+  }
+
+  function setPressed(offId, onId, on) {
+    document.getElementById(offId).setAttribute("aria-pressed", String(!on));
+    document.getElementById(onId).setAttribute("aria-pressed", String(on));
+  }
+
+  document.getElementById("m2024").addEventListener("click", function () { setYear("2024"); });
+  document.getElementById("m2026").addEventListener("click", function () { setYear("2026"); });
+  function setYear(y) {
+    if (state.year === y) return;
+    var carry = state.district ? counterpartOf(state.district, state.year) : null;
+    state.year = y;
+    document.getElementById("m2024").setAttribute("aria-pressed", String(y === "2024"));
+    document.getElementById("m2026").setAttribute("aria-pressed", String(y === "2026"));
+    if (state.district) {
+      // Follow the district across, not the number: the counterpart is the
+      // district on this map that shares the most population with the one
+      // that was in focus.
+      state.district = carry;
+      var f = state.district ? districtFeature(state.district) : null;
+      if (f) {
+        refreshScales(); render();
+        animateZoomTo(boundsTransform(districtFrame(state.district), 0.82, 60));
+        showReadout(f); updateHint(); return;
+      }
+      clearDistrict(); return;
+    }
+    buildPanels();     // the split is fitted to the map on show
+    refreshScales(); render(); showReadout(state.hover);
+  }
+
+  var sel = document.getElementById("demoVar");
+  rebuildVarOptions();
+  sel.addEventListener("change", function () {
+    state.demoVar = sel.value;
+    refreshScales(); render(); showReadout(state.hover);
+  });
+
+  document.getElementById("cElection").addEventListener("click", function () { setColor("election"); });
+  document.getElementById("cDemo").addEventListener("click", function () { setColor("demo"); });
+  var buildEl = document.getElementById("build");
+  if (buildEl) buildEl.textContent = "build " + BUILD;
+
+  document.getElementById("cCook").addEventListener("click", function () { setColor("cook"); });
+  document.getElementById("cFlip").addEventListener("click", function () { setColor("flip"); });
+
+  function setColor(c) {
+    if (state.color === c) return;
+    if (c === "demo") {
+      // Works at both levels now: precinct demographics when precincts are
+      // drawn, district demographics otherwise, both aggregated from the same
+      // blocks by the same method.
+      var need = (state.focus && state.precincts)
+        ? ensureDemographics(state.focus)
+        : loadDemoDistricts();
+      need.then(function () { applyColor("demo"); }).catch(function () {});
+      return;
+    }
+    if (c === "cook" || c === "flip") {
+      // The ratings are for the seats as they will be contested, so they only
+      // describe the 2026 map. Switching to it is what the click means.
+      loadCook().then(function () {
+        if (state.year !== "2026") setYear("2026");
+        applyColor(c);
+      }).catch(function () {});
+      return;
+    }
+    applyColor(c);
+  }
+
+  function applyColor(c) {
+    state.color = c;
+    ["election", "demo", "cook", "flip"].forEach(function (m) {
+      var id = m === "election" ? "cElection" : m === "cook" ? "cCook"
+             : m === "flip" ? "cFlip" : "cDemo";
+      document.getElementById(id).setAttribute("aria-pressed", String(c === m));
+    });
+    document.getElementById("varWrap").hidden = (c !== "demo");
+    // Leaving the election mode at national zoom takes the image away with it,
+    // since the margin is the only thing drawn into it.
+    syncPrecinctControls();
+    syncLayerControls();
+    refreshScales(); render(); updateHint(); showReadout(state.hover);
+  }
+
+  document.getElementById("kSquares").addEventListener("click", function () { setSquares(true); });
+  document.getElementById("kFill").addEventListener("click", function () { setSquares(false); });
+
+  function setSquares(on) {
+    if (state.squares === on) return;
+    state.squares = on;
+    setPressed("kFill", "kSquares", on);
+    refreshScales(); render(); showReadout(state.hover);
+  }
+
+  document.getElementById("pOff").addEventListener("click", function () { setPrecincts(false); });
+  document.getElementById("pOn").addEventListener("click", function () { setPrecincts(true); });
+  // Precincts are available in two different ways and the control has to say
+  // which: inside a state, for the nine with precinct files, as geometry you
+  // can hover; and at national zoom, for the whole country, as the image --
+  // which is the 2024 margin and only that, so it is offered in the election
+  // mode and not in the others.
+  function precinctsAvailable() {
+    if (state.focus) return !!PRECINCT_STATES[state.focus];
+    return state.color === "election";
+  }
+
+  function syncPrecinctControls() {
+    var ok = precinctsAvailable();
+    document.getElementById("pOff").disabled = !ok;
+    document.getElementById("pOn").disabled = !ok;
+    if (!ok && state.precincts) {
+      state.precincts = false;
+      setPressed("pOff", "pOn", false);
+    }
+  }
+
+  function setPrecincts(on) {
+    if (state.precincts === on || !precinctsAvailable()) return;
+    if (!on) {
+      state.precincts = false; setPressed("pOff", "pOn", false);
+      syncLayerControls();
+      rebuildVarOptions();
+      if (state.color === "demo") {
+        loadDemoDistricts().then(function () { refreshScales(); render(); });
+        return;
+      }
+      refreshScales(); render(); updateHint(); return;
+    }
+    var ready = state.focus
+      ? ensurePrecincts(state.focus).then(function () {
+          return ensureDemographics(state.focus);
+        })
+      : ensureRaster();
+    if (!state.focus) setStatus("Loading precincts…");
+    ready.then(function () {
+      state.precincts = true; setPressed("pOff", "pOn", true);
+      if (!state.focus) setStatus(null);
+      syncLayerControls();
+      rebuildVarOptions(); refreshScales(); render(); updateHint();
+    }).catch(function () {
+      if (!state.focus) {
+        setStatus("Could not load the national precinct layer");
+        setTimeout(function () { setStatus(null); }, 2600);
+      }
+    });
+  }
+
+  function syncLayerControls() {
+    // The lines control has nothing to say over precincts, where every
+    // district keeps its outline either way.
+    var lines = !state.precincts;
+    document.getElementById("lRedrawn").disabled = !lines;
+    document.getElementById("lAll").disabled = !lines;
+  }
+
+  document.getElementById("lRedrawn").addEventListener("click", function () { setAllLines(false); });
+  document.getElementById("lAll").addEventListener("click", function () { setAllLines(true); });
+
+  function setAllLines(on) {
+    if (state.allLines === on) return;
+    state.allLines = on; setPressed("lRedrawn", "lAll", on);
+    // The control now sets which districts the rating modes judge, not just
+    // which ones are outlined, so the legend's counts and the idle blurb move
+    // with it.
+    updateLegend();
+    if (!state.hover) showReadout(null);
+    render();
+  }
+
+  // The only way into a state used to be a tap on the state itself. That is
+  // a fair target on a desktop and a cruel one on a phone, where North
+  // Carolina is a twenty-pixel ribbon and the overview -- two stacked panels
+  // -- offers neither zoom nor pan to help you hit it. A list costs one
+  // control and is the same list the map is drawn from.
+  function buildStateSelect() {
+    var sel = document.getElementById("stateSel");
+    var html = ['<option value="">All states</option>'];
+    Object.keys(STATE_NAME).sort(function (a, b) {
+      return STATE_NAME[a].localeCompare(STATE_NAME[b]);
+    }).forEach(function (st) {
+      html.push('<option value="' + st + '">' + STATE_NAME[st] + "</option>");
+    });
+    sel.innerHTML = html.join("");
+  }
+
+  function syncStateSelect() {
+    var sel = document.getElementById("stateSel");
+    if (sel) sel.value = state.focus || "";
+  }
+
+  buildStateSelect();
+  document.getElementById("stateSel").addEventListener("change", function () {
+    var v = this.value;
+    if (!v) { if (state.focus) unfocus(); return; }
+    // Re-picking the state you are already in steps back out of a single
+    // district, which is the one move the list would otherwise not offer.
+    if (v === state.focus) { if (state.district) clearDistrict(); return; }
+    focusState(v);
+  });
+
+  // Reset means the whole map. Zoomed into a state, this leaves that state
+  // rather than re-fitting it -- "zoom out fully" should end at all nine.
+  function fitCurrent() {
+    if (state.district) { clearDistrict(); return; }
+    if (state.focus) { unfocus(); return; }
+    var base = state.districts[state.year] || [];
+    if (base.length) fitTo(base);
+  }
+  // Same tween as the district zoom, about the canvas centre.
+  function zoomBy(f) {
+    var cx = W / 2, cy = H / 2;
+    var k1 = Math.max(1, Math.min(220, transform.k * f));
+    var target = d3.zoomIdentity
+      .translate(cx - (cx - transform.x) * (k1 / transform.k),
+                 cy - (cy - transform.y) * (k1 / transform.k))
+      .scale(k1);
+    animateZoomTo(target, 300);
+  }
+  document.getElementById("zIn").addEventListener("click", function () { zoomBy(1.6); });
+  document.getElementById("zOut").addEventListener("click", function () { zoomBy(1 / 1.6); });
+  document.getElementById("zFit").addEventListener("click", function () { fitCurrent(); });
+
+  d3.select(cv).call(zoom);
+  window.addEventListener("resize", function () { resize(); });
+
+  // The webfont arrives after first paint. When it does, the control labels
+  // reflow, the control bar changes height, and the canvas -- sized once from
+  // the old stage height -- ends up taller than its box and paints over the
+  // footer. Re-fit when the font settles, and watch the stage for any other
+  // reflow (the controls wrap at narrow widths too).
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () { resize(); });
+  }
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(function () { resize(); });
+    ro.observe(document.getElementById("stage"));
+  }
+
+  // The rating tabs are drawn from three files that load alongside the
+  // districts rather than before them, so whichever lands last has to ask for
+  // the repaint. A tab the reader picked is safe -- setColor waits on the
+  // ratings -- but the tab the page opens on is chosen before any of this is
+  // in, and without the repaint it would open on an empty map.
+  Promise.all([loadIncumbents(), loadCook(), loadPredecessors()])
+    .then(function () {
+      if (ratingMode() && (state.districts[state.year] || []).length) {
+        refreshScales(); render(); showReadout(state.hover);
+      }
+    });
+  loadDemoDistricts();
+  syncPrecinctControls();
+  updateHint();
+  loadBasemap();
+  loadDistricts().catch(function (e) {
+    setStatus("Could not load district data: " + e.message);
+  });
+})();
+</script>
+</body>
+</html>

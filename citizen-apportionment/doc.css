@@ -1,0 +1,165 @@
+/* Scoped to .cgdoc: the host styles headings and images but not tables,
+   code or rules, and it owns the bare element selectors. */
+.cgdoc { --cgd-rule: #e2e6ea; --cgd-muted: #5b636f; --cgd-panel: #f6f7f8; }
+@media (prefers-color-scheme: dark) {
+  .cgdoc { --cgd-rule: #2a3038; --cgd-muted: #99a3b0; --cgd-panel: #1b1f26; }
+}
+:root[data-theme="dark"] .cgdoc { --cgd-rule: #2a3038; --cgd-muted: #99a3b0; --cgd-panel: #1b1f26; }
+:root[data-theme="light"] .cgdoc { --cgd-rule: #e2e6ea; --cgd-muted: #5b636f; --cgd-panel: #f6f7f8; }
+
+.cgdoc { margin-top: 2.5rem; }
+.cgdoc img { display: block; margin: 1.5rem 0; border: 1px solid var(--cgd-rule); border-radius: 4px; }
+.cgdoc table { border-collapse: collapse; width: 100%; max-width: 100%;
+  font-size: .93rem; margin: 1.25rem 0; }
+.cgdoc th, .cgdoc td {
+  text-align: left; padding: .5rem .85rem .5rem 0;
+  border-bottom: 1px solid var(--cgd-rule); vertical-align: top;
+}
+.cgdoc th { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--cgd-muted); font-weight: 600; }
+.cgdoc code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .88em;
+  background: var(--cgd-panel); border: 1px solid var(--cgd-rule);
+  border-radius: 3px; padding: .1em .35em;
+}
+.cgdoc pre {
+  background: var(--cgd-panel); border: 1px solid var(--cgd-rule);
+  border-radius: 4px; padding: .8rem 1rem; overflow-x: auto; font-size: .88rem;
+}
+.cgdoc pre code { background: none; border: 0; padding: 0; font-size: 1em; }
+.cgdoc hr { border: 0; border-top: 1px solid var(--cgd-rule); margin: 2.25rem 0; }
+.cgdoc blockquote { margin: 1.25rem 0; padding-left: 1rem;
+  border-left: 3px solid var(--cgd-rule); color: var(--cgd-muted); }
+
+/* Work-in-progress notice above the map; the pill is site.css's .draft-tag. */
+.cgdraft {
+  margin: 0 0 1.5rem; padding: .65rem .9rem; font-size: .95rem;
+  border: 1px solid var(--line); border-left: 3px solid var(--red);
+  border-radius: 4px; background: var(--bg-alt);
+}
+.cgdraft .draft-tag { margin: 0 .45rem 0 0; }
+
+/* The map sits under the page's own <h1>, so its heading is a figure heading.
+   cartogram.css styles .cg-head h1; this page uses h2 for it instead, both so
+   the page has a single h1 and so the map does not shout over the title. */
+.cg-head h2 {
+  margin: 0 0 4px;
+  font-size: clamp(17px, 2.1vw, 21px);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+/* ---------------------------------------------------- seat-change figure --
+ * Colours are set per mark in the SVG, because they carry direction and have to
+ * match the map above; everything else is text, and wears the page's ink. */
+.sc-wrap { margin: 1.75rem 0; overflow-x: auto; }
+.sc { width: 100%; max-width: 660px; height: auto; display: block; }
+.sc text { fill: currentColor; font-family: inherit; }
+.sc-head { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .6; }
+.sc-side { font-size: 11px; opacity: .45; font-style: italic; }
+.sc-name { font-size: 13.5px; font-weight: 600; }
+.sc-seats { font-size: 13px; opacity: .55; font-variant-numeric: tabular-nums; }
+.sc-range { font-size: 12.5px; font-weight: 700; }
+.sc-key { font-size: 11.5px; opacity: .6; }
+.sc-rule { stroke: currentColor; opacity: .15; stroke-width: 1; }
+/* A pale block is the same hue at a fraction of its weight, outlined so it keeps
+ * its edge against either surface. */
+.sc-blk.sc-maybe { fill-opacity: .18; stroke-width: 1.25; stroke-opacity: .55; }
+.sc-row:hover .sc-name { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ------------------------------------------------------- state silhouettes -- */
+/* The source outlines each come in a square viewBox, already padded so every
+ * state reads at a comparable size. So the mark has to be square too -- in a
+ * wider box the square content fits the short side and every state shrinks. */
+.state-mark {
+  width: 1.5em; height: 1.5em; vertical-align: -0.35em; margin-right: .4em;
+  fill: currentColor; opacity: .32;
+}
+.cgdoc h3 .state-mark { opacity: .38; }
+.sc-zero { stroke: currentColor; opacity: .3; stroke-width: 1; }
+.sc-trend { font-size: 12.5px; opacity: .6; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------- the exclusion surface --
+ * An interpolated field, not a choropleth: tract values blended by distance and
+ * contoured. Outlines and type follow the page, so the figure sits in either
+ * theme; the bands are set here rather than in the file because a dark page
+ * needs its own ramp. Inverting the light one would put a near-white lowest
+ * band on a dark ground, which reads as a white landmass rather than as "almost
+ * nobody here". Both ramps step away from their own background. */
+.xs-wrap { margin: 1.75rem 0; }
+.xs { width: 100%; height: auto; display: block; }
+.xs-state { stroke: currentColor; stroke-width: .6; opacity: .3; }
+.xs-nation { stroke: currentColor; stroke-width: .9; opacity: .5; }
+.xs-rule { stroke: currentColor; opacity: .18; }
+.xs-cap { fill: currentColor; opacity: .72; font-size: 12px; }
+.xs-tick { fill: currentColor; opacity: .58; font-size: 11px; font-variant-numeric: tabular-nums; }
+/* the hatch marks country whose value is a state average, not a DHS count */
+.xs-hatchline { stroke: currentColor; stroke-width: .8; opacity: .16; }
+
+.xs-b0 { fill: #f4f1f7; } .xs-b1 { fill: #ded4e9; } .xs-b2 { fill: #bda6d3; }
+.xs-b3 { fill: #9678b9; } .xs-b4 { fill: #6d4a9c; } .xs-b5 { fill: #472a78; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .xs-b0 { fill: #23212a; }
+  :root:not([data-theme="light"]) .xs-b1 { fill: #332c44; }
+  :root:not([data-theme="light"]) .xs-b2 { fill: #493b64; }
+  :root:not([data-theme="light"]) .xs-b3 { fill: #654e8b; }
+  :root:not([data-theme="light"]) .xs-b4 { fill: #8a6cb4; }
+  :root:not([data-theme="light"]) .xs-b5 { fill: #b195d8; }
+}
+:root[data-theme="dark"] .xs-b0 { fill: #23212a; }
+:root[data-theme="dark"] .xs-b1 { fill: #332c44; }
+:root[data-theme="dark"] .xs-b2 { fill: #493b64; }
+:root[data-theme="dark"] .xs-b3 { fill: #654e8b; }
+:root[data-theme="dark"] .xs-b4 { fill: #8a6cb4; }
+:root[data-theme="dark"] .xs-b5 { fill: #b195d8; }
+
+/* ------------------------------------------------------ population totals --
+ * Written by build_poptable.js. The totals row is a definition list so each
+ * figure stays paired with its label for a screen reader; the value is drawn
+ * above the label with order. */
+.pt-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px; margin: 1.5rem 0; padding: 0;
+  background: var(--cgd-rule); border: 1px solid var(--cgd-rule); border-radius: 4px;
+  overflow: hidden;
+}
+.pt-stats > div { display: flex; flex-direction: column; margin: 0;
+  padding: .75rem .9rem; background: var(--bg, #fff); }
+.pt-stats dd { order: -1; margin: 0; font-size: 1.35rem; font-weight: 650;
+  letter-spacing: -0.01em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.pt-stats dt { margin-top: .2rem; font-size: .8rem; line-height: 1.35; color: var(--cgd-muted); }
+
+.pt-details { margin: 1.75rem 0; border-top: 1px solid var(--cgd-rule);
+  border-bottom: 1px solid var(--cgd-rule); }
+.pt-details summary { cursor: pointer; padding: .7rem 0; font-weight: 600; }
+.pt-details[open] summary { margin-bottom: .25rem; }
+.pt-scroll { overflow-x: auto; }
+.cgdoc .pt-table { margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cgdoc .pt-table .num { text-align: right; }
+.cgdoc .pt-table th { white-space: normal; vertical-align: bottom; }
+.cgdoc .pt-table tfoot td { font-weight: 650; border-bottom: 0;
+  border-top: 2px solid var(--cgd-rule); }
+.pt-moved td:first-child { font-weight: 600; }
+.pt-gain { color: #7570B3; font-weight: 700; }
+.pt-loss { color: #D95F02; font-weight: 700; }
+.pt-delta { font-size: .85em; color: var(--cgd-muted); }
+.pt-note { margin: .6rem 0 1rem; font-size: .85rem; color: var(--cgd-muted); }
+.pt-mark { margin-left: .15em; color: var(--cgd-muted); }
+.pt-pad { visibility: hidden; }
+.pt-note + .pt-note { margin-top: -.4rem; }
+
+/* Sortable headers (poptable.js). The button wears the header's own type; the
+ * arrow shows only on the sorted column, and a faint one on hover elsewhere. */
+.pt-sort { all: unset; cursor: pointer; display: inline-block; width: 100%;
+  text-align: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit;
+  color: inherit; }
+.pt-sort:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; border-radius: 2px; }
+.pt-sort::after { content: "↓"; display: inline-block; width: 1em; margin-left: .2em;
+  text-align: center; opacity: 0; }
+.pt-sort:hover::after { opacity: .35; }
+[aria-sort="ascending"] > .pt-sort::after { content: "↑"; opacity: 1; }
+[aria-sort="descending"] > .pt-sort::after { content: "↓"; opacity: 1; }
+.cgdoc .pt-table th[aria-sort="ascending"], .cgdoc .pt-table th[aria-sort="descending"] {
+  color: var(--ink); }

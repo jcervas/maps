@@ -1,0 +1,52 @@
+state,pop,mid_decade,status,party
+Alabama,"5,025,369",partisan,NA,gop
+Alaska,"733,395",NA,NA,
+Arizona,"7,158,110",999,NA,
+Arkansas,"3,011,553",999,NA,
+California,"39,555,674",partisan,NA,dem
+Colorado,"5,775,324",999,NA,
+Connecticut,"3,607,701",999,NA,
+Delaware,"989,955",NA,NA,
+District of Columbia,"689,545",NA,NA,
+Florida,"21,538,192",partisan,NA,gop
+Georgia,"10,713,755",999,proposed,gop
+Hawaii,"1,455,252",999,NA,
+Idaho,"1,839,140",999,NA,
+Illinois,"12,821,814",999,NA,
+Indiana,"6,786,587",partisan,blocked,gop
+Iowa,"3,190,546",999,NA,
+Kansas,"2,937,745",999,NA,
+Kentucky,"4,506,302",999,NA,
+Louisiana,"4,657,874",court,NA,gop
+Maine,"1,363,196",999,NA,
+Maryland,"6,181,629",999,proposed,dem
+Massachusetts,"7,033,132",999,NA,
+Michigan,"10,079,338",999,NA,
+Minnesota,"5,706,692",999,NA,
+Mississippi,"2,961,278",possible,proposed,gop
+Missouri,"6,154,854",partisan,NA,gop
+Montana,"1,084,216",999,NA,
+Nebraska,"1,961,996",999,NA,
+Nevada,"3,105,595",999,NA,
+New Hampshire,"1,377,546",999,NA,
+New Jersey,"9,289,014",999,NA,
+New Mexico,"2,117,555",999,NA,
+New York,"20,203,772",court,blocked,dem
+North Carolina,"10,441,499",partisan,NA,gop
+North Dakota,"779,046",NA,NA,
+Ohio,"11,799,453",court,NA,gop
+Oklahoma,"3,959,405",999,NA,
+Oregon,"4,237,224",999,NA,
+Pennsylvania,"13,002,909",999,NA,
+Rhode Island,"1,097,354",999,NA,
+South Carolina,"5,118,252",possible,blocked,gop
+South Dakota,"886,729",NA,NA,
+Tennessee,"6,912,347",partisan,NA,gop
+Texas,"29,149,458",partisan,NA,gop
+Utah,"3,271,608",court,NA,dem
+Vermont,"643,082",NA,NA,
+Virginia,"8,631,388",partisan,blocked,dem
+Washington,"7,707,586",999,NA,
+West Virginia,"1,793,736",999,NA,
+Wisconsin,"5,894,170",999,NA,
+Wyoming,"576,844",NA,NA,

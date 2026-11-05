@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="author" content="Jonathan Cervas" />
+
+<title>Where Nobody Lives</title>
+<meta name="description" content="An interactive map of the 2,368,443 census blocks that recorded no residents in 2020 — 41.5% of the land area of the United States. Click a state to zoom in." />
+<meta name="theme-color" content="#C41230">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Where Nobody Lives">
+<meta property="og:description" content="The 2,368,443 census blocks that recorded no residents in 2020 — 41.5% of the land area of the United States.">
+
+<link rel="stylesheet" href="assets/zpb.css" />
+<link rel="stylesheet" href="assets/card.css" />
+<!-- zpb-doc.js is carried for one of its four jobs: the sweep that hides the
+     static twin once the live map has drawn. The other three find nothing
+     to do on this page. -->
+<script src="assets/zpb-doc.js" defer></script>
+<script src="assets/d3.v7.min.js" defer></script>
+<script src="assets/zpb-figures.js" defer></script>
+</head>
+
+<body class="zpb-card">
+
+<main class="card">
+
+  <header class="card-head">
+    <h1>Where Nobody Lives</h1>
+    <p class="card-note">
+      <b>2,368,443</b> of the 8,174,955 census blocks in the United States
+      recorded not one resident in 2020 — empty ground covering <b>41.5%</b>
+      of the country’s land area. Red is a block with nobody on it.
+    </p>
+  </header>
+
+  <div class="card-figure">
+    <div id="zmap" class="zpb-fig">
+      <div id="zmap-back" class="zmap-btn zmap-icon" style="left:0;display:none" title="Back to the whole country" aria-label="Back to the whole country">
+      ←
+      </div>
+      <div id="zmap-full" class="zmap-btn zmap-icon" style="right:0" title="Full screen" aria-label="Full screen">
+      ⛶
+      </div>
+    </div>
+
+    <div class="dd-fallback">
+    <p><img role="img" src="assets/img/fig1-us-blocks.webp" width="691" height="432" decoding="async" /></p>
+    </div>
+  </div>
+
+  <footer class="card-foot">
+    <div class="card-meta">
+      <span class="card-hint">Click a state to zoom in.</span>
+      <a href="full.html">Read more →</a>
+      <span class="card-source">Jonathan Cervas, Carnegie Mellon University · Blocks and populations from the U.S. Census Bureau, 2020</span>
+    </div>
+    <img class="card-logo" src="assets/img/cmu-wordmark.svg" width="62" height="62"
+         alt="Carnegie Mellon University" />
+  </footer>
+
+</main>
+
+<div class="card-rotate">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="7" y="2" width="10" height="20" rx="2"/>
+    <line x1="10.5" y1="19" x2="13.5" y2="19"/>
+  </svg>
+  <h1>Where Nobody Lives</h1>
+  <p>The map is the width of the country. Turn your phone sideways to see it.</p>
+  <p class="card-rotate-alt"><a href="full.html">Or read more →</a></p>
+</div>
+
+<div class="card-tartan"></div>
+
+</body>
+</html>

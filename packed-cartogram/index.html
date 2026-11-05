@@ -1,0 +1,184 @@
+---
+layout: default
+title: A Packed Cartogram of the United States
+description: "A cartogram where every state keeps its exact shape: each state is resized so its area matches its House seats, then packed by circle collision with a guaranteed minimum gap along every border."
+---
+
+<link rel="stylesheet" href="{{ '/packed-cartogram/cartogram.css' | relative_url }}">
+
+<div class="map-wrap">
+  <header class="map-header">
+    <h1 class="page-title">A Packed Cartogram of the United States</h1>
+    <p class="subtitle">Every state keeps its exact shape. Only size and position change.</p>
+  </header>
+
+  <div class="controls">
+    <div class="control">
+      <label for="metric">Area proportional to</label>
+      <select id="metric">
+        <option value="seats" selected>House seats (2020 apportionment)</option>
+        <option value="ev">Electoral votes</option>
+        <option value="equal">Two per state</option>
+        <option value="land">Land area (no resizing)</option>
+      </select>
+    </div>
+
+    <div class="control">
+      <label for="padding">Padding between states</label>
+      <div class="range-row">
+        <input type="range" id="padding" min="2" max="14" step="0.5" value="5">
+        <span class="range-out" id="padding-out">5 px</span>
+      </div>
+    </div>
+
+    <div class="control">
+      <label>&nbsp;</label>
+      <button id="run" type="button">Re-pack</button>
+    </div>
+  </div>
+
+  <figure class="map-figure">
+    <div id="map" role="img" aria-label="Cartogram of the United States in which each state keeps its true outline but is scaled so its area is proportional to its number of House seats, with the states packed together without overlapping."></div>
+    <div id="tooltip" class="tooltip" hidden></div>
+  </figure>
+
+  <ul class="stats">
+    <li><span class="stat-label">Guaranteed clearance</span><span class="stat-value" id="stat-clear">—</span></li>
+    <li><span class="stat-label">Collision circles</span><span class="stat-value" id="stat-circles">—</span></li>
+    <li><span class="stat-label">Packing density</span><span class="stat-value" id="stat-cover">—</span></li>
+    <li><span class="stat-label">Solve time</span><span class="stat-value" id="stat-time">—</span></li>
+  </ul>
+  <p class="verdict" id="verdict">Packing&hellip;</p>
+
+  <figcaption class="map-note">
+    <strong>Note:</strong> Shapes are the true state outlines in an Albers USA projection,
+    which relocates Alaska and Hawaii. The District of Columbia is not shown, as the
+    geography file covers the 50 states; under the electoral-vote measure its three
+    votes are therefore absent from the total. Seat counts are the 2020 census
+    apportionment, in effect for the 2022 through 2030 elections.
+  </figcaption>
+
+  <section class="method">
+    <h2>How it is built</h2>
+
+    <p>
+      A cartogram has to distort something. Diffusion cartograms distort shape until
+      the areas come out right, which makes states hard to recognise and leaves the
+      area itself only approximately correct. This map makes the opposite trade: it
+      refuses to bend a single border, and gives up contiguity instead. States are
+      resized and rearranged, but never reshaped, so <strong>shape error and area
+      error are both exactly zero</strong>. What is lost is that the states no longer
+      touch, and their relative positions shift.
+    </p>
+
+    <h3>1. Resize each state</h3>
+    <p>
+      Each state is scaled about its own centroid by a factor that makes its area
+      exactly its share of the total. Uniform scaling, so the shape is preserved
+      precisely:
+    </p>
+    <code class="formula">k<sub>i</sub> = sqrt( (target area &times; value<sub>i</sub> / total value) / area<sub>i</sub> )</code>
+
+    <h3>2. Turn each outline into a ring of circles</h3>
+    <p>
+      Each outline is resampled at a uniform arc length <em>s</em>, and a circle of
+      radius <em>s</em>/2 is placed at every sample. This does two things at once.
+    </p>
+    <ol>
+      <li>
+        Consecutive circles touch, so the ring is a <strong>sealed wall</strong>.
+        Nothing can pass through it at any size, which is why no state can ever end
+        up inside another and why the interiors never need filling. Ringing the
+        boundary rather than packing the inside is the difference between about
+        3,000 circles and about 30,000.
+      </li>
+      <li>
+        The union of the circles is the outline <strong>dilated by <em>s</em>/2</strong>
+        — a Minkowski sum with a disc. So if circles belonging to different states are
+        forbidden from coming closer than <em>s</em> + <em>gap</em>, then every point
+        of one outline finishes at least <em>gap</em> away from every point of the
+        other. A boundary point is within <em>s</em>/2 of its nearest sample, so
+        |p&nbsp;&minus;&nbsp;q| &ge; |a&nbsp;&minus;&nbsp;b| &minus; <em>s</em> = <em>gap</em>.
+      </li>
+    </ol>
+    <p>
+      That keeps the two knobs independent: <em>s</em> buys resolution, <em>gap</em>
+      buys padding, and tight padding stays cheap. The padding is not a typical value
+      or an average — it is a guaranteed minimum, uniform along every border, and the
+      readout above measures it rather than assuming it.
+    </p>
+
+    <h3>3. Pack by relaxation</h3>
+    <p>
+      Each state is a rigid body that may translate but not rotate or deform — a
+      tilted Florida costs more legibility than the packing gains. Every pass hashes
+      the circles into a uniform grid, pushes overlapping cross-state pairs apart
+      along their centre line, and combines each body's corrections into a single
+      translation. Overlaps are projected out directly rather than integrated
+      through velocities, so nothing can tunnel through a wall.
+    </p>
+    <p>
+      The layout <strong>starts expanded and contracts</strong>, which is the
+      opposite of what seems natural. Scaling every state about its own centroid
+      pushes neighbours into each other, so the true map is not a legal starting
+      point. Growing the states from tiny is the obvious fix and it fails: a growing
+      arm sweeps sideways and can close <em>around</em> a neighbour, and a shape that
+      may only slide can never escape that — Maryland does it to Delaware every time.
+      So the states are held at full size, the positions are pushed apart until
+      nothing overlaps, and gravity draws them back together. Shapes that only ever
+      approach one another cannot interlock: they meet, and they stop.
+    </p>
+    <p>
+      One more detail decides whether it works at all. Each body's correction is
+      weighted by how <em>deep</em> each contact is, rather than averaged flat. Under
+      a flat average, a hundred neighbours resting quietly at the padding out-vote
+      the one contact that is genuinely overlapping, and that contact never clears no
+      matter how long the solve runs. Weighting by depth lets the worst contact lead.
+    </p>
+    <p>
+      A fourth force holds <strong>neighbours in their true bearing</strong> to one
+      another. Gravity says where each state belongs on its own and nothing at all
+      about where states belong <em>relative</em> to each other, so a large state on
+      the edge of the pack can shoulder a small one straight past itself — which is
+      how Maine came to sit west of New Hampshire. It corrects only the component
+      across the true bearing, never along it, so the padding is still free to push
+      neighbours apart.
+    </p>
+    <p>
+      That force is only switched on when the map is barely resized, and the reason
+      is worth stating: true bearings are not all satisfiable at once. Once New Jersey
+      is 3.6&times; its true size it cannot sit at its true bearing from both New York
+      and Pennsylvania without overlapping one of them. A spring demanding it fights
+      the separation pass until the packing comes out worse than with no alignment at
+      all — which is what happened at every strength tried. So its strength is scaled
+      by the measured spread of the scale factors. Under <em>Land area</em> the spread
+      is zero, alignment runs at full strength, and it halves the misordered pairs;
+      under the three resized measures it is off.
+    </p>
+
+    <p class="caveat">
+      <strong>Honest caveats,</strong> both measured rather than asserted. The solver
+      does not converge at every padding, and <em>Two per state</em> falls short at the
+      default — so the clearance above is measured on the finished map, not inferred
+      from the settings, and the line beneath it says plainly when the packing missed.
+      And relative position is only approximate: under the resized measures about 1% of
+      east–west state pairs come out on the wrong side of one another compared with the
+      true projection. This map buys exact shape and exact area by spending accuracy
+      on <em>where</em> things sit, and that is the bill.
+    </p>
+
+    <h3>What the controls show</h3>
+    <p>
+      Switching to <em>Land area</em> turns the resizing off and leaves only the
+      packing, which isolates what step 3 does on its own — and it packs tightest,
+      because states at their true relative sizes still fit together nearly as well
+      as they do on a real map. <em>Two per state</em> gives every state the same
+      area — the Senate, drawn to scale. Raising the padding costs nothing in the
+      solve; it simply widens the gap the circles must respect.
+    </p>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script src="{{ '/packed-cartogram/cartogram.js' | relative_url }}" defer></script>

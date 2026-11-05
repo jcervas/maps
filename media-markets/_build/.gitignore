@@ -1,0 +1,20 @@
+# Third-party sources -- fetch.sh reproduces all of these.
+nielsentopo.json
+counties-10m.json
+states-10m.json
+copop.csv
+co-est2020.csv
+probe.tmp
+lib_d3.js
+lib_topo.js
+cd/
+nodeenv/
+npmcache/
+
+# Generated output. The published copies live one level up.
+build/index.html
+build/map.css
+media-markets.html
+media-markets.local.html
+thumb.svg
+cd_dma_*.json
