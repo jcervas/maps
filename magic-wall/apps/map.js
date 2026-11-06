@@ -101,6 +101,8 @@ const OFFICE_LABEL = { president: "President", senate: "Senate", governor: "Gove
 // pa_leg.py): picked inside the state from the Race menu, never a national
 // mode or a state's default race, and read out as seats rather than votes.
 const LEGISLATURE = new Set(["state-house", "state-senate"]);
+// Each map's Shapes radios get a name of their own (a split screen has two).
+let shapesGroups = 0;
 // The tiers a district carries a number on, inside a state.
 const DISTRICT_TIERS = new Set(["cd", "district", "senate-district"]);
 
@@ -273,23 +275,25 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   });
   pane.appendChild(precinctBtn);
 
-  // A dropdown, not a button that cycles: House 2026 has three choices,
-  // and a reader should see them all and pick one (the user's call).
-  const shapesBtn = document.createElement("label");
+  // Radio buttons, not a button that cycles: House 2026 has three choices,
+  // and a reader should see them all and pick one (the user's call). Native
+  // radios sharing a name, so the arrow keys move between them; the name is
+  // this map's own, since a split screen has two.
+  const shapesBtn = document.createElement("div");
   shapesBtn.hidden = true;
+  shapesBtn.setAttribute("role", "radiogroup");
+  shapesBtn.setAttribute("aria-label", "Shapes");
   shapesBtn.title = "Draw the districts as an equal-size cartogram (one cell per seat) or on their lines";
-  shapesBtn.style.cssText = precinctBtn.style.cssText + "display:flex;align-items:center;gap:6px;cursor:default;";
-  shapesBtn.append("Shapes");
-  const shapesSel = document.createElement("select");
-  shapesSel.style.cssText = "font:inherit;font-size:13px;color:inherit;background:var(--paper);" +
-    "border:1px solid var(--rule);border-radius:4px;padding:2px 4px;cursor:pointer;";
-  shapesBtn.appendChild(shapesSel);
+  shapesBtn.style.cssText = precinctBtn.style.cssText + "display:flex;flex-wrap:wrap;align-items:center;" +
+    "gap:4px 10px;cursor:default;";
+  const shapesName = `mw-shapes-${++shapesGroups}`;
   for (const t of ["click", "pointerdown", "mousedown", "wheel"]) {
     shapesBtn.addEventListener(t, (ev) => ev.stopPropagation());
   }
-  shapesSel.addEventListener("change", () => {
-    if (!shapeChoices().includes(shapesSel.value)) return;
-    shapes = shapesSel.value;
+  shapesBtn.addEventListener("change", (ev) => {
+    const v = ev.target.value;
+    if (!shapeChoices().includes(v)) return;
+    shapes = v;
     try { localStorage.setItem("mw.shapes", shapes); } catch (_) { /* private window */ }
     hovered = null;
     pinned = null;
@@ -635,11 +639,25 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (shapesBtn.hidden) return;
     const lines = mode().office === "house" && !raceId ? `${mode().cycle} lines` : "District lines";
     const want = c.map((v) => `${v}=${SHAPE_LABEL[v] || lines}`).join("|");
-    if (shapesSel.dataset.opts !== want) {
-      shapesSel.replaceChildren(...c.map((v) => new Option(SHAPE_LABEL[v] || lines, v)));
-      shapesSel.dataset.opts = want;
+    if (shapesBtn.dataset.opts !== want) {
+      const head = document.createElement("span");
+      head.textContent = "Shapes";
+      head.style.fontWeight = "600";
+      shapesBtn.replaceChildren(head, ...c.map((v) => {
+        const l = document.createElement("label");
+        l.style.cssText = "display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;";
+        const r = document.createElement("input");
+        r.type = "radio";
+        r.name = shapesName;
+        r.value = v;
+        r.style.cssText = "margin:0;accent-color:var(--ink);cursor:pointer;";
+        l.append(r, SHAPE_LABEL[v] || lines);
+        return l;
+      }));
+      shapesBtn.dataset.opts = want;
     }
-    shapesSel.value = shapesNow();
+    const now = shapesNow();
+    for (const r of shapesBtn.querySelectorAll("input")) r.checked = r.value === now;
   }
 
   /** The options button shows while any of its controls applies; the panel
