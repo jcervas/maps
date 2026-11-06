@@ -4221,10 +4221,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     ctx.restore();
   }
   view.on("overlay", ({ ctx, dpr, W, H, transform }) => {
-    performance.mark("mw:ov0");
-    try { overlayBody(ctx, dpr, W, H, transform); } finally { performance.mark("mw:ov1"); }
-  });
-  function overlayBody(ctx, dpr, W, H, transform) {
     if (!geo) return;
     const T = theme();
     if (!focus) {
@@ -4268,17 +4264,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     if (focus && binsCover() < 0.5) drawCities(ctx, dpr, W, H, transform, numberBoxes);
     numberBoxes = [];
-    performance.mark("mw:ov-labels");
     if (chiclets()) drawChiclets(ctx, dpr, W, H, transform, focus ? [] : stateLabelBoxes);
     if (bins.on) drawBins(ctx, dpr, W, H);
     syncRatingBar();
-    performance.mark("mw:ov-bar");
     legendBox = null;
     if (legendOn && binsCover() < 0.5 && ratingBar.hidden) drawLegend(ctx, dpr, W, H);
-    performance.mark("mw:ov-legend");
     if (titleOn) drawTitle(ctx, dpr);
     fitWatch(transform);
-  }
+  });
 
   /* Where each state's label goes on the cartogram: just outside its box,
    * above first, then beside, below and at the corners, then the same a
@@ -4652,9 +4645,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     view,
     async load({ base = "." } = {}) {
       bundle = await loadBundle(base);
-      performance.mark("mw:bundle");
       api.adopt(bundle);
-      performance.mark("mw:adopted");
       return api;
     },
     /** Take geometry already loaded by another map app. */
@@ -4703,9 +4694,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // State outlines dissolved from the counties, not taken from the
       // basemap: the basemap's states carry no identity, and two files from
       // different Census releases do not agree on a shared border.
-      performance.mark("mw:pre-dissolve");
       const outlines = dissolveBy(counties, name, "state");
-      performance.mark("mw:dissolve");
       stateFeatures = Object.values(outlines);
       countiesByState = group(geo.counties);
       geo.countyIndex = indexBy(geo.counties);
@@ -4731,15 +4720,20 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
           showReadout(hovered || pinned);
         });
       }
-      performance.mark("mw:pre-auto");
       autoBaseline();
-      performance.mark("mw:auto");
       view.setLayers(layers());
-      performance.mark("mw:layers");
-      view.resize();
-      performance.mark("mw:resize");
-      showReadout(null);
-      performance.mark("mw:readout");
+      /* The first frame is drawn after load() returns, not inside it. In
+       * the default mode (President 2024) it builds every one of 3,144
+       * county shapes, about a second, and the shell switches to House 2026
+       * the moment load() returns, so that frame was thrown away -- and the
+       * shell waited on it before fetching a single result (November 6).
+       * A render from the shell meanwhile fits and draws on its own (the
+       * view refits whenever its box or features are new). */
+      setTimeout(() => {
+        if (bundle !== b) return;
+        view.resize();
+        showReadout(hovered || pinned);
+      }, 0);
       return api;
     },
     refresh,
