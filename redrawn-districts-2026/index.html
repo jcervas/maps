@@ -1,3 +1,10 @@
+---
+layout: null
+title: "Redrawn Districts Explorer"
+description: "All 435 congressional districts and the nine states that redrew their maps between 2024 and 2026: the old and new lines, 2024 presidential results, Cook ratings, which seats change hands, and the 2026 House results from the AP."
+summary: "The nine states that redrew their congressional maps mid-decade, district by district: old lines against new, Cook ratings, seats changing hands, and live 2026 House results."
+permalink: /redrawn-districts-2026/
+---
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -658,7 +665,7 @@
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-06b";
+  var BUILD = "2026-11-06c";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -4287,6 +4294,17 @@
     var base = state.districts[state.year] || [];
     if (base.length) fitTo(base);
   }
+  // Esc is the reset button: out of a district, then out of the state. Not
+  // while a form control has focus, where Esc already means something.
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || e.defaultPrevented) return;
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (!state.district && !state.focus) return;
+    e.preventDefault();
+    fitCurrent();
+  });
+
   // Same tween as the district zoom, about the canvas centre.
   function zoomBy(f) {
     var cx = W / 2, cy = H / 2;
