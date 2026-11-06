@@ -1,0 +1,18 @@
+state,tier,what,url
+FL,statewide,"FL election night",https://enight.elections.myflorida.com/
+FL,statewide,"FL results landing",https://results.elections.myflorida.com/
+FL,statewide,"FL DOS election results",https://dos.elections.myflorida.com/
+ID,statewide,"ID ENR",https://voteidaho.gov/election-results-2/
+ID,statewide,"ID sos results",https://elections.sos.idaho.gov/
+IL,statewide,"IL ENR",https://electionresults.illinois.gov/
+IL,statewide,"IL vote totals",https://www.elections.il.gov/ElectionOperations/VoteTotalsSearch.aspx
+KS,statewide,"KS ENR",https://electionresults.ks.gov/
+KS,statewide,"KS enr alt",https://enr.sos.ks.gov/
+NE,statewide,"NE results api",https://electionresults.nebraska.gov/ElectionResults
+OR,statewide,"OR results 2024",https://results.oregonvotes.gov/ResultsSW.aspx
+SC,statewide,"SC enr via scvotes",https://scvotes.gov/election-results/
+SD,statewide,"SD results api",https://electionresults.sd.gov/resultsSW.aspx
+TN,statewide,"TN enr",https://enr.tn.gov/
+TN,statewide,"TN results",https://sos.tn.gov/elections/results
+WY,statewide,"WY results portal",https://sosresults.wyo.gov/
+WY,statewide,"WY sos elections results",https://sos.wyo.gov/Elections/Docs/

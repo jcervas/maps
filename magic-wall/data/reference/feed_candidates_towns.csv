@@ -1,0 +1,9 @@
+state,tier,what,url
+NH,town,"NH SOS election results index",https://www.sos.nh.gov/elections/election-results
+VT,town,"VT election results portal",https://electionresults.vermont.gov/
+VT,town,"VT SOS 2024 general town results index",https://sos.vermont.gov/elections/election-info-resources/election-results/
+MA,town,"MA electionstats search",https://electionstats.state.ma.us/
+MA,town,"MA electionstats 2024 president by town (csv export guess)",https://electionstats.state.ma.us/elections/download/134160/precincts_include:0/
+ME,town,"ME SOS election results index",https://www.maine.gov/sos/cec/elec/results/
+CT,town,"CT election management results portal",https://ctemspublic.pcctg.net/
+RI,town,"RI BOE election results",https://elections.ri.gov/elections/results

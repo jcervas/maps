@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boards Harness</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="../wall.css">
+<style>
+  /* wall.css lays the body out for the map; the harness is one column, and
+     like the wall's stage the board gets the window's height below the rail
+     (Battle sizes its tiles to fill it). */
+  body { display: flex; flex-direction: column; height: 100vh; }
+  .rail, #log { flex: none; }
+  #boards, #battle { flex: 1; min-height: 0; }
+  #log { font-size: 12px; color: var(--ink-soft); padding: 4px 16px; }
+</style>
+</head>
+<body>
+<!-- Standalone test page for apps/boards.js and apps/battle.js until the
+     shell mounts them. Loads what shell.js loads (every cycle's registry, the
+     presidential baselines, the live poller) and nothing else. The "test"
+     buttons put synthetic numbers and calls into this page's memory only --
+     nothing is written to results/ or calls.json. -->
+<header class="rail">
+  <div class="brand">Magic&nbsp;Wall <span class="tag">harness</span></div>
+  <div class="field"><span>View</span><div class="seg">
+    <button id="vBoards" aria-pressed="true">Boards</button>
+    <button id="vBattle" aria-pressed="false">Battle</button>
+  </div></div>
+  <div class="field"><span>Test (memory only)</span><div class="seg">
+    <button id="tVotes">Fake votes</button>
+    <button id="tCalls">Sample calls</button>
+    <button id="tReset">Reload</button>
+  </div></div>
+  <div class="spacer"></div>
+  <div class="badge" id="status" data-level="unknown">starting</div>
+  <button id="themeBtn" title="Light or dark">&#9680;</button>
+</header>
+<section id="boards"></section>
+<section id="battle" hidden></section>
+<div id="log"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script type="module">
+
+const { createStore } = await import("../data/store.js");
+const { createPoller } = await import("../data/poller.js");
+const { createSeats } = await import("../data/seats.js");
+const { createBoardsApp } = await import("./boards.js");
+const { createBattleApp } = await import("./battle.js");
+const { setTheme, themeKey } = await import("../core/theme.js");
+
+const $ = (id) => document.getElementById(id);
+const log = (m) => { $("log").textContent = m; };
+const json = (u) => fetch(u, { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(`${u}: ${r.status}`); return r.json(); });
+
+const store = createStore();
+const regs = await Promise.all(["2026", "2025", "2024", "2022"].map((c) =>
+  json(`../registry/races_${c}.json`).catch(() => ({ races: [] }))));
+store.setRegistry({ cycle: "2026", races: regs.flatMap((r) => r.races || []) });
+for (const k of ["pres-2024", "pres-2020"]) store.setBaseline(k, await json(`../baselines/${k}.json`));
+
+const seats = createSeats({ store, base: "..", root: ".." });
+await seats.load();
+seats.start();
+
+const selected = (raceId, s) => log(`onSelect("${raceId}") — the shell would send the map to ${s ? s.label : raceId}`);
+const boards = createBoardsApp({ el: $("boards"), seats, onSelect: selected });
+const battle = createBattleApp({ el: $("battle"), seats, onSelect: selected });
+
+function onData(ids) {
+  seats.invalidate();      // a newly loaded result can be a baseline too
+  boards.render(); battle.render();
+  log(`poll: ${ids.length} race file(s) updated`);
+}
+const poller = createPoller({ store, base: "..", onUpdate: onData,
+  onStatus: (s) => { $("status").dataset.level = s.level; $("status").textContent = `live · ${s.level}`; } });
+poller.start();
+
+function view(v) {
+  $("boards").hidden = v !== "boards"; $("battle").hidden = v !== "battle";
+  $("vBoards").setAttribute("aria-pressed", String(v === "boards"));
+  $("vBattle").setAttribute("aria-pressed", String(v === "battle"));
+  (v === "boards" ? boards : battle).render();
+}
+$("vBoards").onclick = () => view("boards");
+$("vBattle").onclick = () => view("battle");
+$("themeBtn").onclick = () => { setTheme(themeKey() === "dark" ? "light" : "dark"); boards.render(); battle.render(); };
+$("tReset").onclick = () => location.reload();
+
+// Synthetic statewide votes for every loaded 2026 race, in memory. Stops the
+// poller first so a real poll cannot overwrite them mid-test.
+$("tVotes").onclick = () => {
+  poller.stop();
+  let i = 0;
+  for (const race of store.registry.races.filter((r) => r.race_id.startsWith("2026-"))) {
+    const d = race.candidates.find((c) => c.party === "dem");
+    const r = race.candidates.find((c) => c.party === "rep");
+    const votes = {};
+    for (const c of race.candidates) votes[c.id] = 1000;
+    if (d) votes[d.id] = 50000 + ((i * 7919) % 30000);
+    if (r) votes[r.id] = 50000 + ((i * 104729) % 30000);
+    store.setResults(race.race_id, { race_id: race.race_id, updated: new Date().toISOString(),
+      status: { state: "undecided" }, statewide: { reporting_pct: 10 + (i * 13) % 85, votes }, units: [] });
+    i++;
+  }
+  boards.render(); battle.render();
+  log(`fake votes in ${i} races (memory only; poller stopped)`);
+};
+$("tCalls").onclick = async () => {
+  seats.calls.stop();
+  const doc = await json("../docs/calls.sample.json");
+  // One malformed entry, to see the refusal.
+  doc.calls["2026-gov-ny"] = { party: "dem", at: "2026-11-04T02:00:00Z" };
+  seats.calls.load(doc);
+  log("sample calls loaded (memory only; calls poller stopped)");
+};
+window.harness = { store, seats, boards, battle, poller };
+view("boards");
+</script>
+</body>
+</html>

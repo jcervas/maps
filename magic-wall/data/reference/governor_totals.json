@@ -1,0 +1,517 @@
+{
+ "_about": "Certified statewide totals for governor races not harvested from a state site, read off each race's Wikipedia results table on November 2, 2026 (Alaska 2022: first round). The count of record for scripts/backfill_governor.py.",
+ "2022-AK": {
+  "total": 263752,
+  "source": "https://en.wikipedia.org/wiki/2022_Alaska_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Mike Dunleavy",
+    "party": "Republican",
+    "votes": 132632
+   },
+   {
+    "name": "Les Gara",
+    "party": "Democratic",
+    "votes": 63851
+   },
+   {
+    "name": "Bill Walker",
+    "party": "Independent",
+    "votes": 54668
+   },
+   {
+    "name": "Charlie Pierce",
+    "party": "Republican",
+    "votes": 11817
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 784
+   }
+  ],
+  "note": "First-round counts. Charlie Pierce is marked as withdrawn on Wikipedia but remained on the ballot."
+ },
+ "2022-AZ": {
+  "total": 2559485,
+  "source": "https://en.wikipedia.org/wiki/2022_Arizona_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Katie Hobbs",
+    "party": "Democratic",
+    "votes": 1287891
+   },
+   {
+    "name": "Kari Lake",
+    "party": "Republican",
+    "votes": 1270774
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 820
+   }
+  ]
+ },
+ "2022-FL": {
+  "total": 7771399,
+  "source": "https://en.wikipedia.org/wiki/2022_Florida_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Ron DeSantis",
+    "party": "Republican",
+    "votes": 4614210
+   },
+   {
+    "name": "Charlie Crist",
+    "party": "Democratic",
+    "votes": 3106313
+   }
+  ]
+ },
+ "2022-IA": {
+  "total": 1221864,
+  "source": "https://en.wikipedia.org/wiki/2022_Iowa_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Kim Reynolds",
+    "party": "Republican",
+    "votes": 709198
+   },
+   {
+    "name": "Deidre DeJear",
+    "party": "Democratic",
+    "votes": 482950
+   },
+   {
+    "name": "Rick Stewart",
+    "party": "Libertarian",
+    "votes": 28998
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 718
+   }
+  ]
+ },
+ "2022-ID": {
+  "total": 592603,
+  "source": "https://en.wikipedia.org/wiki/2022_Idaho_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Brad Little",
+    "party": "Republican",
+    "votes": 358598
+   },
+   {
+    "name": "Stephen Heidt",
+    "party": "Democratic",
+    "votes": 120160
+   },
+   {
+    "name": "Ammon Bundy",
+    "party": "Independent",
+    "votes": 101835
+   },
+   {
+    "name": "Paul Sand",
+    "party": "Libertarian",
+    "votes": 6714
+   },
+   {
+    "name": "Chantyrose Davison",
+    "party": "Constitution",
+    "votes": 5250
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 46
+   }
+  ],
+  "note": "Write-in line is the single named write-in listed on Wikipedia (Lisa Marie, Independent)."
+ },
+ "2022-KS": {
+  "total": 1008998,
+  "source": "https://en.wikipedia.org/wiki/2022_Kansas_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Laura Kelly",
+    "party": "Democratic",
+    "votes": 499849
+   },
+   {
+    "name": "Derek Schmidt",
+    "party": "Republican",
+    "votes": 477591
+   },
+   {
+    "name": "Dennis Pyle",
+    "party": "Independent",
+    "votes": 20452
+   },
+   {
+    "name": "Seth Cordell",
+    "party": "Libertarian",
+    "votes": 11106
+   }
+  ]
+ },
+ "2022-MN": {
+  "total": 2510661,
+  "source": "https://en.wikipedia.org/wiki/2022_Minnesota_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Tim Walz",
+    "party": "Democratic (DFL)",
+    "votes": 1312349
+   },
+   {
+    "name": "Scott Jensen",
+    "party": "Republican",
+    "votes": 1119941
+   },
+   {
+    "name": "James McCaskel",
+    "party": "Legal Marijuana Now",
+    "votes": 29346
+   },
+   {
+    "name": "Steve Patterson",
+    "party": "Grassroots—LC",
+    "votes": 22599
+   },
+   {
+    "name": "Hugh McTavish",
+    "party": "Independence",
+    "votes": 18156
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 1029
+   }
+  ]
+ },
+ "2022-NE": {
+  "total": 672593,
+  "source": "https://en.wikipedia.org/wiki/2022_Nebraska_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Jim Pillen",
+    "party": "Republican",
+    "votes": 398334
+   },
+   {
+    "name": "Carol Blood",
+    "party": "Democratic",
+    "votes": 242006
+   },
+   {
+    "name": "Scott Zimmerman",
+    "party": "Libertarian",
+    "votes": 26455
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 5798
+   }
+  ]
+ },
+ "2022-NV": {
+  "total": 1019071,
+  "source": "https://en.wikipedia.org/wiki/2022_Nevada_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Joe Lombardo",
+    "party": "Republican",
+    "votes": 497377
+   },
+   {
+    "name": "Steve Sisolak",
+    "party": "Democratic",
+    "votes": 481991
+   },
+   {
+    "name": "Brandon Davis",
+    "party": "Libertarian",
+    "votes": 14919
+   },
+   {
+    "name": "None of These Candidates",
+    "party": "None of These Candidates",
+    "votes": 14866
+   },
+   {
+    "name": "Ed Bridges",
+    "party": "Independent American",
+    "votes": 9918
+   }
+  ],
+  "note": "\"None of These Candidates\" is a ballot line with 14,866 votes (1.46%)."
+ },
+ "2022-OH": {
+  "total": 4134877,
+  "source": "https://en.wikipedia.org/wiki/2022_Ohio_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Mike DeWine",
+    "party": "Republican",
+    "votes": 2580424
+   },
+   {
+    "name": "Nan Whaley",
+    "party": "Democratic",
+    "votes": 1545489
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 8964
+   }
+  ]
+ },
+ "2022-OR": {
+  "total": 1952883,
+  "source": "https://en.wikipedia.org/wiki/2022_Oregon_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Tina Kotek",
+    "party": "Democratic",
+    "votes": 917074
+   },
+   {
+    "name": "Christine Drazan",
+    "party": "Republican",
+    "votes": 850347
+   },
+   {
+    "name": "Betsy Johnson",
+    "party": "Independent",
+    "votes": 168431
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 2113
+   }
+  ]
+ },
+ "2022-RI": {
+  "total": 357670,
+  "source": "https://en.wikipedia.org/wiki/2022_Rhode_Island_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Dan McKee",
+    "party": "Democratic",
+    "votes": 207166
+   },
+   {
+    "name": "Ashley Kalus",
+    "party": "Republican",
+    "votes": 139001
+   },
+   {
+    "name": "Zachary Hurwitz",
+    "party": "Independent",
+    "votes": 4512
+   },
+   {
+    "name": "Paul Rianna Jr.",
+    "party": "Independent",
+    "votes": 3123
+   },
+   {
+    "name": "Elijah Gizzarelli",
+    "party": "Libertarian",
+    "votes": 2811
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 1057
+   }
+  ]
+ },
+ "2022-SC": {
+  "total": 1703192,
+  "source": "https://en.wikipedia.org/wiki/2022_South_Carolina_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Henry McMaster",
+    "party": "Republican",
+    "votes": 988501
+   },
+   {
+    "name": "Joe Cunningham",
+    "party": "Democratic",
+    "votes": 692691
+   },
+   {
+    "name": "Morgan Bruce Reeves",
+    "party": "Libertarian",
+    "votes": 20826
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 1174
+   }
+  ]
+ },
+ "2022-SD": {
+  "total": 350166,
+  "source": "https://en.wikipedia.org/wiki/2022_South_Dakota_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Kristi Noem",
+    "party": "Republican",
+    "votes": 217035
+   },
+   {
+    "name": "Jamie Smith",
+    "party": "Democratic",
+    "votes": 123148
+   },
+   {
+    "name": "Tracey Quint",
+    "party": "Libertarian",
+    "votes": 9983
+   }
+  ]
+ },
+ "2022-TN": {
+  "total": 1739882,
+  "source": "https://en.wikipedia.org/wiki/2022_Tennessee_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Bill Lee",
+    "party": "Republican",
+    "votes": 1129390
+   },
+   {
+    "name": "Jason Martin",
+    "party": "Democratic",
+    "votes": 572818
+   },
+   {
+    "name": "John Gentry",
+    "party": "Independent",
+    "votes": 15395
+   },
+   {
+    "name": "Constance Every",
+    "party": "Independent",
+    "votes": 10277
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 389
+   }
+  ],
+  "note": "Write-ins aggregated from four named write-in rows (389 votes). Below-threshold independents omitted (Rouse 3,772 etc.)."
+ },
+ "2022-TX": {
+  "total": 8101994,
+  "source": "https://en.wikipedia.org/wiki/2022_Texas_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Greg Abbott",
+    "party": "Republican",
+    "votes": 4435558
+   },
+   {
+    "name": "Beto O'Rourke",
+    "party": "Democratic",
+    "votes": 3553656
+   },
+   {
+    "name": "Mark Tippetts",
+    "party": "Libertarian",
+    "votes": 81932
+   }
+  ],
+  "note": "Listed candidate votes sum to 8,100,973, 1,021 short of the stated total 8,101,994; Wikipedia lists no write-in line. Turnout row equals the total."
+ },
+ "2024-IN": {
+  "total": 2879655,
+  "source": "https://en.wikipedia.org/wiki/2024_Indiana_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Mike Braun",
+    "party": "Republican",
+    "votes": 1566081
+   },
+   {
+    "name": "Jennifer McCormick",
+    "party": "Democratic",
+    "votes": 1183741
+   },
+   {
+    "name": "Donald Rainwater",
+    "party": "Libertarian",
+    "votes": 129781
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 52
+   }
+  ]
+ },
+ "2024-MO": {
+  "total": 2960266,
+  "source": "https://en.wikipedia.org/wiki/2024_Missouri_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Mike Kehoe",
+    "party": "Republican",
+    "votes": 1750802
+   },
+   {
+    "name": "Crystal Quade",
+    "party": "Democratic",
+    "votes": 1146173
+   },
+   {
+    "name": "Bill Slantz",
+    "party": "Libertarian",
+    "votes": 40908
+   },
+   {
+    "name": "Paul Lehmann",
+    "party": "Green",
+    "votes": 22359
+   },
+   {
+    "name": "Write-ins",
+    "party": "Write-in",
+    "votes": 24
+   }
+  ]
+ },
+ "2024-MT": {
+  "total": 602404,
+  "source": "https://en.wikipedia.org/wiki/2024_Montana_gubernatorial_election",
+  "candidates": [
+   {
+    "name": "Greg Gianforte",
+    "party": "Republican",
+    "votes": 354569
+   },
+   {
+    "name": "Ryan Busse",
+    "party": "Democratic",
+    "votes": 232644
+   },
+   {
+    "name": "Kaiser Leib",
+    "party": "Libertarian",
+    "votes": 15191
+   }
+  ]
+ }
+}

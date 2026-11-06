@@ -1,0 +1,13 @@
+{
+  "_comment": "Preset views on keys 1-9. Edit freely; the wall re-reads this on every load. focus: a state abbreviation or null for the nation. race: a race_id, or null for the newest race in that state with votes. variable: margin | swing (and lead, reporting, turnout once the map has them). center [lon, lat] and zoom: null and 1 mean 'fit the state'. Views saved at the wall (shift + digit) override a slot here until forgotten. Slots 2-8 are the Senate races Cook rated Toss-up on 2026-10-30 (data/ratings.js): AK, IA, KS, ME, MI, OH, TX; slot 9 is left free for a view saved at the wall. A race with no results file yet is skipped and the state still focuses.",
+  "presets": [
+    {"slot": 1, "name": "Senate 2026", "app": "map", "focus": null, "race": null, "national": "senate-2026", "variable": "margin", "baseline": "pres-2024", "center": null, "zoom": 1},
+    {"slot": 2, "name": "Alaska Senate", "app": "map", "focus": "AK", "race": "2026-sen-ak", "national": "senate-2026", "variable": "margin", "baseline": "pres-2024", "center": null, "zoom": 1},
+    {"slot": 3, "name": "Iowa Senate", "app": "map", "focus": "IA", "race": "2026-sen-ia", "national": "senate-2026", "variable": "margin", "baseline": "pres-2024", "center": null, "zoom": 1},
+    {"slot": 4, "name": "Kansas Senate", "app": "map", "focus": "KS", "race": "2026-sen-ks", "national": "senate-2026", "variable": "margin", "baseline": "pres-2024", "center": null, "zoom": 1},
+    {"slot": 5, "name": "Maine Senate", "app": "map", "focus": "ME", "race": "2026-sen-me", "national": "senate-2026", "variable": "margin", "baseline": "pres-2024", "center": null, "zoom": 1},
+    {"slot": 6, "name": "Michigan Senate", "app": "map", "focus": "MI", "race": "2026-sen-mi", "national": "senate-2026", "variable": "margin", "baseline": "pres-2024", "center": null, "zoom": 1},
+    {"slot": 7, "name": "Ohio Senate", "app": "map", "focus": "OH", "race": "2026-sen-oh", "national": "senate-2026", "variable": "margin", "baseline": "pres-2024", "center": null, "zoom": 1},
+    {"slot": 8, "name": "Texas Senate", "app": "map", "focus": "TX", "race": "2026-sen-tx", "national": "senate-2026", "variable": "margin", "baseline": "pres-2024", "center": null, "zoom": 1}
+  ]
+}

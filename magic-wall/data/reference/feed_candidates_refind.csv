@@ -1,0 +1,18 @@
+state,tier,what,url
+AR,statewide,"AR SOS election results",https://www.sos.arkansas.gov/elections/election-results/
+AR,statewide,"AR results portal alt",https://electionresults.arkansas.gov/
+DC,statewide,"DCBOE results portal",https://electionresults.dcboe.org/
+DC,statewide,"DCBOE site results page",https://www.dcboe.org/Elections_Voting/Election-Results
+KS,statewide,"KS SOS results page",https://sos.ks.gov/elections/election-results.html
+KS,statewide,"KS ENR",https://ksenr.org/enr/
+KY,statewide,"KY SBE results",https://elect.ky.gov/results/
+KY,statewide,"KY results portal alt",https://electionresults.ky.gov/
+ME,statewide,"ME SOS results index",https://www.maine.gov/sos/cec/elec/results/index.html
+MI,statewide,"MI SOS results page",https://www.michigan.gov/sos/elections/election-results
+MI,statewide,"MI ENR data root",https://mielections.us/election/results/
+NM,statewide,"NM SOS results",https://www.sos.nm.gov/voting-and-elections/results/
+NM,statewide,"NM ENR alt",https://electionresults.sos.state.nm.us/resultsSW.aspx
+RI,statewide,"RI BOE results",https://elections.ri.gov/results/
+RI,statewide,"RI results portal alt",https://ristateelections.sharepoint.com/
+WV,statewide,"WV SOS results app",https://apps.sos.wv.gov/elections/results/
+WV,statewide,"WV SOS elections",https://sos.wv.gov/elections/

@@ -1,0 +1,11 @@
+state,tier,what,url
+MI,statewide,"MI SOS elections",https://www.michigan.gov/sos/elections
+MI,statewide,"MI NICTUSA enr",https://miboecfr.nictusa.com/election/results/
+MI,statewide,"MI results subdomain",https://electionresults.michigan.gov/
+SC,statewide,"SC enr root",https://www.enr-scvotes.org/
+SC,statewide,"SC votes",https://scvotes.gov/
+NV,statewide,"NV enr results",https://silverstateelection.nv.gov/sitesearch
+NE,statewide,"NE results",https://electionresults.nebraska.gov/
+AK,statewide,"AK results",https://www.elections.alaska.gov/election-results/
+NH,statewide,"NH results 2024",https://www.sos.nh.gov/elections/elections/election-results
+TX,statewide,"TX history",https://elections.sos.state.tx.us/elchist.exe

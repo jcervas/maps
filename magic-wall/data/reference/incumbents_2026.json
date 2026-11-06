@@ -1,0 +1,1331 @@
+{
+ "cycle": 2026,
+ "generated": "2026-11-04T01:23:59Z",
+ "source": {
+  "house": "unitedstates/congress-legislators legislators-current.json (public domain)",
+  "senate, governor": "data/reference/holdovers_2026.json up",
+  "state-house, state-senate": "data/reference/holdovers_2026.json legislatures"
+ },
+ "note": "Seat holders before the election; the wall marks a candidate whose name matches one in the same office and state.",
+ "races": {
+  "governor AK": [
+   "Mike Dunleavy"
+  ],
+  "governor AL": [
+   "Kay Ivey"
+  ],
+  "governor AR": [
+   "Sarah Huckabee Sanders"
+  ],
+  "governor AZ": [
+   "Katie Hobbs"
+  ],
+  "governor CA": [
+   "Gavin Newsom"
+  ],
+  "governor CO": [
+   "Jared Polis"
+  ],
+  "governor CT": [
+   "Ned Lamont"
+  ],
+  "governor FL": [
+   "Ron DeSantis"
+  ],
+  "governor GA": [
+   "Brian Kemp"
+  ],
+  "governor HI": [
+   "Josh Green"
+  ],
+  "governor IA": [
+   "Kim Reynolds"
+  ],
+  "governor ID": [
+   "Brad Little"
+  ],
+  "governor IL": [
+   "JB Pritzker"
+  ],
+  "governor KS": [
+   "Laura Kelly"
+  ],
+  "governor MA": [
+   "Maura Healey"
+  ],
+  "governor MD": [
+   "Wes Moore"
+  ],
+  "governor ME": [
+   "Janet Mills"
+  ],
+  "governor MI": [
+   "Gretchen Whitmer"
+  ],
+  "governor MN": [
+   "Tim Walz"
+  ],
+  "governor NE": [
+   "Jim Pillen"
+  ],
+  "governor NH": [
+   "Kelly Ayotte"
+  ],
+  "governor NM": [
+   "Michelle Lujan Grisham"
+  ],
+  "governor NV": [
+   "Joe Lombardo"
+  ],
+  "governor NY": [
+   "Kathy Hochul"
+  ],
+  "governor OH": [
+   "Mike DeWine"
+  ],
+  "governor OK": [
+   "Kevin Stitt"
+  ],
+  "governor OR": [
+   "Tina Kotek"
+  ],
+  "governor PA": [
+   "Josh Shapiro"
+  ],
+  "governor RI": [
+   "Dan McKee"
+  ],
+  "governor SC": [
+   "Henry McMaster"
+  ],
+  "governor SD": [
+   "Larry Rhoden"
+  ],
+  "governor TN": [
+   "Bill Lee"
+  ],
+  "governor TX": [
+   "Greg Abbott"
+  ],
+  "governor VT": [
+   "Phil Scott"
+  ],
+  "governor WI": [
+   "Tony Evers"
+  ],
+  "governor WY": [
+   "Mark Gordon"
+  ],
+  "house AK": [
+   "Nicholas J. Begich III",
+   "Nicholas Begich"
+  ],
+  "house AL": [
+   "Robert B. Aderholt",
+   "Robert Aderholt",
+   "Mike Rogers",
+   "Terri A. Sewell",
+   "Terri Sewell",
+   "Gary J. Palmer",
+   "Gary Palmer",
+   "Barry Moore",
+   "Dale W. Strong",
+   "Dale Strong",
+   "Shomari Figures"
+  ],
+  "house AR": [
+   "Eric A. \"Rick\" Crawford",
+   "Eric Crawford",
+   "Rick Crawford",
+   "Steve Womack",
+   "J. French Hill",
+   "J. Hill",
+   "Bruce Westerman"
+  ],
+  "house AS": [
+   "Aumua Amata Coleman Radewagen",
+   "Aumua Amata Radewagen"
+  ],
+  "house AZ": [
+   "Paul A. Gosar",
+   "Paul Gosar",
+   "David Schweikert",
+   "Andy Biggs",
+   "Greg Stanton",
+   "Elijah Crane",
+   "Eli Crane",
+   "Juan Ciscomani",
+   "Yassamin Ansari",
+   "Abraham J. Hamadeh",
+   "Abraham Hamadeh",
+   "Adelita S. Grijalva",
+   "Adelita Grijalva"
+  ],
+  "house CA": [
+   "Ken Calvert",
+   "Judy Chu",
+   "Jim Costa",
+   "John Garamendi",
+   "Zoe Lofgren",
+   "Doris O. Matsui",
+   "Doris Matsui",
+   "Tom McClintock",
+   "Nancy Pelosi",
+   "Brad Sherman",
+   "Linda T. Sánchez",
+   "Linda Sánchez",
+   "Mike Thompson",
+   "Maxine Waters",
+   "Jared Huffman",
+   "Ami Bera",
+   "Julia Brownley",
+   "Raul Ruiz",
+   "Mark Takano",
+   "Juan Vargas",
+   "Scott H. Peters",
+   "Scott Peters",
+   "Mark DeSaulnier",
+   "Pete Aguilar",
+   "Ted Lieu",
+   "Norma J. Torres",
+   "Norma Torres",
+   "Ro Khanna",
+   "Jimmy Panetta",
+   "Salud O. Carbajal",
+   "Salud Carbajal",
+   "Nanette Diaz Barragán",
+   "Nanette Barragán",
+   "J. Luis Correa",
+   "J. Correa",
+   "Jimmy Gomez",
+   "Josh Harder",
+   "Mike Levin",
+   "Darrell Issa",
+   "David G. Valadao",
+   "David Valadao",
+   "Jay Obernolte",
+   "Young Kim",
+   "Sara Jacobs",
+   "Kevin Kiley",
+   "Kevin Mullin",
+   "Sydney Kamlager-Dove",
+   "Robert Garcia",
+   "Vince Fong",
+   "Gilbert Ray Cisneros, Jr.",
+   "Gilbert Cisneros",
+   "Lateefah Simon",
+   "Adam Gray",
+   "Sam T. Liccardo",
+   "Sam Liccardo",
+   "George Whitesides",
+   "Luz M. Rivas",
+   "Luz Rivas",
+   "Laura Friedman",
+   "Derek Tran",
+   "Dave Min",
+   "James Gallagher",
+   "Aisha Wahab"
+  ],
+  "house CO": [
+   "Diana DeGette",
+   "Joe Neguse",
+   "Jason Crow",
+   "Lauren Boebert",
+   "Brittany Pettersen",
+   "Jeff Hurd",
+   "Jeff Crank",
+   "Gabe Evans"
+  ],
+  "house CT": [
+   "Joe Courtney",
+   "Rosa L. DeLauro",
+   "Rosa DeLauro",
+   "James A. Himes",
+   "James Himes",
+   "Jim Himes",
+   "John B. Larson",
+   "John Larson",
+   "Jahana Hayes"
+  ],
+  "house DC": [
+   "Eleanor Holmes Norton",
+   "Eleanor Norton"
+  ],
+  "house DE": [
+   "Sarah McBride"
+  ],
+  "house FL": [
+   "Gus M. Bilirakis",
+   "Gus Bilirakis",
+   "Vern Buchanan",
+   "Kathy Castor",
+   "Mario Diaz-Balart",
+   "Debbie Wasserman Schultz",
+   "Daniel Webster",
+   "Frederica S. Wilson",
+   "Frederica Wilson",
+   "Lois Frankel",
+   "Neal P. Dunn",
+   "Neal Dunn",
+   "John H. Rutherford",
+   "John Rutherford",
+   "Darren Soto",
+   "Brian J. Mast",
+   "Brian Mast",
+   "W. Gregory Steube",
+   "W. Steube",
+   "Kat Cammack",
+   "Katherine Cammack",
+   "Scott Franklin",
+   "C. Franklin",
+   "Byron Donalds",
+   "Carlos A. Gimenez",
+   "Carlos Gimenez",
+   "Maria Elvira Salazar",
+   "Maria Salazar",
+   "Aaron Bean",
+   "Cory Mills",
+   "Maxwell Frost",
+   "Anna Paulina Luna",
+   "Anna Luna",
+   "Laurel M. Lee",
+   "Laurel Lee",
+   "Jared Moskowitz",
+   "Mike Haridopolos",
+   "Jimmy Patronis",
+   "Randy Fine",
+   "Randall Fine"
+  ],
+  "house GA": [
+   "Sanford D. Bishop, Jr.",
+   "Sanford Bishop",
+   "Henry C. \"Hank\" Johnson, Jr.",
+   "Henry Johnson",
+   "Hank Johnson",
+   "Austin Scott",
+   "Earl L. \"Buddy\" Carter",
+   "Earl Carter",
+   "Buddy Carter",
+   "Barry Loudermilk",
+   "Rick W. Allen",
+   "Rick Allen",
+   "Lucy McBath",
+   "Nikema Williams",
+   "Andrew S. Clyde",
+   "Andrew Clyde",
+   "Richard McCormick",
+   "Rich McCormick",
+   "Mike Collins",
+   "Brian Jack",
+   "Clay Fuller",
+   "Everton Blair Jr.",
+   "Everton Blair"
+  ],
+  "house GU": [
+   "James C. Moylan",
+   "James (Jim) Moylan"
+  ],
+  "house HI": [
+   "Ed Case",
+   "Jill N. Tokuda",
+   "Jill Tokuda"
+  ],
+  "house IA": [
+   "Ashley Hinson",
+   "Mariannette Miller-Meeks",
+   "Randy Feenstra",
+   "Zachary Nunn",
+   "Zachary (Zach) Nunn"
+  ],
+  "house ID": [
+   "Michael K. Simpson",
+   "Michael Simpson",
+   "Mike Simpson",
+   "Russ Fulcher"
+  ],
+  "house IL": [
+   "Danny K. Davis",
+   "Danny Davis",
+   "Mike Quigley",
+   "Janice D. Schakowsky",
+   "Janice Schakowsky",
+   "Jan Schakowsky",
+   "Bill Foster",
+   "Robin L. Kelly",
+   "Robin Kelly",
+   "Mike Bost",
+   "Darin LaHood",
+   "Bradley Scott Schneider",
+   "Bradley Schneider",
+   "Brad Schneider",
+   "Raja Krishnamoorthi",
+   "Jesús G. \"Chuy\" García",
+   "Jesús García",
+   "Chuy García",
+   "Sean Casten",
+   "Lauren Underwood",
+   "Mary E. Miller",
+   "Mary Miller",
+   "Jonathan L. Jackson",
+   "Jonathan Jackson",
+   "Delia C. Ramirez",
+   "Delia Ramirez",
+   "Nikki Budzinski",
+   "Nicole (Nikki) Budzinski",
+   "Eric Sorensen"
+  ],
+  "house IN": [
+   "André Carson",
+   "James R. Baird",
+   "James Baird",
+   "Frank J. Mrvan",
+   "Frank Mrvan",
+   "Victoria Spartz",
+   "Rudy Yakym III",
+   "Rudy Yakym",
+   "Erin Houchin",
+   "Marlin A. Stutzman",
+   "Marlin Stutzman",
+   "Jefferson Shreve",
+   "Mark B. Messmer",
+   "Mark Messmer"
+  ],
+  "house KS": [
+   "Ron Estes",
+   "Sharice Davids",
+   "Tracey Mann",
+   "Derek Schmidt"
+  ],
+  "house KY": [
+   "Brett Guthrie",
+   "Harold Rogers",
+   "Hal Rogers",
+   "Thomas Massie",
+   "Andy Barr",
+   "Garland Barr",
+   "James Comer",
+   "Morgan McGarvey"
+  ],
+  "house LA": [
+   "Steve Scalise",
+   "Clay Higgins",
+   "Mike Johnson",
+   "Julia Letlow",
+   "Troy A. Carter",
+   "Troy Carter",
+   "Cleo Fields"
+  ],
+  "house MA": [
+   "William R. Keating",
+   "William Keating",
+   "Stephen F. Lynch",
+   "Stephen Lynch",
+   "James P. McGovern",
+   "James McGovern",
+   "Jim McGovern",
+   "Richard E. Neal",
+   "Richard Neal",
+   "Katherine M. Clark",
+   "Katherine Clark",
+   "Seth Moulton",
+   "Lori Trahan",
+   "Ayanna Pressley",
+   "Jake Auchincloss"
+  ],
+  "house MD": [
+   "Andy Harris",
+   "Steny H. Hoyer",
+   "Steny Hoyer",
+   "Jamie Raskin",
+   "Kweisi Mfume",
+   "Glenn Ivey",
+   "Johnny Olszewski, Jr.",
+   "Johnny Olszewski",
+   "Sarah Elfreth",
+   "April McClain Delaney"
+  ],
+  "house ME": [
+   "Chellie Pingree",
+   "Jared F. Golden",
+   "Jared Golden"
+  ],
+  "house MI": [
+   "Bill Huizenga",
+   "Tim Walberg",
+   "John R. Moolenaar",
+   "John Moolenaar",
+   "Debbie Dingell",
+   "Jack Bergman",
+   "Haley M. Stevens",
+   "Haley Stevens",
+   "Rashida Tlaib",
+   "Lisa C. McClain",
+   "Lisa McClain",
+   "Hillary J. Scholten",
+   "Hillary Scholten",
+   "John James",
+   "Shri Thanedar",
+   "Tom Barrett",
+   "Kristen McDonald Rivet"
+  ],
+  "house MN": [
+   "Betty McCollum",
+   "Tom Emmer",
+   "Angie Craig",
+   "Ilhan Omar",
+   "Pete Stauber",
+   "Michelle Fischbach",
+   "Brad Finstad",
+   "Kelly Morrison"
+  ],
+  "house MO": [
+   "Emanuel Cleaver",
+   "Sam Graves",
+   "Ann Wagner",
+   "Jason Smith",
+   "Mark Alford",
+   "Eric Burlison",
+   "Wesley Bell",
+   "Robert F. Onder, Jr.",
+   "Robert Onder"
+  ],
+  "house MP": [
+   "Kimberlyn King-Hinds"
+  ],
+  "house MS": [
+   "Bennie G. Thompson",
+   "Bennie Thompson",
+   "Trent Kelly",
+   "Michael Guest",
+   "Mike Ezell"
+  ],
+  "house MT": [
+   "Ryan K. Zinke",
+   "Ryan Zinke",
+   "Troy Downing"
+  ],
+  "house NC": [
+   "Virginia Foxx",
+   "Richard Hudson",
+   "Alma S. Adams",
+   "Alma Adams",
+   "David Rouzer",
+   "Gregory F. Murphy",
+   "Gregory Murphy",
+   "Deborah K. Ross",
+   "Deborah Ross",
+   "Donald G. Davis",
+   "Donald Davis",
+   "Valerie P. Foushee",
+   "Valerie Foushee",
+   "Chuck Edwards",
+   "Charles (Chuck) Edwards",
+   "Addison P. McDowell",
+   "Addison McDowell",
+   "Mark Harris",
+   "Pat Harrigan",
+   "Brad Knott",
+   "Tim Moore"
+  ],
+  "house ND": [
+   "Julie Fedorchak"
+  ],
+  "house NE": [
+   "Adrian Smith",
+   "Don Bacon",
+   "Mike Flood"
+  ],
+  "house NH": [
+   "Chris Pappas",
+   "Maggie Goodlander"
+  ],
+  "house NJ": [
+   "Frank Pallone, Jr.",
+   "Frank Pallone",
+   "Christopher H. Smith",
+   "Christopher Smith",
+   "Chris Smith",
+   "Donald Norcross",
+   "Bonnie Watson Coleman",
+   "Josh Gottheimer",
+   "Jefferson Van Drew",
+   "Thomas H. Kean, Jr.",
+   "Thomas Kean",
+   "Robert Menendez",
+   "LaMonica McIver",
+   "Herbert C. Conaway, Jr.",
+   "Herbert Conaway",
+   "Nellie Pou",
+   "Analilia Mejia"
+  ],
+  "house NM": [
+   "Teresa Leger Fernandez",
+   "Melanie A. Stansbury",
+   "Melanie Stansbury",
+   "Gabe Vasquez",
+   "Gabriel (Gabe) Vasquez"
+  ],
+  "house NV": [
+   "Mark E. Amodei",
+   "Mark Amodei",
+   "Dina Titus",
+   "Steven Horsford",
+   "Susie Lee"
+  ],
+  "house NY": [
+   "Yvette D. Clarke",
+   "Yvette Clarke",
+   "Gregory W. Meeks",
+   "Gregory Meeks",
+   "Jerrold Nadler",
+   "Paul Tonko",
+   "Nydia M. Velázquez",
+   "Nydia Velázquez",
+   "Grace Meng",
+   "Hakeem S. Jeffries",
+   "Hakeem Jeffries",
+   "Elise M. Stefanik",
+   "Elise Stefanik",
+   "Adriano Espaillat",
+   "Joseph D. Morelle",
+   "Joseph Morelle",
+   "Alexandria Ocasio-Cortez",
+   "Andrew R. Garbarino",
+   "Andrew Garbarino",
+   "Nicole Malliotakis",
+   "Ritchie Torres",
+   "Claudia Tenney",
+   "Patrick Ryan",
+   "Nick LaLota",
+   "Nicolas LaLota",
+   "Daniel S. Goldman",
+   "Dan Goldman",
+   "Michael Lawler",
+   "Nicholas A. Langworthy",
+   "Nicholas Langworthy",
+   "Thomas R. Suozzi",
+   "Thomas Suozzi",
+   "Timothy M. Kennedy",
+   "Timothy Kennedy",
+   "Laura Gillen",
+   "George Latimer",
+   "Josh Riley",
+   "John W. Mannion",
+   "John Mannion"
+  ],
+  "house OH": [
+   "Jim Jordan",
+   "Marcy Kaptur",
+   "Robert E. Latta",
+   "Robert Latta",
+   "Michael R. Turner",
+   "Michael Turner",
+   "Joyce Beatty",
+   "David P. Joyce",
+   "David Joyce",
+   "Warren Davidson",
+   "Troy Balderson",
+   "Shontel M. Brown",
+   "Shontel Brown",
+   "Mike Carey",
+   "Greg Landsman",
+   "Max L. Miller",
+   "Max Miller",
+   "Emilia Strong Sykes",
+   "Emilia Sykes",
+   "Michael A. Rulli",
+   "Michael Rulli",
+   "David J. Taylor",
+   "David Taylor"
+  ],
+  "house OK": [
+   "Tom Cole",
+   "Frank D. Lucas",
+   "Frank Lucas",
+   "Kevin Hern",
+   "Stephanie I. Bice",
+   "Stephanie Bice",
+   "Josh Brecheen"
+  ],
+  "house OR": [
+   "Suzanne Bonamici",
+   "Cliff Bentz",
+   "Val T. Hoyle",
+   "Valerie Hoyle",
+   "Andrea Salinas",
+   "Maxine Dexter",
+   "Janelle S. Bynum",
+   "Janelle Bynum"
+  ],
+  "house PA": [
+   "Mike Kelly",
+   "Glenn Thompson",
+   "Scott Perry",
+   "Brendan F. Boyle",
+   "Brendan Boyle",
+   "Dwight Evans",
+   "Brian K. Fitzpatrick",
+   "Brian Fitzpatrick",
+   "Lloyd Smucker",
+   "Mary Gay Scanlon",
+   "Mary Scanlon",
+   "Madeleine Dean",
+   "Chrissy Houlahan",
+   "Daniel Meuser",
+   "John Joyce",
+   "Guy Reschenthaler",
+   "Summer L. Lee",
+   "Summer Lee",
+   "Christopher R. Deluzio",
+   "Chris Deluzio",
+   "Ryan Mackenzie",
+   "Robert P. Bresnahan, Jr.",
+   "Robert Bresnahan"
+  ],
+  "house PR": [
+   "Pablo José Hernández",
+   "Pablo José Hernández Rivera"
+  ],
+  "house RI": [
+   "Seth Magaziner",
+   "Gabe Amo"
+  ],
+  "house SC": [
+   "James E. Clyburn",
+   "James Clyburn",
+   "Jim Clyburn",
+   "Joe Wilson",
+   "Ralph Norman",
+   "William R. Timmons IV",
+   "William Timmons",
+   "Nancy Mace",
+   "Russell Fry",
+   "Sheri Biggs"
+  ],
+  "house SD": [
+   "Dusty Johnson"
+  ],
+  "house TN": [
+   "Steve Cohen",
+   "Scott DesJarlais",
+   "Charles J. \"Chuck\" Fleischmann",
+   "Charles Fleischmann",
+   "Chuck Fleischmann",
+   "David Kustoff",
+   "Tim Burchett",
+   "John W. Rose",
+   "John Rose",
+   "Diana Harshbarger",
+   "Andrew Ogles",
+   "Matt Van Epps"
+  ],
+  "house TX": [
+   "John R. Carter",
+   "John Carter",
+   "Henry Cuellar",
+   "Lloyd Doggett",
+   "Al Green",
+   "Michael T. McCaul",
+   "Michael McCaul",
+   "Randy K. Weber, Sr.",
+   "Randy Weber",
+   "Joaquin Castro",
+   "Roger Williams",
+   "Marc A. Veasey",
+   "Marc Veasey",
+   "Brian Babin",
+   "Vicente Gonzalez",
+   "Jodey C. Arrington",
+   "Jodey Arrington",
+   "Michael Cloud",
+   "Dan Crenshaw",
+   "Lance Gooden",
+   "Lizzie Fletcher",
+   "Veronica Escobar",
+   "Chip Roy",
+   "Sylvia R. Garcia",
+   "Sylvia Garcia",
+   "Pete Sessions",
+   "Pat Fallon",
+   "Patrick Fallon",
+   "August Pfluger",
+   "Ronny Jackson",
+   "Troy E. Nehls",
+   "Troy Nehls",
+   "Beth Van Duyne",
+   "Jake Ellzey",
+   "Nathaniel Moran",
+   "Keith Self",
+   "Morgan Luttrell",
+   "Monica De La Cruz",
+   "Mónica De La Cruz",
+   "Jasmine Crockett",
+   "Greg Casar",
+   "Gregorio Casar",
+   "Wesley Hunt",
+   "Craig A. Goldman",
+   "Craig Goldman",
+   "Brandon Gill",
+   "Julie Johnson",
+   "Christian D. Menefee",
+   "Christian Menefee"
+  ],
+  "house UT": [
+   "Blake D. Moore",
+   "Blake Moore",
+   "Burgess Owens",
+   "Clarence Owens",
+   "Celeste Maloy",
+   "Mike Kennedy"
+  ],
+  "house VA": [
+   "H. Morgan Griffith",
+   "H. Griffith",
+   "Robert C. \"Bobby\" Scott",
+   "Robert Scott",
+   "Bobby Scott",
+   "Robert J. Wittman",
+   "Robert Wittman",
+   "Donald S. Beyer, Jr.",
+   "Donald Beyer",
+   "Ben Cline",
+   "Jennifer A. Kiggans",
+   "Jennifer Kiggans",
+   "Jennifer L. McClellan",
+   "Jennifer McClellan",
+   "John J. McGuire III",
+   "John McGuire",
+   "Eugene Simon Vindman",
+   "Eugene Vindman",
+   "Suhas Subramanyam",
+   "James R. Walkinshaw",
+   "James Walkinshaw"
+  ],
+  "house VI": [
+   "Stacey E. Plaskett",
+   "Stacey Plaskett"
+  ],
+  "house VT": [
+   "Becca Balint"
+  ],
+  "house WA": [
+   "Rick Larsen",
+   "Adam Smith",
+   "Suzan K. DelBene",
+   "Suzan DelBene",
+   "Dan Newhouse",
+   "Pramila Jayapal",
+   "Kim Schrier",
+   "Marilyn Strickland",
+   "Marie Gluesenkamp Perez",
+   "Michael Baumgartner",
+   "Emily Randall"
+  ],
+  "house WI": [
+   "Gwen Moore",
+   "Mark Pocan",
+   "Glenn Grothman",
+   "Bryan Steil",
+   "Thomas P. Tiffany",
+   "Thomas Tiffany",
+   "Scott Fitzgerald",
+   "Derrick Van Orden",
+   "Tony Wied"
+  ],
+  "house WV": [
+   "Carol D. Miller",
+   "Carol Miller",
+   "Riley M. Moore",
+   "Riley Moore"
+  ],
+  "house WY": [
+   "Harriet M. Hageman",
+   "Harriet Hageman"
+  ],
+  "senate AK": [
+   "Dan Sullivan"
+  ],
+  "senate AL": [
+   "Tommy Tuberville"
+  ],
+  "senate AR": [
+   "Tom Cotton"
+  ],
+  "senate CO": [
+   "John Hickenlooper"
+  ],
+  "senate DE": [
+   "Chris Coons"
+  ],
+  "senate FL": [
+   "Ashley Moody"
+  ],
+  "senate GA": [
+   "Jon Ossoff"
+  ],
+  "senate IA": [
+   "Joni Ernst"
+  ],
+  "senate ID": [
+   "Jim Risch"
+  ],
+  "senate IL": [
+   "Dick Durbin"
+  ],
+  "senate KS": [
+   "Roger Marshall"
+  ],
+  "senate KY": [
+   "Mitch McConnell"
+  ],
+  "senate LA": [
+   "Bill Cassidy"
+  ],
+  "senate MA": [
+   "Ed Markey"
+  ],
+  "senate ME": [
+   "Susan Collins"
+  ],
+  "senate MI": [
+   "Gary Peters"
+  ],
+  "senate MN": [
+   "Tina Smith"
+  ],
+  "senate MS": [
+   "Cindy Hyde-Smith"
+  ],
+  "senate MT": [
+   "Steve Daines"
+  ],
+  "senate NC": [
+   "Thom Tillis"
+  ],
+  "senate NE": [
+   "Pete Ricketts"
+  ],
+  "senate NH": [
+   "Jeanne Shaheen"
+  ],
+  "senate NJ": [
+   "Cory Booker"
+  ],
+  "senate NM": [
+   "Ben Ray Lujan"
+  ],
+  "senate OH": [
+   "Jon Husted"
+  ],
+  "senate OK": [
+   "Alan Armstrong"
+  ],
+  "senate OR": [
+   "Jeff Merkley"
+  ],
+  "senate RI": [
+   "Jack Reed"
+  ],
+  "senate SC": [
+   "Darline Graham"
+  ],
+  "senate SD": [
+   "Mike Rounds"
+  ],
+  "senate TN": [
+   "Bill Hagerty"
+  ],
+  "senate TX": [
+   "John Cornyn"
+  ],
+  "senate VA": [
+   "Mark Warner"
+  ],
+  "senate WV": [
+   "Shelley Moore Capito"
+  ],
+  "senate WY": [
+   "Cynthia Lummis"
+  ],
+  "state-house PA": [
+   "Pat Harkins",
+   "Robert Merski",
+   "Ryan Bizzarro",
+   "Jake Banta",
+   "Eric Weaknecht",
+   "Brad Roae",
+   "Parke Wentling",
+   "Aaron Bernstine",
+   "Marla Brown",
+   "Amen Brown",
+   "Marci Mustello",
+   "Brandon Dukes",
+   "John Lawrence",
+   "Roman Kozak",
+   "Josh Kail",
+   "Robert Matzie",
+   "Timothy R. Bonner",
+   "K.C. Tomlinson",
+   "Aerion Abney",
+   "Emily Kinkead",
+   "Lindsay Powell",
+   "Ana Tiburcio",
+   "Dan Frankel",
+   "La'Tasha Mayes",
+   "Brandon Markosek",
+   "Paul Friel",
+   "Daniel Deasy",
+   "Jeremy Shaffer",
+   "Tim Brennan",
+   "Arvind Venkat",
+   "Perry Warren",
+   "Joe McAndrew",
+   "Mandy Steele",
+   "Abigail Salisbury",
+   "Daniel Goughnour",
+   "Jessica Benham",
+   "Mindy Fee",
+   "John Inglis",
+   "Andrew Kuzma",
+   "Natalie Mihalek",
+   "Brett Miller",
+   "Jen Mazzocco",
+   "Keith Greiner",
+   "Valerie Gaydos",
+   "Anita Astorino Kulik",
+   "Jason Ortitay",
+   "Joseph D'Orsie",
+   "Tim O'Neal",
+   "Ismail Smith-Wade-El",
+   "Bud Cook",
+   "Charity Grimm Krupa",
+   "Ryan Warner",
+   "Steve Malagari",
+   "Greg Scott",
+   "Jill N. Cooper",
+   "Brian Rasel",
+   "Eric Nelson",
+   "Eric Davanzo",
+   "Leslie Rossi",
+   "Abby Major",
+   "Liz Hanbidge",
+   "James Struzzi",
+   "Josh Bashline",
+   "Lee James",
+   "Kathy Rapp",
+   "Brian Smith",
+   "Martin Causer",
+   "Clint Owlett",
+   "Carl Walker Metzgar",
+   "Matthew Bradford",
+   "James Rigby",
+   "Frank Burns",
+   "Dallas Kephart",
+   "Dan K. Williams",
+   "Michael Armanini",
+   "Stephanie Borowicz",
+   "Scott Conklin",
+   "Jesse Topper",
+   "Andrea Verobish",
+   "Scott Barger",
+   "Rich Irvin",
+   "Paul Takac",
+   "Jamie Flick",
+   "Joseph D. Hamm",
+   "David Rowe",
+   "Perry A. Stambaugh",
+   "Thomas Kutz",
+   "Sheryl M. Delozier",
+   "Rob Kauffman",
+   "Chad Reichard",
+   "Dan Moul",
+   "Marc Anderson",
+   "Mike Jones",
+   "Wendy Fink",
+   "Carol Hill-Evans",
+   "Nikki Rivera",
+   "Steven Mentzer",
+   "Tom Jones",
+   "David H. Zimmerman",
+   "Bryan Cutler",
+   "John A. Schlegel",
+   "Russ Diamond",
+   "Nathan Davidson",
+   "Dave Madsen",
+   "Justin C. Fleming",
+   "Tom Mehaffie",
+   "Joanne Stehr",
+   "Mike Stender",
+   "Robert Leadbeter",
+   "Tina Pickett",
+   "Jonathan Fritz",
+   "Kyle Mullins",
+   "Kyle Donahue",
+   "Bridget Malloy Kosierowski",
+   "Maureen Madden",
+   "Dane Watro",
+   "Jamie Walsh",
+   "Jim Haddock",
+   "Alec Ryncavage",
+   "Brenda Pugh",
+   "Eddie Day Pashinski",
+   "Doyle Heffley",
+   "Timothy Twardzik",
+   "Jamie Barton",
+   "Joseph Kerwin",
+   "Jacklyn Rusnock",
+   "Manny Guzman Jr.",
+   "Mark M. Gillen",
+   "Johanny Cepeda-Freytiz",
+   "David Maloney",
+   "Milou Mackenzie",
+   "Michael Schlossberg",
+   "Jeanne McNeill",
+   "Peter Schweyer",
+   "Steve Samuelson",
+   "Robert L. Freeman",
+   "Joe Emrick",
+   "Ann Flood",
+   "Jeff Olsommer",
+   "Jim Prokopiak",
+   "Tina Davis",
+   "Joe Hogan",
+   "Shelby Labs",
+   "Brian Munroe",
+   "Craig Staats",
+   "Joe Ciresi",
+   "Donna Scheuren",
+   "Mary Jo Daley",
+   "Tim Briggs",
+   "Joe Webster",
+   "Melissa Cerrato",
+   "Nancy Guenst",
+   "Ben Sanchez",
+   "Napoleon Nelson",
+   "Danielle Friel Otten",
+   "Chris Pielli",
+   "Melissa Shusterman",
+   "Christina Sappey",
+   "Carol Kazeem",
+   "Wendell Craig Williams",
+   "Leanne Krueger",
+   "David Delloso",
+   "Heather Boyd",
+   "Gina Curry",
+   "Jennifer O'Mara",
+   "Greg Vitali",
+   "Kristine Howard",
+   "Lisa Borowski",
+   "Kate Klunk",
+   "Martina White",
+   "Kerry Benninghoff",
+   "Sean Dougherty",
+   "Pat Gallagher",
+   "Ed Neilson",
+   "Mary Isaacson",
+   "Jack Rader",
+   "Joseph Hohenstein",
+   "Kristin Marcell",
+   "Jason Dawkins",
+   "Jose Giral",
+   "Malcolm Kenyatta",
+   "Ben Waxman",
+   "Zach Mako",
+   "Elizabeth Fiedler",
+   "Regina Young",
+   "Jordan A. Harris",
+   "Gary Day",
+   "Rick Krajewski",
+   "Tarah Probst",
+   "Roni Green",
+   "Joanna McClinton",
+   "Morgan Cephas",
+   "Catherine Wallen",
+   "Tarik Khan",
+   "Keith Harris",
+   "George Margetas",
+   "Danilo Burgos",
+   "Darisha Parker",
+   "Barbara Gleim",
+   "Chris Rabb",
+   "Andre Carroll",
+   "Jared Solomon",
+   "Anthony A. Bellmon"
+  ],
+  "state-house WV": [
+   "Pat McGeehan",
+   "Mark Zatezalo",
+   "Jimmy Willis",
+   "Shane Stack",
+   "Shawn Fluharty",
+   "Jeffrey Stephens",
+   "Charles Sheedy",
+   "Bill Bell",
+   "Betsy Kelly",
+   "Bill Anderson",
+   "Bob Fehrenbacher",
+   "Vernon Criss",
+   "Scot Heckert",
+   "Dave Foggin",
+   "Erica Moore",
+   "Joe Parsons",
+   "Jonathan Pinson",
+   "Jim Butler",
+   "Kathie Hess Crouse",
+   "Sarah Drennan",
+   "Jarred Cannon",
+   "Aaron Holley",
+   "Evan Worrell",
+   "Patrick Lucas",
+   "Sean Hornbuckle",
+   "Matthew Rohrbach",
+   "Michael Amos",
+   "Ryan Browning",
+   "Henry Dillon",
+   "Jeff Eldridge",
+   "Margitta Mazzocchi",
+   "Josh Holstein",
+   "Jordan Bridges",
+   "Mark Dean",
+   "Adam Vance",
+   "David Green",
+   "Marty Gearheart",
+   "Joe Ellington",
+   "Doug Smith",
+   "Roy Cooper",
+   "Jordan Maynor",
+   "John Jordan",
+   "Chris Toney",
+   "Bill Roop",
+   "Eric Brooks",
+   "Jeff Campbell",
+   "Ray Canterbury",
+   "Gregory Watt",
+   "Stanley Adkins",
+   "William Vest",
+   "Marshall Clay",
+   "Tresa Howell",
+   "Tristan Leavitt",
+   "Mike Pushkin",
+   "JB Akers",
+   "Kayla Young",
+   "Hollis Lewis",
+   "Walter Hall",
+   "Andy Shamblin",
+   "Dana Ferrell",
+   "Dean Jeffries",
+   "Roger Hanshaw",
+   "Lori Dittman",
+   "Adam Burkhammer",
+   "Carl Martin",
+   "Jonathan Kyle",
+   "Elias Coop-Gonzalez",
+   "Chris Phillips",
+   "Keith Marple",
+   "Mickey Petitto",
+   "Laura Kimble",
+   "Clay Riley",
+   "Bryan Smith",
+   "Guy Ward",
+   "Phil Mallow",
+   "Rick Garcia",
+   "Joe Statler",
+   "Geno Chiarelli",
+   "Evan Hansen",
+   "John Williams",
+   "Anitra Hamilton",
+   "David McCormick",
+   "George Street",
+   "D. Rolland Jennings",
+   "John Paul Hott",
+   "Bryan Ward",
+   "Gary Howell",
+   "Rick Hillenbrand",
+   "David Cannon",
+   "George Miller",
+   "Ian Masters",
+   "Michael Hite",
+   "Michael Hornby",
+   "Donald Bennett",
+   "Chuck Horst",
+   "Lisa White",
+   "S. Chris Anders",
+   "Joe Funkhouser",
+   "Wayne Clark",
+   "William Ridenour"
+  ],
+  "state-senate PA": [
+   "Nikil Saval",
+   "Christine Tartaglione",
+   "Sharif Street",
+   "Art Haywood",
+   "Joe Picozzi",
+   "Frank Farry",
+   "Vincent Hughes",
+   "Anthony Williams",
+   "John Kane",
+   "Steve Santarsiero",
+   "Judy Schwank",
+   "Maria Collett",
+   "Scott Martin",
+   "Nick Miller",
+   "Patty Kim",
+   "Jarrett Coleman",
+   "Amanda Cappelletti",
+   "Lisa Boscola",
+   "Carolyn Comitta",
+   "Lisa Baker",
+   "Scott Hutchinson",
+   "Marty Flynn",
+   "Eugene Yaw",
+   "Tracy Pennycuick",
+   "Cris Dush",
+   "Tim Kearney",
+   "Lynda Culver",
+   "Kristin Phillips-Hill",
+   "Dave Argall",
+   "Judy Ward",
+   "Dawn Keefer",
+   "Patrick Stefano",
+   "Doug Mastriano",
+   "Greg Rothman",
+   "Wayne Langerholc",
+   "James Malone",
+   "Devlin Robinson",
+   "Lindsey Williams",
+   "Kim Ward",
+   "Rosemary Brown",
+   "Joe Pittman",
+   "Wayne Fontana",
+   "Jay Costa",
+   "Katie Muth",
+   "Nick Pisciottano",
+   "Camera Bartolotta",
+   "Elder Vogel",
+   "Chris Gebhard",
+   "Dan Laughlin",
+   "Michele Brooks"
+  ],
+  "state-senate WV": [
+   "Laura Wakim Chapman",
+   "Charles H. Clements",
+   "Mike Azinger",
+   "Trenton Barnhart",
+   "Eric Tarr",
+   "Mike Woelfel",
+   "Mark R. Maynard",
+   "Zack Maynard",
+   "T. Kevan Bartlett",
+   "Rollan Roberts",
+   "Vince Deeds",
+   "Bill Hamilton",
+   "Ben Queen",
+   "Mike Oliverio",
+   "Jay Taylor",
+   "Darren Thorne",
+   "Jason Barrett",
+   "Tom Takubo",
+   "Anne Charnock"
+  ]
+ }
+}

@@ -1,0 +1,195 @@
+---
+layout: null
+title: "Magic Wall: 2026 Election Results"
+description: "Live 2026 results for the U.S. House, Senate, governors, secretaries of state and the Pennsylvania and West Virginia legislatures, by county and district, from each state's own election site, with The New York Times and the AP where a state has no feed."
+summary: "Every 2026 House, Senate, governor and secretary of state race by county and district, built for election night: margins, swing, ratings, calls and seat counts."
+permalink: /magic-wall/
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Magic Wall</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;600;700&display=swap">
+<link rel="stylesheet" href="wall.css">
+</head>
+<body class="app-map">
+<!-- Two rows. The first says where the wall is and how fresh its numbers
+     are, and picks what is on it; the second is the presenter's tools. The
+     staleness badge is in the first row and the rail is sticky, so it is on
+     screen whatever app is up and however far a phone has scrolled. -->
+<header class="rail">
+  <div class="brand">Magic&nbsp;Wall</div>
+  <div class="badge" id="status" data-level="unknown" role="status">starting</div>
+  <button id="back" hidden>&larr; United States</button>
+  <div class="where" id="where">United States</div>
+
+  <div class="seg" id="apps" role="group" aria-label="App">
+    <button data-app="map" aria-pressed="true" title="Map (M)">Map</button>
+    <button data-app="table" aria-pressed="false" title="Table (T)">Table</button>
+    <button data-app="boards" aria-pressed="false" title="Boards (B)">Boards</button>
+    <button data-app="battle" aria-pressed="false" title="Battle for Control (C)">Battle</button>
+    <button data-app="calls" aria-pressed="false" title="Call races (K)" hidden>Calls</button>
+  </div>
+
+  <button id="splitBtn" aria-pressed="false" hidden title="Split screen (S)">Split</button>
+  <!-- With the split open, the controls after this act on one panel. -->
+  <div class="seg" id="paneSeg" role="group" aria-label="Controls apply to" hidden>
+    <button data-side="left" aria-pressed="true" title="Left panel ([)">Left</button>
+    <button data-side="right" aria-pressed="false" title="Right panel (])">Right</button>
+  </div>
+
+  <!-- Office, then year: hover (or tap) an office for its years. Built from
+       the map's race modes in shell.js, fillNational. -->
+  <nav class="field" id="nationalField" aria-label="Election" hidden>
+    <ul class="offices" id="national" role="menubar"></ul>
+  </nav>
+
+  <label class="field">
+    <span>Race</span>
+    <select id="race"><option value="">baseline</option></select>
+  </label>
+
+</header>
+
+<nav class="tools" aria-label="Presenter tools">
+  <!-- Color first, always at the left of this row: it folds and unfolds
+     (shell.js foldVars), and on the first row its opening wrapped it to
+     another line. -->
+  <div class="field">
+    <span>Color</span>
+    <div class="seg" id="vars" role="group" aria-label="Color by">
+      <button data-var="margin" aria-pressed="true">Margin</button>
+      <button data-var="swing" aria-pressed="false" disabled>Swing</button>
+    </div>
+  </div>
+
+  <label class="field secondary">
+    <span>Compare to</span>
+    <select id="baseline"></select>
+  </label>
+
+  <!-- On a phone the rows marked secondary fold away behind this. -->
+  <button id="moreBtn" aria-expanded="false">More</button>
+
+  <div class="field drawtools">
+    <button id="drawBtn" aria-pressed="false" title="Draw (D)">&#9998; Draw</button>
+    <span class="pens" id="pens" hidden>
+      <button class="pen" data-pen="0" aria-pressed="true" title="Yellow pen"><i></i></button>
+      <button class="pen" data-pen="1" aria-pressed="false" title="Ink pen"><i></i></button>
+      <button id="undoBtn" title="Undo (U)">Undo</button>
+      <button id="clearBtn" title="Clear (X)">Clear</button>
+    </span>
+  </div>
+  <!-- Saved views live on the number keys only (see the keys panel); this
+       says "Saved to 3" for a moment. -->
+  <span class="flash" id="flash" role="status"></span>
+
+  <div class="spacer"></div>
+
+  <!-- Type size and palette, set once per show: one menu, not two rows of
+       buttons on the rail. -->
+  <div class="display-menu secondary">
+    <button id="displayBtn" aria-expanded="false" aria-controls="displayPop" title="Type size and palette">Display</button>
+    <div class="display-pop" id="displayPop" hidden>
+      <div class="field">
+        <span>Type</span>
+        <div class="seg" id="scales" role="group" aria-label="Type scale">
+          <button data-scale="1" aria-pressed="true">1&times;</button>
+          <button data-scale="1.5" aria-pressed="false">1.5&times;</button>
+          <button data-scale="2" aria-pressed="false">2&times;</button>
+        </div>
+      </div>
+      <div class="field">
+        <span>Palette</span>
+        <div class="seg" id="themes" role="group" aria-label="Palette">
+          <button data-theme-key="light" aria-pressed="false">Light</button>
+          <button data-theme-key="dark" aria-pressed="false">Dark</button>
+          <button data-theme-key="studio" aria-pressed="false">Studio</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <button id="updatesBtn" aria-pressed="false" aria-controls="updates" title="Latest updates: new numbers as they arrive (N)">Updates</button>
+  <button id="keysBtn" class="secondary" aria-pressed="false" title="Keyboard map (?)">?</button>
+</nav>
+
+<main id="stage" class="app" data-app="map">
+  <canvas id="map"></canvas>
+</main>
+
+<section id="table" class="app" data-app="table" hidden></section>
+<section id="boards" class="app placeholder" data-app="boards" hidden>
+  <p>Boards are not wired into this build yet.</p>
+</section>
+<section id="battle" class="app placeholder" data-app="battle" hidden>
+  <p>Battle for Control is not wired into this build yet.</p>
+</section>
+<!-- Mounted only where the server can save a call (scripts/serve.py). -->
+<section id="calls" class="app" data-app="calls" hidden></section>
+
+<!-- Over every app, under nothing: pointer-events only while drawing. -->
+<canvas id="ink" aria-hidden="true"></canvas>
+
+<aside id="sources" hidden aria-label="Sources">
+  <div class="keyshead"><h2>Sources</h2><button id="sourcesClose" aria-label="Close">&times;</button></div>
+  <div class="srclist"></div>
+</aside>
+
+<aside id="updates" hidden aria-label="Latest updates">
+  <div class="keyshead"><h2>Latest updates</h2><button id="updatesClose" aria-label="Close">&times;</button></div>
+  <!-- Numbers: new counts as they arrive. Calls: calls.json, newest first. -->
+  <div class="seg updtabs" role="group" aria-label="Show">
+    <button data-tab="numbers" aria-pressed="true">Numbers</button>
+    <button data-tab="calls" aria-pressed="false">Calls</button>
+  </div>
+  <p class="hint" id="updHint">New numbers since this page opened, newest first. Click one to open its state.</p>
+  <ol class="updlist"></ol>
+</aside>
+
+<aside id="keys" hidden aria-label="Keyboard map">
+  <div class="keyshead"><h2>Keys</h2><button id="keysClose" aria-label="Close">&times;</button></div>
+  <dl>
+    <dt>1&ndash;9</dt><dd>Preset view</dd>
+    <dt>Shift + 1&ndash;9</dt><dd>Save this view to that key</dd>
+    <dt>M T B C</dt><dd>Map, Table, Boards, Battle</dd>
+    <dt>K</dt><dd>Calls (on the wall's own machine)</dd>
+    <dt>Esc</dt><dd>Back to the nation</dd>
+    <dt>D</dt><dd>Draw on / off</dd>
+    <dt>U</dt><dd>Undo the last mark</dd>
+    <dt>X</dt><dd>Clear the marks</dd>
+    <dt>S</dt><dd>Split screen</dd>
+    <dt>[ ]</dt><dd>Controls act on the left / right panel</dd>
+    <dt>L</dt><dd>Light, dark, studio</dd>
+    <dt>+ &minus;</dt><dd>Type scale</dd>
+    <dt>N</dt><dd>Latest updates</dd>
+    <dt>O</dt><dd>Sources: what each feed is doing (or click the status badge)</dd>
+    <dt>?</dt><dd>This map of keys</dd>
+  </dl>
+  <p class="hint">Presets come from <code>presets.json</code>; views saved here stay in this browser.</p>
+  <button id="presetExport">Copy presets as JSON</button>
+</aside>
+
+<aside id="readout">
+  <!-- LIVE, and a countdown to the next poll closing (shell.js, startPollClock),
+       above the map's readout, which rewrites only #readoutBody. -->
+  <div class="pollclock" id="pollClock" hidden><span class="live" id="pollLive">LIVE</span><span id="pollText"></span></div>
+  <div id="readoutBody"><div class="hint">Loading geography&hellip;</div></div>
+</aside>
+
+<footer>
+  <span>Geography: Census 1:500,000 cartographic boundaries — counties 2023, congressional districts 2024, New England towns 2020.</span>
+  <span>Results: each state's own election site; where a state has no feed, or its count is partial or far behind, The New York Times or the Associated Press. Each race names its source.</span>
+  <span>Build <code id="build">&mdash;</code></span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<!-- The build tag is on the module too, not just on the data files it
+     fetches: a browser caches an ES module by URL, so an unversioned
+     shell.js kept running after an edit and the footer was the only
+     sign. Bump this with BUILD in shell.js. -->
+<script type="module" src="shell.js?v=2026-11-03i"></script>
+</body>
+</html>

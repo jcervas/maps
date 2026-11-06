@@ -1,0 +1,17 @@
+state,tier,what,url
+MN,statewide,"MN all races by precinct",https://electionresultsfiles.sos.mn.gov/20241105/allracesbyprecinct.txt
+MN,statewide,"MN precinct results",https://electionresultsfiles.sos.mn.gov/20241105/precinctresults.txt
+MN,statewide,"MN governor statewide",https://electionresultsfiles.sos.mn.gov/20241105/governor.txt
+MN,statewide,"MN results by county",https://electionresultsfiles.sos.mn.gov/20241105/cntyresults.txt
+TX,statewide,"TX results api",https://results.texas-election.com/api/elections
+TX,statewide,"TX static data",https://results.texas-election.com/static/data/elections.json
+VA,statewide,"VA arcgis services root",https://services.arcgis.com/p5v98VHDX9Atv3l7/arcgis/rest/services?f=json
+VA,statewide,"VA results json index",https://results.elections.virginia.gov/vaelections/2024%20November%20General/Json/ElectionEvent.json
+PA,statewide,"PA county breakdown api",https://www.electionreturns.pa.gov/api/ElectionReturn/GetCountyBreakDownResults?officeId=1&districtId=1&methodName=GetCountyBreakDownResults&electionid=102&electiontype=G&isactive=0
+MI,statewide,"MI county CENR 2024",https://mielections.us/election/results/DATA/2024GEN_MI_CENR_BY_COUNTY.html
+MI,statewide,"MI results index",https://mielections.us/election/results/index.html
+NV,statewide,"NV silver state election",https://silverstateelection.nv.gov/
+KS,statewide,"KS results portal",https://sos.ks.gov/elections/election-results.html
+ME,statewide,"ME results index",https://www.maine.gov/sos/cec/elec/results/index.html
+NM,statewide,"NM enr",https://electionresults.sos.state.nm.us/
+WI,statewide,"WI election results",https://elections.wi.gov/election-results

@@ -1,0 +1,13 @@
+state,tier,what,url
+NC,statewide,"NCSBE election-night precinct+county TSV (2024 archive)",https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2024_11_05/results_pct_20241105.zip
+CO,statewide,"Clarity CO 2024 General summary (EID 122598)",https://results.enr.clarityelections.com/CO/122598/summary.json
+IA,statewide,"Clarity IA 2026 Primary summary (EID 126082)",https://results.enr.clarityelections.com/IA/126082/summary.json
+MN,statewide,"MN SOS results file directory, 2024 general",https://electionresultsfiles.sos.mn.gov/20241105/
+MN,statewide,"MN SOS US Senate county file, 2024 general",https://electionresultsfiles.sos.mn.gov/20241105/ussenate.txt
+WA,statewide,"WA SOS all-counties export, 2024 general",https://results.vote.wa.gov/results/20241105/export/20241105_AllCounties.csv
+VA,statewide,"VA ELECT JSON index, 2024 November general",https://results.elections.virginia.gov/vaelections/2024%20November%20General/Json/Index.json
+MI,statewide,"MI county-level CENR file, 2024 general",https://mielections.us/election/results/DATA/2024GEN_MI_CENR_BY_COUNTY.html
+TX,statewide,"TX SOS results portal",https://results.texas-election.com/
+AZ,statewide,"AZ SOS results portal",https://results.arizona.vote/
+GA,statewide,"Clarity GA 2024 General (EID guess, listing omits it)",https://results.enr.clarityelections.com/GA/122174/summary.json
+PA,statewide,"PA election returns API, county breakdown",https://www.electionreturns.pa.gov/api/ElectionReturn/GetCountyBreakDownResults?officeId=1&districtId=1&methodName=GetCountyBreakDownResults&electionid=102&electiontype=G&isactive=0

@@ -1,0 +1,10 @@
+state,tier,what,url
+NY,statewide,"NY election night reporting",https://nyenr.elections.ny.gov/
+NY,statewide,"NY ENR api",https://nyenr.elections.ny.gov/api/elections
+NY,statewide,"NY results page 2024",https://elections.ny.gov/2024-general-election-results
+NY,statewide,"NY legacy results index",https://www.elections.ny.gov/2024ElectionResults.html
+OH,statewide,"OH live results",https://liveresults.ohiosos.gov/
+OH,statewide,"OH election site",https://election.ohiosos.gov/
+OH,statewide,"OH 2024 general assets",https://www.ohiosos.gov/globalassets/elections/2024/gen/
+OH,statewide,"OH results section index",https://www.ohiosos.gov/elections/election-results-and-data/
+OH,statewide,"OH 2024 official results",https://www.ohiosos.gov/elections/election-results-and-data/2024-official-election-results/

@@ -1,0 +1,499 @@
+/* Tokens first: the canvas reads these through core/theme.js, so the map and
+ * the page can never disagree about the palette. Three palettes: light, dark,
+ * and studio (DESIGN.md §9) -- maximum contrast for a camera.
+ */
+:root {
+  --paper: #ffffff;
+  --panel: #f6f6f5;
+  --ink: #1d1d1d;
+  --ink-soft: #5c5c5c;
+  --rule: #e6e6e4;
+  --accent: #1d1d1d;
+  --accent-soft: #eeeeec;
+  --dem: #1366b3;
+  --rep: #be2c25;
+  --water: #ffffff;
+  --nodata: #bebcba;
+  --basefill: #ffffff;
+  --baseline: #d6d6d2;
+  --baseedge: #b2b2ad;
+  --good: #2f7d4f;
+  --warn: #b07a12;
+  --bad: #b02a22;
+  --ramp0: #be2c25; --ramp1: #d35f4f; --ramp2: #f9dddb; --ramp3: #ffffff;
+  --ramp4: #d3e7fa; --ramp5: #5784c5; --ramp6: #1366b3;
+  /* Partisanship is drawn in steps, not a blend, and the same steps in light
+     and dark: nine equal classes from R+ strongest to D+ strongest, white in
+     the middle. Each red/blue pair is matched in lightness (CIE L 43, 55, 73,
+     90) so neither party reads louder at the same margin. */
+  --ramp-steps: #be2c25, #d35f4f, #eb9f92, #f9dddb, #ffffff,
+    #d3e7fa, #98b4e0, #5784c5, #1366b3;
+  /* Anyone else ahead -- an independent like King or Osborn -- in purple,
+     lightest to strongest, at the same four lightnesses as the blue steps
+     (the blues' hue turned to purple in CIE LCh), so a King town and a
+     Democratic town at the same margin read equally loud. */
+  --ind: #844d9c;
+  --ind-steps: #efdff5, #c7a7d3, #9f70b2, #844d9c;
+  --body: "Libre Franklin", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* The broadcast type scale: 1 on a laptop, 1.5 or 2 on a wall seen from
+     twelve feet. Every size below is in rem, and the root font follows. */
+  --s: 1;
+  /* 44 pt minimum touch target, at every scale. */
+  --target: max(44px, 2.75rem);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="studio"]) {
+    --paper: #141414; --panel: #1d1d1d; --ink: #e8e8e8; --ink-soft: #a2a2a2;
+    --rule: #2f2f2f; --accent: #e8e8e8; --accent-soft: #252525;
+    --dem: #5784c5; --rep: #d35f4f; --water: #141414; --nodata: #4a4a4a;
+    --basefill: #141414; --baseline: #333333; --baseedge: #4d4d4d;
+    --good: #5fbd84; --warn: #ddab45; --bad: #e0675c; --ind: #9f70b2;
+    --stateline: #ffffff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #141414; --panel: #1d1d1d; --ink: #e8e8e8; --ink-soft: #a2a2a2;
+  --rule: #2f2f2f; --accent: #e8e8e8; --accent-soft: #252525;
+  --dem: #5784c5; --rep: #d35f4f; --water: #141414; --nodata: #4a4a4a;
+  --basefill: #141414; --baseline: #333333; --baseedge: #4d4d4d;
+  --good: #5fbd84; --warn: #ddab45; --bad: #e0675c; --ind: #9f70b2;
+  --stateline: #ffffff;
+  color-scheme: dark;
+}
+/* Studio: black and white with nothing between, and party colors pushed to
+   full saturation so they survive a camera's gamma and a studio's lights.
+   The ramp runs through white rather than through the paper, so an even
+   county is the brightest thing on screen instead of a hole in it. Borders
+   are black on the fills; the only grey left is "no data", which has to look
+   like neither party and like neither "even". */
+:root[data-theme="studio"] {
+  --paper: #000000; --panel: #000000; --ink: #ffffff; --ink-soft: #e6e6e6;
+  --rule: #ffffff; --accent: #ffffff; --accent-soft: #1a1a1a;
+  --dem: #2f7bff; --rep: #ff2a1f; --water: #000000; --nodata: #3d3d3d;
+  --basefill: #000000; --baseline: #000000; --baseedge: #ffffff;
+  --good: #19e36b; --warn: #ffc400; --bad: #ff2a1f;
+  /* State boundaries white on every view (the user's call, November 3). */
+  --stateline: #ffffff;
+  --ramp0: #ff1a10; --ramp1: #ff6a5c; --ramp2: #ffc9c4; --ramp3: #ffffff;
+  --ramp4: #c4dbff; --ramp5: #5c9bff; --ramp6: #0a5cff;
+  --ramp-steps: #ff1a10, #ff6a5c, #ff9b8f, #ffc9c4, #ffffff,
+    #c4dbff, #97baff, #5c9bff, #0a5cff;
+  --ind: #a12bd9;
+  --ind-steps: #ebd0f5, #d8a7eb, #c47ee2, #a12bd9;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { font-size: calc(14px * var(--s)); }
+html, body { height: 100%; margin: 0; }
+body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) min(calc(320px * var(--s)), 42vw);
+  /* minmax(0, ...), not 1fr: a canvas's intrinsic size is its pixel size,
+     and an auto minimum let the ink layer grow the row it was sized from. */
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "rail rail" "tools tools" "stage readout" "foot foot";
+  background: var(--paper);
+  color: var(--ink);
+  font: 1rem/1.45 var(--body);
+}
+/* Boards and Battle have no per-county readout: they take the full width. */
+body.app-boards, body.app-battle, body.app-calls {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "rail" "tools" "stage" "foot";
+}
+body.app-boards #readout, body.app-battle #readout, body.app-calls #readout { display: none; }
+
+/* Control rail and the presenter's tools under it. Wrapping at every width:
+   a second cycle of races and a baseline selector pushed the status badge
+   off the right edge of a 1024px window, where nothing said it had gone. */
+.rail, .tools {
+  display: flex; align-items: center; flex-wrap: wrap;
+  column-gap: 0.9rem; row-gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--panel);
+}
+.rail { grid-area: rail; }
+.tools { grid-area: tools; border-bottom: 1px solid var(--rule); padding-top: 0; }
+.rail select, .tools select { max-width: 14rem; }
+.brand { font-weight: 700; letter-spacing: -0.01em; }
+.where { font-weight: 600; }
+.spacer { flex: 1; }
+.field { display: flex; align-items: center; gap: 0.4rem; }
+.field > span:first-child {
+  font-size: 0.786rem; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+.field .value { font-weight: 600; }
+select, button {
+  font: inherit; color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 4px;
+  min-height: var(--target); min-width: var(--target);
+  padding: 0.25rem 0.7rem;
+}
+button { cursor: pointer; touch-action: manipulation; }
+button:disabled { opacity: 0.45; cursor: default; }
+button[aria-pressed="true"]:not(.pen) {
+  background: var(--accent); color: var(--paper); border-color: var(--accent);
+}
+/* A segment that does not fit the screen scrolls sideways under a finger
+   rather than pushing the page wider than the phone. */
+.seg { display: flex; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.seg button { flex: none; }
+.field { min-width: 0; max-width: 100%; }
+.seg button { border-radius: 0; }
+.seg button:first-child { border-radius: 4px 0 0 4px; }
+.seg button:last-child { border-radius: 0 4px 4px 0; }
+.seg button + button { border-left: 0; }
+.seg button[hidden] + button { border-left: 1px solid var(--rule); }
+/* Color by, folded: only the variable in use, with a mark that more open to
+   its right on a tap (shell.js foldVars). */
+#vars:not(.open) button[aria-pressed="false"] { display: none; }
+#vars:not(.open) button[aria-pressed="true"] { border-radius: 4px; border-left: 1px solid var(--rule); }
+#vars button[aria-pressed="true"]::after { content: " \25B8"; opacity: 0.7; }
+#vars.open button[aria-pressed="true"]::after { content: " \25C2"; }
+/* Open, the one in use stays where it was, first, and the rest unfold to
+   its right in their usual order; the corners follow what is on the ends. */
+#vars button[aria-pressed="true"] { order: -1; }
+#vars.open button[aria-pressed="true"] { border-radius: 4px 0 0 4px; border-left: 1px solid var(--rule); }
+#vars.open button:first-child:not([aria-pressed="true"]) { border-radius: 0; border-left: 0; }
+#vars.open button:has(+ button[aria-pressed="true"]:last-child) { border-radius: 0 4px 4px 0; }
+:focus-visible { outline: 3px solid var(--warn); outline-offset: 1px; }
+
+/* The badge sits next to the name of the wall, in the first row, and is
+   pinned to the corner of a narrow screen: nothing can scroll it away. */
+.badge {
+  font-size: 0.857rem; font-weight: 600; padding: 0.35rem 0.65rem; border-radius: 999px;
+  border: 1px solid currentColor;
+  max-width: 100%;
+}
+.badge[data-level="ok"] { color: var(--good); }
+.badge[data-level="warn"] { color: var(--warn); }
+.badge[data-level="bad"] { color: var(--bad); }
+.badge[data-level="unknown"] { color: var(--ink-soft); }
+/* Hand-entered numbers are not an error, but nobody should mistake them for
+   the feed: filled, not outlined. */
+.badge[data-level="override"] { color: var(--panel); background: var(--warn); border-color: var(--warn); }
+.badge[data-level="bad"] { background: color-mix(in srgb, var(--bad) 14%, transparent); }
+/* LIVE and the next poll closing, beside the badge. The pill is broadcast
+   red in every theme: it is a label, not a party color. */
+.pollclock { display: flex; align-items: center; gap: 0.55rem; font-weight: 600; font-size: 0.929rem;
+             font-variant-numeric: tabular-nums; white-space: nowrap;
+             margin: 0 0 0.9rem; padding-bottom: 0.7rem; border-bottom: 1px solid var(--rule); }
+.pollclock[hidden] { display: none; }
+.pollclock .live { background: #d0021b; color: #fff; font-weight: 800; font-size: 0.786rem;
+                   letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 3px; }
+.pollclock .live[data-kind="rehearsal"] { background: var(--warn); color: #000; }
+:root[data-theme="studio"] .badge { border-width: 2px; }
+:root[data-theme="studio"] .badge[data-level="bad"] { color: #000; background: var(--bad); border-color: var(--bad); }
+
+/* Pens: a swatch, and pressed shows as a ring rather than a fill so the
+   color stays visible. */
+.pens { display: inline-flex; gap: 0.4rem; align-items: center; }
+.pens[hidden] { display: none; }
+.pen { padding: 0; display: inline-grid; place-items: center; }
+.pen i { width: 1.4rem; height: 1.4rem; border-radius: 50%; display: block;
+         border: 1px solid var(--ink-soft); }
+.pen[data-pen="0"] i { background: #ffd21f; }
+.pen[data-pen="1"] i { background: var(--ink); }
+.pen[aria-pressed="true"] { border: 3px solid var(--ink); }
+
+/* No minimum here: on a laptop at 2x the rails take what they need and the
+   map gets the rest, rather than the map spilling over the footer. The
+   narrow layout below gives the stage a height of its own. */
+#stage { grid-area: stage; position: relative; min-height: 0; overflow: hidden; }
+#map { position: absolute; inset: 0; display: block; touch-action: none; }
+.app[hidden] { display: none !important; }
+
+/* The telestration layer spans the stage's grid cell over whatever app is
+   in it. Inert until drawing is on. */
+#ink {
+  grid-area: stage; z-index: 5;
+  width: 100%; height: 100%; min-height: 0; display: block;
+  contain: size;
+  pointer-events: none; touch-action: none;
+}
+#ink.drawing { pointer-events: auto; cursor: crosshair; }
+body.drawing #drawBtn { background: #ffd21f; color: #000; border-color: #ffd21f; }
+
+#readout {
+  grid-area: readout;
+  border-left: 1px solid var(--rule);
+  padding: 1rem 1.15rem;
+  overflow: auto;
+  background: var(--panel);
+}
+#readout h2 { margin: 0 0 0.7rem; font-size: 1.43rem; letter-spacing: -0.01em; }
+#readout dl {
+  display: grid; grid-template-columns: 1fr auto; gap: 0.3rem 0.85rem; margin: 0;
+}
+#readout dt { color: var(--ink-soft); }
+#readout dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+#readout .hint { color: var(--ink-soft); }
+/* The map's candidate table carries inline pixel styles; these let it follow
+   the type scale. */
+#readout .cands td { padding-top: 0.25rem !important; padding-bottom: 0.25rem !important;
+                     border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+#readout .cands td:first-child span { width: 0.7rem !important; height: 0.7rem !important; }
+#readout .cands td span[style*="font-size"] { font-size: 0.786rem !important; }
+:root[data-theme="studio"] #readout .cands td:first-child span { outline: 1px solid #fff; }
+
+/* The keyboard map: a panel in the stage's corner, not a modal -- the wall
+   behind it keeps working, and ? or Esc or its own button puts it away. */
+#keys {
+  grid-area: stage; z-index: 6;
+  align-self: start; justify-self: end;
+  margin: 0.75rem; padding: 0.75rem 1rem 1rem;
+  width: min(22rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 1.5rem); overflow: auto;
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+#keys[hidden] { display: none; }
+
+/* Latest updates (apps/updates.js): the keys panel's place, wider. */
+#updates, #sources {
+  grid-area: stage; z-index: 6;
+  align-self: start; justify-self: end;
+  margin: 0.75rem; padding: 0.75rem 1rem 1rem;
+  width: min(30rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 1.5rem); overflow: auto;
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 6px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+#updates[hidden], #sources[hidden] { display: none; }
+#updates h2, #sources h2 { margin: 0; font-size: 1.15rem; }
+#updates .hint, #sources .hint { font-size: 0.857rem; color: var(--ink-soft); margin: 0.3rem 0 0.5rem; }
+/* Sources (apps/sources.js): opened from the status badge. */
+#status { cursor: pointer; }
+#sources h3 { margin: 0.9rem 0 0; font-size: 0.95rem; }
+#sources h3.src-stopped, #sources h3.src-failing { color: var(--bad); }
+#sources h3.src-waiting { color: var(--warn); }
+#sources h3.src-ok { color: var(--good); }
+#sources ul { list-style: none; margin: 0; padding: 0; }
+#sources li { display: grid; grid-template-columns: 2.2rem 1fr; column-gap: 0.5rem; padding: 0.3rem 0;
+  border-top: 1px solid var(--rule); cursor: pointer; font-size: 0.9rem; }
+#sources li:hover { background: var(--accent-soft); }
+#sources li .why { grid-column: 2; color: var(--ink-soft); font-size: 0.8rem; }
+.updlist { list-style: none; margin: 0; padding: 0; font-variant-numeric: tabular-nums; }
+.updlist li {
+  display: grid; grid-template-columns: 6.2rem 1fr; column-gap: 0.6rem;
+  padding: 0.4rem 0; border-top: 1px solid var(--rule); cursor: pointer;
+}
+.updlist li:hover { background: var(--accent-soft); }
+.updlist li.note { display: block; cursor: default; color: var(--ink-soft); font-size: 0.857rem; }
+.updlist li.note:hover { background: none; }
+.updlist .when { grid-row: span 3; color: var(--ink-soft); font-size: 0.857rem; }
+.updlist .race { font-weight: 700; }
+.updlist .what, .updlist .now { font-size: 0.857rem; }
+.updlist .now { color: var(--ink-soft); }
+.updlist .tag { font-size: 0.75rem; font-weight: 700; color: var(--warn); border: 1px solid currentColor; border-radius: 3px; padding: 0 0.25rem; margin-left: 0.3rem; }
+.updlist li.flip { box-shadow: inset 3px 0 0 var(--warn); padding-left: 0.4rem; }
+/* The Calls tab: a party bar on each call. */
+.updtabs { margin-top: 0.5rem; }
+.updlist li.call { padding-left: 0.5rem; box-shadow: inset 4px 0 0 var(--ink-soft); }
+.updlist li.call-dem { box-shadow: inset 4px 0 0 var(--dem); }
+.updlist li.call-rep { box-shadow: inset 4px 0 0 var(--rep); }
+.updlist li.call .what b { font-weight: 700; }
+.updlist li.call.new { background: var(--accent-soft); }
+:root[data-theme="studio"] #updates, :root[data-theme="studio"] #sources { border-color: #fff; }
+.keyshead { display: flex; align-items: center; justify-content: space-between; }
+#keys h2 { margin: 0; font-size: 1.15rem; }
+#keys dl { display: grid; grid-template-columns: auto 1fr; gap: 0.3rem 0.9rem; margin: 0.6rem 0; }
+#keys dt { font-weight: 700; white-space: nowrap; }
+#keys dd { margin: 0; color: var(--ink-soft); }
+#keys .hint { font-size: 0.857rem; color: var(--ink-soft); }
+
+footer {
+  grid-area: foot;
+  display: flex; gap: 1.3rem; flex-wrap: wrap;
+  padding: 0.55rem 1rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.857rem; color: var(--ink-soft);
+}
+footer code { font-family: inherit; }
+
+/* More is a phone control; everywhere else the secondary rows just show. */
+#moreBtn { display: none; }
+@media (max-width: 700px) {
+  #moreBtn { display: inline-block; }
+  body:not(.more-open) .secondary { display: none !important; }
+  .tools { padding-top: 0.5rem; }
+}
+
+@media (max-width: 860px) {
+  body, body.app-boards, body.app-battle, body.app-calls {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(320px, 58vh) auto auto;
+    grid-template-areas: "rail" "tools" "stage" "readout" "foot";
+    height: auto; min-height: 100%;
+  }
+  #readout { border-left: 0; border-top: 1px solid var(--rule); }
+  /* A sticky rail would cover most of a phone once it wraps, so only the
+     badge stays: pinned to the bottom corner, over everything, with its own
+     background. */
+  .badge {
+    position: fixed; left: 0.6rem; bottom: 0.6rem; z-index: 20;
+    max-width: calc(100vw - 1.2rem);
+    background: var(--paper);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  }
+  .badge[data-level="bad"] { background: color-mix(in srgb, var(--bad) 14%, var(--paper)); }
+  footer { padding-bottom: 3.4rem; }
+  .rail select, .tools select { max-width: 11rem; }
+}
+
+/* The table and the boards share the stage's grid cell and are toggled with
+   it. Hiding the stage takes its measured size to zero; the view's
+   ResizeObserver picks the size back up when it returns. */
+#table, #boards, #battle, #calls {
+  grid-area: stage;
+  overflow: auto;
+  padding: 0.85rem 1.15rem 1.4rem;
+  background: var(--paper);
+  min-height: 0;
+}
+.placeholder { display: grid; place-items: center; color: var(--ink-soft); }
+#table .tablehead { position: sticky; top: 0; background: var(--paper); padding-bottom: 0.4rem; }
+#table h2 { margin: 0; font-size: 1.286rem; letter-spacing: -0.01em; }
+#table .hint { margin: 2px 0 10px; color: var(--ink-soft); font-size: 0.857rem; }
+#table table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+#table th, #table td { padding: 0.35rem 0.7rem; text-align: right; border-bottom: 1px solid var(--rule); }
+#table th { cursor: pointer; user-select: none; font-size: 0.786rem; text-transform: uppercase;
+            letter-spacing: 0.04em; color: var(--ink-soft); position: sticky; top: 3.85rem;
+            background: var(--paper); height: var(--target); }
+#table th.sorted { color: var(--ink); }
+#table th.l, #table td.l { text-align: left; }
+/* The district list's row number (apps/table.js): fixed 1..N, quiet. */
+#table td.rownum { color: var(--ink-soft); width: 1%; white-space: nowrap; }
+#table td.d { color: var(--dem); font-weight: 600; }
+#table td.r { color: var(--rep); font-weight: 600; }
+#table td.i { color: var(--ind); font-weight: 600; }
+#table tr.unmapped { background: var(--accent-soft); }
+#table .flag {
+  font-size: 0.714rem; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--warn); border: 1px solid currentColor; border-radius: 3px;
+  padding: 0 4px; margin-left: 6px;
+}
+
+/* Calls: every seat on the ballot, and two taps to call one. The header
+   stays put while the list scrolls under it. */
+#calls { display: flex; flex-direction: column; padding-bottom: 0; }
+#calls[hidden] { display: none !important; }
+.callshead { flex: none; padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule); }
+.callshead h2 { margin: 0; font-size: 1.286rem; letter-spacing: -0.01em; }
+.callshead .hint { color: var(--ink-soft); font-size: 0.857rem; margin: 2px 0 8px; }
+.callshead .bad, #calls .msg.bad { color: var(--bad); }
+.callsbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; }
+.callsbar input, .ed input, .ed select {
+  font: inherit; color: var(--ink); background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 4px;
+  min-height: var(--target); padding: 0.25rem 0.5rem; min-width: 0;
+}
+.callsbar .by input { font-weight: 600; }
+#calls .msg { min-height: 1.4rem; font-size: 0.857rem; font-weight: 600; color: var(--good); padding-top: 0.3rem; }
+.callslist { flex: 1; min-height: 0; overflow: auto; padding-bottom: 1.4rem; }
+.callslist table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.callslist th, .callslist td { padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--rule); text-align: center; vertical-align: middle; }
+.callslist th { position: sticky; top: 0; background: var(--paper); z-index: 1;
+                font-size: 0.786rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
+.callslist .l { text-align: left; }
+.callslist td.act { white-space: nowrap; }
+.callslist td.act button + button { margin-left: 0.35rem; }
+.callslist .hint { color: var(--ink-soft); font-size: 0.857rem; }
+.callslist button.link { border: 0; background: none; padding: 0; min-width: 0; min-height: var(--target);
+                         font-weight: 600; text-align: left; text-decoration: underline; text-decoration-color: var(--rule); }
+.held, .called, .lead { font-weight: 700; }
+.held.dem, .lead.dem { color: var(--dem); }
+.held.rep, .lead.rep { color: var(--rep); }
+.called { padding: 0.1rem 0.45rem; border-radius: 3px; color: #fff; background: var(--ink-soft); }
+.called.dem { background: var(--dem); }
+.called.rep { background: var(--rep); }
+:root[data-theme="studio"] .called { color: #000; }
+tr.iscalled td { background: color-mix(in srgb, var(--warn) 10%, transparent); }
+tr.iscalled.dem td { background: color-mix(in srgb, var(--dem) 10%, transparent); }
+tr.iscalled.rep td { background: color-mix(in srgb, var(--rep) 10%, transparent); }
+tr.busy { opacity: 0.5; }
+.pick { font-weight: 700; min-width: calc(var(--target) * 1.2); }
+.pick.dem { color: var(--dem); border-color: var(--dem); }
+.pick.rep { color: var(--rep); border-color: var(--rep); }
+/* The second tap: the button fills, says what it will do, and times out. */
+.pick.confirm.dem { background: var(--dem); color: #fff; }
+.pick.confirm.rep { background: var(--rep); color: #fff; }
+button.retract.confirm { background: var(--bad); border-color: var(--bad); color: #fff; }
+tr.editor td { background: var(--accent-soft); text-align: left; }
+.ed { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; padding: 0.4rem 0; }
+.ed input[data-f="winner"], .ed input[data-f="note"] { width: 12rem; }
+.ed .save { background: var(--accent); color: var(--paper); border-color: var(--accent); font-weight: 600; }
+/* On a narrow screen the page scrolls, not a box inside a 58vh stage. */
+@media (max-width: 860px) {
+  body.app-calls { grid-template-rows: auto auto auto auto auto; }
+  #calls { display: block; }
+  .callslist { overflow: visible; }
+  .callslist th { top: 0; }
+}
+.callslist button.link { white-space: nowrap; }
+@media (max-width: 700px) {
+  .callslist td:nth-child(2), .callslist th:nth-child(2) { display: none; }
+  .callslist td.act { white-space: normal; }
+  .callslist td.act button { margin: 0.15rem 0.35rem 0.15rem 0; }
+  .callslist td.act button + button { margin-left: 0; }
+}
+
+/* The election menu bar: offices across, years down. An office's years open
+   on hover where there is a mouse, and on a tap, click or Enter anywhere. */
+.offices { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
+.office { position: relative; }
+.officebtn { font-weight: 600; white-space: nowrap; }
+.officebtn::after { content: "\25BE"; margin-left: 0.35rem; font-size: 0.75em; color: var(--ink-soft); }
+.officebtn .yr:empty { display: none; }
+.office.current > .officebtn { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.office.current > .officebtn::after { color: inherit; }
+.years {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 30;
+  margin: 0; padding: 0.3rem; list-style: none; min-width: 100%;
+  width: max-content; max-width: min(26rem, calc(100vw - 1.5rem));
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.years.flip { left: auto; right: 0; }
+/* No gap between the button and its list, or the pointer drops the hover
+   crossing it. */
+.office.open > .years { display: block; }
+@media (hover: hover) and (pointer: fine) {
+  .office:hover > .years { display: block; }
+}
+.years button {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem;
+  width: 100%; text-align: left; border-color: transparent; background: transparent;
+}
+.years button:hover, .years button:focus-visible { background: var(--accent-soft); }
+.years button b { font-size: 1.07rem; }
+.years button small { font-size: 0.786rem; color: var(--ink-soft); font-weight: 400; }
+.years button[aria-checked="true"] { border-color: var(--accent); }
+.years li + li { margin-top: 0.15rem; }
+:root[data-theme="studio"] .years { border-color: #fff; }
+
+/* Display: type size and palette in one menu (index.html). */
+.display-menu { position: relative; }
+#displayBtn::after { content: "\25BE"; margin-left: 0.35rem; font-size: 0.75em; color: var(--ink-soft); }
+.display-pop {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 30;
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 0.6rem; width: max-content;
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.display-pop[hidden] { display: none; }
+.display-pop .field > span:first-child { min-width: 4.4rem; }
+:root[data-theme="studio"] .display-pop { border-color: #fff; }
+
+/* "Saved to 3" after shift + a number key, then empty (shell.js flash). */
+.flash { font-weight: 600; color: var(--ink-soft); }
+.flash:empty { display: none; }

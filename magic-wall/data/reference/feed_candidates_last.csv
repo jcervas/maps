@@ -1,0 +1,9 @@
+state,tier,what,url
+KS,statewide,"KS ENR classic",https://www.kssos.org/elections/elections_statistics.html
+KS,statewide,"KS election night",https://electionresults.kssos.org/
+ID,statewide,"ID election results portal",https://idahovotes.gov/election-results/
+ID,statewide,"ID sos enr",https://voteidaho.gov/wp-json/wp/v2/pages
+IL,statewide,"IL vote totals",https://www.elections.il.gov/ElectionOperations/ElectionVoteTotals.aspx
+OR,statewide,"OR results export",https://results.oregonvotes.gov/ResultsExport.aspx
+OR,statewide,"OR media files",https://results.oregonvotes.gov/Results.aspx
+ME,statewide,"ME 2026 results page",https://www.maine.gov/sos/cec/elec/results/results26.html

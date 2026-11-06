@@ -55,6 +55,12 @@ defaults:
   # matter, where it beats anything set here, and a tie leaves the two in
   # whatever order site.pages happened to come out in. The newest map leads.
   - scope:
+      path: "magic-wall/index.html"
+    values:
+      breadcrumb: "Magic wall 2026"
+      wide: true
+      order: -3
+  - scope:
       path: "redrawn-districts-2026/index.html"
     values:
       breadcrumb: "Redrawn districts 2026"
