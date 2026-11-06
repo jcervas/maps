@@ -2124,6 +2124,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   const PIECE_K = 1.5;
   const cdPieces = new Map();       // "2024/PA" -> features; null while loading, false if none
   let piecesShown = false;
+  let soloCd = null;                // the one district drawn, zoomed to it (see layers)
   const piecesLines = (st) => (newLines(st) ? "2026" : "2024");
   function piecesWanted() {
     return !!focus && districtMode() && mode().cycle === liveCycle() && !cartoOn() &&
@@ -2392,6 +2393,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       : focus ? unitsIn(focus) : atState ? statewideUnits() : nationalUnits();
     const fill = atState ? nationalFill : fillFor;
     const quietEdge = d3.interpolateRgb(T.paper, T.ink)(0.4);
+    const soloEdge = d3.interpolateRgb(T.paper, T.ink)(0.6);
     const precinctEdge = (() => { const c = d3.color(T.water); c.opacity = 0.35; return c.formatRgb(); })();
     // Inside a state, only that state. The country's outline and its
     // neighbours still project under the state's CRS -- they just land
@@ -2406,12 +2408,21 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     lastData = data;
     // Pieces after their districts in one layer: drawn and picked over them,
     // and a sliver the pieces leave shows (and picks) the district.
-    const pieces = focus && districtMode() ? pieceFeatures(data) : [];
+    let pieces = focus && districtMode() ? pieceFeatures(data) : [];
+    // Zoomed to one district (tapped, so pinned), the user's ask (November
+    // 6): that district alone, its county pieces filled; no other district
+    // drawn at all, and the counties around it as outlines only, for where
+    // it is. Zoomed in without a district picked, every district's pieces.
+    const pick = pinned && (pinned.properties.tier === "cd" ? pinned.properties.id
+      : pinned.properties.tier === "cdpiece" ? pinned.properties.cd : null);
+    soloCd = pick && pieces.some((f) => f.properties.cd === pick) ? pick : null;
+    if (soloCd) pieces = pieces.filter((f) => f.properties.cd === soloCd);
     piecesShown = pieces.length > 0;
+    const shownCds = soloCd ? data.filter((f) => f.properties.id === soloCd) : data;
     return [
       // The country's fill goes behind the data; its borders go over it.
       { id: "nation-fill", features: rest, fill: () => T.basefill },
-      { id: "data", features: piecesShown ? [...data, ...pieces] : data, fill, blank: T.nodata, pick: true,
+      { id: "data", features: piecesShown ? [...shownCds, ...pieces] : data, fill, blank: T.nodata, pick: true,
         // Inside a state the unit boundary is structure and always draws;
         // at national zoom 3,143 hairlines are noise until zoomed in. 435
         // districts are not, and a district map without its lines is a
@@ -2441,7 +2452,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // what the precincts are read against. A paper-colored casing under an
       // ink line keeps it visible on any fill.
       // Over the county pieces, the districts they make up.
-      { id: "piece-districts", features: piecesShown ? data : [], stroke: () => T.ink, lineWidth: 1.6 },
+      { id: "solo-counties", features: soloCd ? (fine && fine.counties.get(focus)) || countiesByState.get(focus) || [] : [],
+        stroke: () => soloEdge, lineWidth: 0.9 },
+      { id: "piece-districts", features: piecesShown ? shownCds : [], stroke: () => T.ink, lineWidth: 1.6 },
       { id: "old-lines", features: oldLines(), stroke: () => T.ink, lineWidth: focus ? 1 : 0.5 },
       { id: "unit-casing", features: precinctShown ? unitsIn(focus) : [],
         stroke: () => T.paper, lineWidth: 4 },
@@ -4249,7 +4262,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const items = [];
       for (const f of unitsIn(focus) || []) {
         const m = DISTRICT_TIERS.has(f.properties.tier) && /-S?0*(\d+|AL)$/.exec(f.properties.id || "");
-        if (!m) continue;
+        if (!m || (soloCd && f.properties.id !== soloCd)) continue;
         const ll = anchorOf(f);
         const pt = ll && view.projection(ll);
         if (!pt) continue;
