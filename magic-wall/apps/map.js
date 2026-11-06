@@ -14,7 +14,7 @@ import { layoutLabels, drawLabels, relaxLabels } from "../core/labels.js";
 import { theme, onThemeChange } from "../core/theme.js";
 import { ago } from "../data/freshness.js";
 import { stateName } from "../data/states.js";
-import { ballotText, createControlStrip } from "./seatbar.js";
+import { ballotText, createControlStrip, ensureStyles } from "./seatbar.js";
 import { CHAMBER_TITLES, ALL_CHAMBERS } from "../data/seats.js";
 import { ratingFor, legLabel, ratingSource, parseRating, RATINGS, LEG_RATINGS } from "../data/ratings.js";
 
@@ -101,8 +101,9 @@ const OFFICE_LABEL = { president: "President", senate: "Senate", governor: "Gove
 // pa_leg.py): picked inside the state from the Race menu, never a national
 // mode or a state's default race, and read out as seats rather than votes.
 const LEGISLATURE = new Set(["state-house", "state-senate"]);
-// Each map's Shapes radios get a name of their own (a split screen has two).
-let shapesGroups = 0;
+// Each map's radio menus (Shapes, Races, Seats) get names of their own: a
+// split screen has two maps.
+let radioGroups = 0;
 // The tiers a district carries a number on, inside a state.
 const DISTRICT_TIERS = new Set(["cd", "district", "senate-district"]);
 
@@ -275,35 +276,79 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   });
   pane.appendChild(precinctBtn);
 
-  // Radio buttons, not a button that cycles: House 2026 has three choices,
-  // and a reader should see them all and pick one (the user's call). A menu
-  // of its own at the map's top left, not folded into Map options (the
-  // user's call), so the choice is always in sight. Native
-  // radios sharing a name, so the arrow keys move between them; the name is
-  // this map's own, since a split screen has two.
-  const shapesBtn = document.createElement("div");
-  shapesBtn.hidden = true;
-  shapesBtn.setAttribute("role", "radiogroup");
-  shapesBtn.setAttribute("aria-label", "Shapes");
-  shapesBtn.title = "Draw the districts as an equal-size cartogram (one cell per seat) or on their lines";
-  // Shown and hidden by display (syncShapesButton): an inline display:flex
-  // would win over the hidden attribute. It wraps short of Map options.
-  shapesBtn.style.cssText = precinctBtn.style.cssText + "right:auto;left:10px;flex-wrap:wrap;align-items:center;" +
-    "gap:4px 10px;cursor:default;box-sizing:border-box;max-width:calc(100% - 150px);";
-  const shapesName = `mw-shapes-${++shapesGroups}`;
+  /* The map's own menus, out of Map options so the choice is always in
+   * sight (the user's call): Shapes at the top left, Races at the top right
+   * beside Map options, Seats in the control bar. Each is a row of radio
+   * buttons, not a button that cycles: House 2026 has three shapes, and a
+   * reader should see them all and pick one (the user's call). Native
+   * radios sharing a name, so the arrow keys move between them; the name
+   * is this map's own, since a split screen has two. The top-left column
+   * wraps short of what is at the top right (stackButtons). */
+  const corner = document.createElement("div");
+  corner.style.cssText = "position:absolute;top:10px;left:10px;z-index:2;display:flex;flex-direction:column;" +
+    "align-items:flex-start;gap:6px;max-width:calc(100% - 150px);";
   for (const t of ["click", "pointerdown", "mousedown", "wheel"]) {
-    shapesBtn.addEventListener(t, (ev) => ev.stopPropagation());
+    corner.addEventListener(t, (ev) => ev.stopPropagation());
   }
-  shapesBtn.addEventListener("change", (ev) => {
-    const v = ev.target.value;
-    if (!shapeChoices().includes(v)) return;
-    shapes = v;
-    try { localStorage.setItem("mw.shapes", shapes); } catch (_) { /* private window */ }
-    hovered = null;
-    pinned = null;
-    changed();
-  });
-  pane.appendChild(shapesBtn);
+  pane.appendChild(corner);
+  function radioMenu(label, title, pick, host = corner) {
+    const el = document.createElement("div");
+    el.hidden = true;
+    el.setAttribute("role", "radiogroup");
+    el.setAttribute("aria-label", label);
+    el.title = title;
+    // Shown and hidden by display (syncRadioMenu): an inline display:flex
+    // would win over the hidden attribute.
+    el.style.cssText = precinctBtn.style.cssText + "position:static;display:none;flex-wrap:wrap;align-items:center;" +
+      "gap:4px 10px;cursor:default;box-sizing:border-box;max-width:100%;";
+    el.dataset.label = label;
+    el.dataset.name = `mw-${label.toLowerCase()}-${++radioGroups}`;
+    el.addEventListener("change", (ev) => pick(ev.target.value));
+    // A press on a menu is not a press on the map under it.
+    for (const t of ["click", "pointerdown", "mousedown", "wheel"]) {
+      el.addEventListener(t, (ev) => ev.stopPropagation());
+    }
+    host.appendChild(el);
+    return el;
+  }
+  /** Fill a corner menu with [value, label] choices, the current one
+   *  checked; fewer than two hides it. */
+  function syncRadioMenu(el, choices, now) {
+    el.hidden = choices.length < 2;
+    el.style.display = el.hidden ? "none" : "flex";
+    // Under a split panel's title, which is drawn at the same corner.
+    corner.style.top = `${titleOn ? 40 * (theme().scale || 1) : 10}px`;
+    if (el.hidden) return;
+    const want = choices.map(([v, l]) => `${v}=${l}`).join("|");
+    if (el.dataset.opts !== want) {
+      const head = document.createElement("span");
+      head.textContent = el.dataset.label;
+      head.style.fontWeight = "600";
+      el.replaceChildren(head, ...choices.map(([v, label]) => {
+        const l = document.createElement("label");
+        l.style.cssText = "display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;";
+        const r = document.createElement("input");
+        r.type = "radio";
+        r.name = el.dataset.name;
+        r.value = v;
+        r.style.cssText = "margin:0;accent-color:var(--ink);cursor:pointer;";
+        l.append(r, label);
+        return l;
+      }));
+      el.dataset.opts = want;
+    }
+    for (const r of el.querySelectorAll("input")) r.checked = r.value === now;
+  }
+
+  const shapesBtn = radioMenu("Shapes",
+    "Draw the districts as an equal-size cartogram (one cell per seat) or on their lines", (v) => {
+      if (!shapeChoices().includes(v)) return;
+      shapes = v;
+      try { localStorage.setItem("mw.shapes", shapes); } catch (_) { /* private window */ }
+      hovered = null;
+      pinned = null;
+      changed();
+    });
   /* Rating as fill, or as chiclets: in chiclets the map stays plain and only
    * the races in play -- Lean and Toss-up, and under vs. Rating any upset --
    * carry a small marker in their rating color, so a national House map is
@@ -331,49 +376,56 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * for a party other than the one holding the seat (data/seats.js
    * seat.flip, the Boards' Pickups). Remembered per machine. */
   const RACE_FILTERS = ["all", "called", "flips"];
-  const RACE_FILTER_LABEL = { all: "Races: All", called: "Races: Called only", flips: "Races: Flips only" };
+  const RACE_FILTER_LABEL = { all: "All", called: "Called", flips: "Flips" };
   let raceFilter = "all";
   try {
     const v = localStorage.getItem("mw.raceFilter");
     raceFilter = RACE_FILTERS.includes(v) ? v : localStorage.getItem("mw.calledOnly") === "on" ? "called" : "all";
   } catch (_) { /* private window */ }
-  const calledBtn = document.createElement("button");
-  calledBtn.type = "button";
-  calledBtn.hidden = true;
-  calledBtn.title = "Every race, only the races that have been called, or only the seats changing hands";
-  calledBtn.style.cssText = precinctBtn.style.cssText;
-  calledBtn.addEventListener("click", (ev) => {
-    ev.stopPropagation();
-    raceFilter = RACE_FILTERS[(RACE_FILTERS.indexOf(raceFilter) + 1) % RACE_FILTERS.length];
-    try { localStorage.setItem("mw.raceFilter", raceFilter); } catch (_) { /* private window */ }
-    changed();
-  });
-  pane.appendChild(calledBtn);
+  const calledBtn = radioMenu("Races",
+    "Every race, only the races that have been called, or only the seats changing hands", (v) => {
+      if (!RACE_FILTERS.includes(v)) return;
+      raceFilter = v;
+      try { localStorage.setItem("mw.raceFilter", raceFilter); } catch (_) { /* private window */ }
+      changed();
+    }, pane);
+  calledBtn.style.cssText += "position:absolute;top:10px;right:10px;z-index:2;max-width:none;";
 
+  /* The control bar's box (see syncStrip): the live count, then Seats, a
+   * row of radio buttons inside the same box (the user's ask), so the
+   * choice between the map and the bins sits with the count it repeats.
+   * The count is apps/seatbar.js's and redraws itself, so the box is the
+   * map's own, styled as the bar (mw-ctlstrip), with the count drawn
+   * plain inside it. While the bins are up the count leaves (they carry
+   * it) and Seats stays, so a reader can always go back to the map. */
+  ensureStyles();
+  const stripBox = document.createElement("div");
+  stripBox.className = "mw-ctlstrip";
+  stripBox.hidden = true;
+  for (const t of ["click", "pointerdown", "mousedown", "wheel"]) {
+    stripBox.addEventListener(t, (ev) => ev.stopPropagation());
+  }
+  pane.appendChild(stripBox);
   // Seats: the map, or every seat of the chamber in three bins (see bins).
-  const binsBtn = document.createElement("button");
-  binsBtn.type = "button";
-  binsBtn.hidden = true;
-  binsBtn.title = "Fly every seat into Democrat, Toss-up and Republican bins, with counts and the majority marked";
-  binsBtn.style.cssText = precinctBtn.style.cssText;
-  binsBtn.addEventListener("click", (ev) => {
-    ev.stopPropagation();
-    if (bins.on && !bins.out) binsClose();
-    else binsOpen();
-  });
-  pane.appendChild(binsBtn);
+  const binsBtn = radioMenu("Seats",
+    "Fly every seat into Democrat, Toss-up and Republican bins, with counts and the majority marked", (v) => {
+      const on = bins.on && !bins.out;
+      if (v === "bins" && !on) binsOpen();
+      else if (v === "map" && on) binsClose();
+    }, stripBox);
+  binsBtn.style.cssText += "border:0;border-radius:0;background:none;padding:0;font-size:12px;justify-content:center;";
 
-  /* The map's own controls (Seats, Precincts, Style, Races) fold into one
+  /* The map's own controls (Precincts, Style) fold into one
    * button at the top right, the user's ask: four stacked buttons covered
    * the map's corner. A press opens them as a panel over the map, and
    * another press (or Escape) folds them away. Open or folded is remembered
    * per machine. They stay in the map pane rather than the readout, which
    * is rewritten with every hover. */
-  const OPT_BTNS = [binsBtn, precinctBtn, ratingBtn, calledBtn];
+  const OPT_BTNS = [precinctBtn, ratingBtn];
   const optsBtn = document.createElement("button");
   optsBtn.type = "button";
   optsBtn.hidden = true;
-  optsBtn.title = "Seats, precincts, rating style and which races for this map";
+  optsBtn.title = "Precincts and rating style for this map";
   optsBtn.style.cssText = precinctBtn.style.cssText;
   const optsPanel = document.createElement("div");
   optsPanel.className = "map-options";
@@ -405,13 +457,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   function syncBinsButton() {
     const spec = binsSpec();
-    binsBtn.hidden = !spec;
     if (!spec && bins.on) binsReset();
     const on = bins.on && !bins.out;
-    binsBtn.textContent = on ? "Seats: Bins" : "Seats: Map";
-    binsBtn.setAttribute("aria-pressed", String(on));
+    syncRadioMenu(binsBtn, spec ? [["map", "Map"], ["bins", "Bins"]] : [], on ? "bins" : "map");
     // Shown or hidden here, outside syncPrecinctButton, so the stack is
-    // redone here too; otherwise it kept the Shapes dropdown's spot.
+    // redone here too.
     stackButtons();
     syncStrip();
   }
@@ -426,7 +476,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * seat bins are up, which carry the same count. */
   const stripEl = document.createElement("div");
   stripEl.hidden = true;
-  pane.appendChild(stripEl);
+  stripBox.prepend(stripEl);
   let strip = null;
   function stripChamber() {
     const r = raceId ? raceOf(raceId) : null;
@@ -445,11 +495,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const S = seatsSrc();
     if (!S) return;
     if (!strip) strip = createControlStrip({ el: stripEl, seats: S, titles: CHAMBER_TITLES });
-    const W = pane.clientWidth;
-    stripEl.style.cssText = "position:absolute;right:10px;bottom:10px;z-index:2;box-sizing:border-box;" +
-      `width:${Math.round(Math.max(260, Math.min(380, W - 270)))}px;`;
     const c = stripChamber();
     if (c !== strip.chamber) strip.show(c);
+    // The count drawn plain: the box is stripBox's.
+    stripEl.style.cssText = "border:0;border-radius:0;background:none;padding:0;min-width:0;";
+    const W = pane.clientWidth;
+    stripBox.hidden = stripEl.hidden && binsBtn.hidden;
+    stripBox.style.cssText = "position:absolute;right:10px;bottom:10px;z-index:2;" + (stripEl.hidden ? "min-width:0;"
+      : `width:${Math.round(Math.max(260, Math.min(380, W - 270)))}px;`);
+    binsBtn.style.borderTop = stripEl.hidden ? "0" : "1px solid var(--rule)";
+    binsBtn.style.marginTop = stripEl.hidden ? "0" : "5px";
+    binsBtn.style.paddingTop = stripEl.hidden ? "0" : "4px";
   }
 
   /* The rating legend as a bar, after the Times's Cook graphic, the user's
@@ -523,7 +579,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const on = legendOn && (variable === "rating" || variable === "vsrating") && !variableNote(variable) &&
       binsCover() < 0.5;
     const key = [on, variable, focus, raceId, modeKey, chiclets(), [...ratingPick].join(), pane.clientWidth,
-                 stripEl.hidden].join("|");
+                 stripBox.hidden].join("|");
     if (barMemo.feats === feats && barMemo.key === key) return;
     barMemo = { feats, key };
     const cells = on ? ratedInView() : [];
@@ -589,7 +645,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         `margin-right:3px;border:1px solid var(--baseedge);background:${swatch(fill)}"></i>${esc(lab)}</span>`).join(" ") : "";
 
     const W = pane.clientWidth;
-    const room = stripEl.hidden ? 0 : stripEl.offsetWidth + 20;
+    const room = stripBox.hidden ? 0 : stripBox.offsetWidth + 20;
     ratingBar.style.cssText = "position:absolute;left:10px;bottom:10px;z-index:2;box-sizing:border-box;" +
       `width:${Math.round(Math.max(220, Math.min(340, W - room - 30)))}px;padding:7px 9px 6px;border-radius:4px;` +
       "background:color-mix(in srgb,var(--paper) 92%,transparent);color:var(--ink);font-size:11px;line-height:1.35;";
@@ -631,40 +687,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   function syncCalledButton() {
-    calledBtn.hidden = !callsApply();
-    calledBtn.textContent = RACE_FILTER_LABEL[raceFilter];
-    calledBtn.setAttribute("aria-pressed", String(raceFilter !== "all"));
+    syncRadioMenu(calledBtn, callsApply() ? RACE_FILTERS.map((v) => [v, RACE_FILTER_LABEL[v]]) : [], raceFilter);
   }
 
   const SHAPE_LABEL = { cartogram: "Cartogram", lines2024: "2024 lines" };
   function syncShapesButton() {
-    const c = shapeChoices();
-    shapesBtn.hidden = c.length < 2;
-    shapesBtn.style.display = shapesBtn.hidden ? "none" : "flex";
-    if (shapesBtn.hidden) return;
-    // Under a split panel's title, which is drawn at the same corner.
-    shapesBtn.style.top = `${titleOn ? 40 * (theme().scale || 1) : 10}px`;
     const lines = mode().office === "house" && !raceId ? `${mode().cycle} lines` : "District lines";
-    const want = c.map((v) => `${v}=${SHAPE_LABEL[v] || lines}`).join("|");
-    if (shapesBtn.dataset.opts !== want) {
-      const head = document.createElement("span");
-      head.textContent = "Shapes";
-      head.style.fontWeight = "600";
-      shapesBtn.replaceChildren(head, ...c.map((v) => {
-        const l = document.createElement("label");
-        l.style.cssText = "display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;";
-        const r = document.createElement("input");
-        r.type = "radio";
-        r.name = shapesName;
-        r.value = v;
-        r.style.cssText = "margin:0;accent-color:var(--ink);cursor:pointer;";
-        l.append(r, SHAPE_LABEL[v] || lines);
-        return l;
-      }));
-      shapesBtn.dataset.opts = want;
-    }
-    const now = shapesNow();
-    for (const r of shapesBtn.querySelectorAll("input")) r.checked = r.value === now;
+    syncRadioMenu(shapesBtn, shapeChoices().map((v) => [v, SHAPE_LABEL[v] || lines]), shapesNow());
   }
 
   /** The options button shows while any of its controls applies; the panel
@@ -676,6 +705,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     optsBtn.textContent = optsOpen ? "Map options \u25B4" : "Map options \u25BE";
     optsBtn.setAttribute("aria-expanded", String(optsOpen));
     optsPanel.style.top = `${10 + (optsBtn.offsetHeight || 34) + 6}px`;
+    // Races to the left of Map options; Shapes wraps short of both.
+    const optsW = optsBtn.hidden ? 0 : optsBtn.offsetWidth + 8;
+    calledBtn.style.right = `${10 + optsW}px`;
+    corner.style.maxWidth = `calc(100% - ${optsW + (calledBtn.hidden ? 0 : calledBtn.offsetWidth + 8) + 30}px)`;
   }
 
   /** The button shows inside a state that has precincts; it says what a
@@ -2941,7 +2974,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const k = theme().scale || 1;
       tip.style.left = "10px";
       // Below the Shapes menu when it is there, which holds the same corner.
-      tip.style.top = `${!shapesBtn.hidden ? shapesBtn.offsetTop + shapesBtn.offsetHeight + 6
+      tip.style.top = `${!shapesBtn.hidden ? corner.offsetTop + corner.offsetHeight + 6
         : titleOn ? 40 * k : 10}px`;
     }
   }
@@ -3178,7 +3211,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   const fitSamples = new WeakMap();   // feature list -> up to 4,000 of its vertices
   function overlayBoxes() {
     const out = legendBox ? [legendBox] : [];
-    for (const el of [ratingBar, stripEl]) {
+    for (const el of [ratingBar, stripBox]) {
       if (!el.hidden && el.offsetWidth) out.push({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
     }
     return out.map((b) => ({ x0: b.x - 6, y0: b.y - 6, x1: b.x + b.w + 6, y1: b.y + b.h + 6 }));
@@ -3815,12 +3848,20 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return { dem: m, rep: m, seats };
   }
 
+  /** What the pane's own menus take at its top (Shapes, Races) and bottom
+   *  (the control bar's box, Seats) edges, so the bins stay clear of them. */
+  function binsInsets() {
+    const top = [corner, calledBtn].reduce((m, el) => (el.offsetHeight ? Math.max(m, el.offsetTop + el.offsetHeight) : m), 0);
+    return { top, bottom: stripBox.hidden ? 0 : pane.clientHeight - stripBox.offsetTop };
+  }
+
   /** Square size and columns for three stacks in the pane, from the biggest stack. */
   function binsLayout(W, H, items, maj) {
     const n = { dem: 0, mid: 0, rep: 0 };
     for (const it of items) n[it.bin] += 1;
     const k = theme().scale || 1;
-    const x0 = 24, x1 = W - 24, y0 = 104 * Math.min(k, 1.5), yb = H - 64 * k;
+    const ins = binsInsets();
+    const x0 = 24, x1 = W - 24, y0 = ins.top + 104 * Math.min(k, 1.5), yb = H - 64 * k - ins.bottom;
     const gap = Math.max(24, (x1 - x0) * 0.05);
     const cw = (x1 - x0 - 2 * gap) / 3;
     const big = Math.max(n.dem, n.mid, n.rep, maj ? Math.max(maj.dem, maj.rep) : 0, 1);
@@ -3834,7 +3875,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const left = x0 + i * (cw + gap);
       cols[b] = { left, w: cw, x: left + (cw - best.per * best.s) / 2 };
     });
-    return { ...best, yb, cols, n, W, H };
+    return { ...best, yb, cols, n, W, H, ins };
   }
 
   /** Each item's square in its stack: lowest rank at the bottom. */
@@ -4009,7 +4050,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const k = T.scale || 1;
     // A pane resized under the bins (a split, the rail rewrapping): the
     // stacks are laid out again for it, and the squares go to their new places.
-    if (bins.layout.W !== W || bins.layout.H !== H) {
+    // Or the menus over it changed size (Seats alone once the count leaves).
+    const ins = binsInsets();
+    if (bins.layout.W !== W || bins.layout.H !== H || bins.layout.ins.top !== ins.top ||
+        bins.layout.ins.bottom !== ins.bottom) {
       bins.layout = binsLayout(W, H, bins.items, bins.maj);
       placeBins(bins.items, bins.layout);
     }
@@ -4086,10 +4130,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     ctx.textAlign = "left";
     ctx.font = FONT(700, 15);
     ctx.fillStyle = T.ink;
-    ctx.fillText(bins.spec.title, 24, 16);
+    ctx.fillText(bins.spec.title, 24, L.ins.top + 16);
     ctx.font = FONT(400, 12);
     ctx.fillStyle = T.inkSoft;
-    ctx.fillText(binsBasis(), 24, 38 * Math.min(k, 1.5));
+    ctx.fillText(binsBasis(), 24, L.ins.top + 38 * Math.min(k, 1.5));
     ctx.restore();
   }
 
@@ -4127,7 +4171,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       row("dem", "Democrats") + row("mid", midName()) +
       row("rep", "Republicans") + `</table>` +
       (maj ? `<p class="hint">Majority: ${maj.dem === maj.rep ? maj.dem : `${maj.dem} for Democrats, ${maj.rep} for Republicans (the vice president breaks ties)`} of ${maj.seats}.</p>` : "") +
-      `<p class="hint">Point at a square for its seat. Tap Seats: Bins to put them back on the map.</p>`;
+      `<p class="hint">Point at a square for its seat. Pick Seats: Map to put them back on the map.</p>`;
   }
 
   canvas.addEventListener("pointermove", (ev) => {
