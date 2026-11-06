@@ -658,7 +658,7 @@
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-06a";
+  var BUILD = "2026-11-06b";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -1653,6 +1653,30 @@
       if (!ds[i].__same) out[ds[i].properties.state] = true;
     }
     return out;
+  }
+
+  // Under "Redrawn" the map is about the nine states that redrew, so the
+  // rest are backdrop: they answer no hover, open on no click and are
+  // greyed out of the state list. "All" brings every state back. Until the
+  // districts load there is no way to tell, so everything stays open.
+  var redrawnCache = null;
+  function stateInScope(st) {
+    if (state.allLines || !st) return true;
+    if (!redrawnCache) {
+      var r = redrawnStates();
+      if (!Object.keys(r).length) return true;
+      redrawnCache = r;
+    }
+    return !!redrawnCache[st];
+  }
+
+  function updateStateOptions() {
+    var sel = document.getElementById("stateSel");
+    if (!sel) return;
+    for (var i = 0; i < sel.options.length; i++) {
+      var o = sel.options[i];
+      o.disabled = !!o.value && !stateInScope(o.value);
+    }
   }
 
   function layoutStateLabels(live) {
@@ -2914,6 +2938,9 @@
     // thing depending on where it landed, and the figures a reader came for
     // were behind a click.
     var hit = hitAt(ev);
+    if (!state.focus && hit.f && !stateInScope(hit.f.properties.state)) {
+      hit = { f: null, chiclet: false };
+    }
     var f = hoverable(hit);
     // The state a click would open follows the raw hit, not the hoverable
     // one. Up here most districts answer a hover with nothing -- all of them
@@ -2955,6 +2982,7 @@
     var f = hit.f;
     if (!f) return;
     var p = f.properties;
+    if (!state.focus && !stateInScope(p.state)) return;
     if (!state.focus && p.state) {
       // A Cook square identifies a district; anywhere else on the national
       // map identifies only a state.
@@ -3223,6 +3251,7 @@
       });
       buildStateOutlines(topo);
       markUnchanged();
+      updateStateOptions();
       setStatus(null);
       resize();
       refreshScales();
@@ -4203,6 +4232,14 @@
   function setAllLines(on) {
     if (state.allLines === on) return;
     state.allLines = on; setPressed("lRedrawn", "lAll", on);
+    updateStateOptions();
+    // Inside a state the redraw skipped, "Redrawn" has nothing to show there;
+    // step back out to the nine.
+    if (!on && state.focus && !stateInScope(state.focus)) {
+      unfocus();
+      updateLegend();
+      return;
+    }
     // The control now sets which districts the rating modes judge, not just
     // which ones are outlined, so the legend's counts and the idle blurb move
     // with it.
