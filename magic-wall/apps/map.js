@@ -325,6 +325,19 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       pinned = null;
       changed();
     });
+  /* Circles, the user's ask (November 6): over a district's county pieces,
+   * a circle on each piece as big as its vote lead (area for votes), in the
+   * leader's color, with the pieces drawn as plain land under them so the
+   * circles carry the result. Only where the pieces show; remembered per
+   * machine. See drawLeadCircles. */
+  let leadCircles = false;
+  try { leadCircles = localStorage.getItem("mw.leadCircles") === "on"; } catch (_) { /* private window */ }
+  const circlesBtn = radioMenu("Circles", "A circle on each county piece, sized by its vote lead", (v) => {
+    leadCircles = v === "lead";
+    try { localStorage.setItem("mw.leadCircles", leadCircles ? "on" : "off"); } catch (_) { /* private window */ }
+    changed();
+  });
+  const circlesOn = () => leadCircles && piecesShown;
   /* Rating as fill, or as chiclets: in chiclets the map stays plain and only
    * the races in play -- Lean and Toss-up, and under vs. Rating any upset --
    * carry a small marker in their rating color, so a national House map is
@@ -666,6 +679,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     syncRadioMenu(calledBtn, callsApply() ? RACE_FILTERS.map((v) => [v, RACE_FILTER_LABEL[v]]) : [], raceFilter);
   }
 
+  function syncCirclesButton() {
+    syncRadioMenu(circlesBtn, piecesShown ? [["off", "Off"], ["lead", "Vote lead"]] : [], leadCircles ? "lead" : "off");
+  }
+
   const SHAPE_LABEL = { cartogram: "Cartogram", lines2024: "2024 lines" };
   function syncShapesButton() {
     const lines = mode().office === "house" && !raceId ? `${mode().cycle} lines` : "District lines";
@@ -690,10 +707,12 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   /** The map's menus and Map options, for what is drawn now. */
   function syncButtons() {
     syncShapesButton();
+    syncCirclesButton();
     syncBinsButton();
     syncRatingButton();
     syncCalledButton();
     stackButtons();
+    dockTip();
   }
 
   const view = createView({
@@ -1678,6 +1697,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // A rating is there before any feed is: every rated race takes its color.
     // Chiclets: the shapes are plain land; the markers carry the rating.
     if (chiclets()) return d3.interpolateRgb(T.paper, T.ink)(0.14);
+    // Circles over the county pieces: a piece with a lead is plain land, so
+    // its circle carries the result.
+    if (c.kind === "piece" && circlesOn() && cellValue(c, "lead") != null) return d3.interpolateRgb(T.paper, T.ink)(0.14);
     if (variable === "rating") return ratingFill(c);
     if (variable === "vsrating") {
       const v = versus(c);
@@ -2756,13 +2778,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     tip.dataset.mode = follow ? "follow" : "dock";
     redraw();
     if (follow) placeTip();
-    else {
-      const k = theme().scale || 1;
-      tip.style.left = "10px";
-      // Below the Shapes menu when it is there, which holds the same corner.
-      tip.style.top = `${!shapesBtn.hidden ? corner.offsetTop + corner.offsetHeight + 6
-        : titleOn ? 40 * k : 10}px`;
-    }
+    else dockTip();
+  }
+
+  /** The docked card at the top left, below the menus there (Shapes,
+   *  Circles), which come and go with the zoom: syncButtons places it again. */
+  function dockTip() {
+    if (tip.dataset.mode !== "dock") return;
+    const k = theme().scale || 1;
+    tip.style.left = "10px";
+    tip.style.top = `${corner.offsetHeight ? corner.offsetTop + corner.offsetHeight + 6
+      : titleOn ? 40 * k : 10}px`;
   }
 
   /** The card's content, cut from the readout's own: its heading, the line
@@ -3277,6 +3303,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     if (cartoOn()) keys.push(["Cartogram: every district the same size", "text"]);
     if (piecesShown) keys.push(["Districts split by county: AP's count for each piece", "text"]);
+    if (circlesOn() && circleMax) keys.push([`Circle area: vote lead (largest ${d3.format(",")(circleMax)})`, "text"]);
     const classes = P
       ? { colors: [...P.rep].reverse().concat([P.tie], P.dem), labels: breaks.map(fmt) } : null;
     return { title, stops: note ? null : stops, classes, ends, keys };
@@ -4084,6 +4111,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   view.on("overlay", ({ ctx, dpr, W, H, transform }) => {
     if (!geo) return;
     const T = theme();
+    circleMax = 0;
+    if (focus && circlesOn() && binsCover() < 0.5) drawLeadCircles(ctx, dpr, W, H, transform);
     if (!focus) {
       const items = [];
       // On the cartogram the cells are the data, so a state's label sits
@@ -4226,6 +4255,48 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   const CHIC = 17, CHIC_R = 5, CHIC_GAP = 2.5;   // px at type scale 1
+  /** The vote lead on each county piece drawn, as a circle whose area is
+   *  the lead, scaled to the biggest lead on the map; biggest first so a
+   *  small one sits on top of a big neighbor. */
+  let circleMax = 0;                // the biggest lead drawn, for the legend
+  function drawLeadCircles(ctx, dpr, W, H, transform) {
+    const T = theme();
+    const k = T.scale || 1;
+    const L = view.getLayers().find((x) => x.id === "data");
+    const items = [];
+    for (const f of (L && L.features) || []) {
+      if (f.properties.tier !== "cdpiece") continue;
+      const c = cellFor(f);
+      const v = cellValue(c, "lead");
+      const t = v == null ? null : topOf(c);
+      if (!t || !v) continue;
+      const ll = anchorOf(f);
+      const pt = ll && view.projection(ll);
+      if (!pt) continue;
+      items.push({ x: transform.applyX(pt[0]), y: transform.applyY(pt[1]), lead: Math.abs(v), party: t.leader.party });
+    }
+    if (!items.length) return;
+    circleMax = d3.max(items, (d) => d.lead);
+    const R = 30 * k;
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    items.sort((a, b) => b.lead - a.lead);
+    for (const d of items) {
+      const r = Math.max(2 * k, R * Math.sqrt(d.lead / circleMax));
+      if (d.x < -r || d.y < -r || d.x > W + r || d.y > H + r) continue;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, r, 0, 2 * Math.PI);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = partyColor(d.party);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = T.paper;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function drawChiclets(ctx, dpr, W, H, transform, fixed) {
     const T = theme();
     const k = T.scale || 1;
