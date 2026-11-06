@@ -63,11 +63,38 @@ export function createPoller({ store, base = ".", interval = 30000,
     return !watch || watch.includes(raceId);
   }
 
+  /* A published copy (maps/build/magic-wall/publish.sh) carries every race
+   * in one file, results/bundle.json: { races: { race_id: results file } },
+   * built from the same manifest. A first load reads it in one request
+   * instead of some 540, which from a public host left the map hatched
+   * "awaiting votes" for long enough to look broken (November 6). After
+   * that, only the races that move are fetched, one by one, as before. The
+   * wall's own server has no bundle; a 404 falls through to the old path. */
+  let bundleTried = false;
+  async function loadBundle() {
+    bundleTried = true;
+    try {
+      const b = await get(`${base}/results/bundle.json`, { optional: true });
+      const done = [];
+      for (const [raceId, data] of Object.entries((b && b.races) || {})) {
+        const meta = (manifest.races || {})[raceId];
+        if (!meta || !wanted(raceId) || !data) continue;
+        store.setResults(raceId, data);
+        seen.set(raceId, meta.updated);
+        done.push(raceId);
+      }
+      return done;
+    } catch (_) {
+      return [];
+    }
+  }
+
   async function tick() {
     try {
       const m = await get(`${base}/manifest.json`);
       if (m) manifest = m;
       if (manifest) {
+        const fromBundle = bundleTried ? [] : await loadBundle();
         const jobs = [];
         for (const [raceId, meta] of Object.entries(manifest.races || {})) {
           if (!wanted(raceId)) continue;
@@ -81,9 +108,9 @@ export function createPoller({ store, base = ".", interval = 30000,
             })
           );
         }
-        const done = (await settleLimited(jobs, 12))
+        const done = fromBundle.concat((await settleLimited(jobs, 12))
           .filter((x) => x.status === "fulfilled" && x.value)
-          .map((x) => x.value);
+          .map((x) => x.value));
         // The override file rides the same poll. Missing is normal (no
         // overrides tonight). Malformed -- a half-typed edit -- keeps the last
         // good overrides and says so in the badge, rather than counting as a
