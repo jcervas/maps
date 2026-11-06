@@ -50,7 +50,7 @@
     /* Behind the squares the nine states stay nearly as light as the rest of
        the country: the squares are the subject, and the district lines are
        cue enough that these are the states in scope. */
-    --chicfill: #e8e8e4;
+    --chicfill: #ffffff;
     --uncalled: #c9c9c6;
     /* The Post sets its charts in ITC Franklin Std, which is licensed and
        served from their own CDN, so it cannot be loaded here. Libre Franklin
@@ -588,7 +588,7 @@
 <script>
 (function () {
   "use strict";
-  var BUILD = "2026-11-04a";
+  var BUILD = "2026-11-06a";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   document.getElementById("build").textContent = "build " + BUILD;
 
@@ -689,6 +689,7 @@
       },
       ink: g("--ink") || "#111111", paper: g("--paper") || "#ffffff",
       basefill: g("--basefill") || "#f2f2f0", baseedge: g("--baseedge") || "#b9b9b4",
+      baseline: g("--baseline") || "#dcdcd8",
       uncalled: g("--uncalled") || "#c9c9c6"
     };
     return THEME;
@@ -954,6 +955,10 @@
     ctx.beginPath();
     state.states.forEach(function (f) { path(f); });
     ctx.strokeStyle = T.paper; ctx.lineWidth = 1; ctx.lineJoin = "round"; ctx.stroke();
+    // A state left in the page tone needs a line that shows against it.
+    ctx.beginPath();
+    state.states.forEach(function (f) { if (fillFor(f) === T.chicfill) path(f); });
+    ctx.strokeStyle = T.baseline; ctx.stroke();
     if (state.hover) {
       ctx.beginPath(); path(state.hover);
       ctx.strokeStyle = T.ink; ctx.lineWidth = 2; ctx.stroke();

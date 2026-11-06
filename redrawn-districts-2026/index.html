@@ -50,10 +50,9 @@
     --cook-solidD:  #1366b3; --cook-likelyD: #5784c5; --cook-leanD: #a9c6e8;
     --cook-toss:    #e0a63a;
     --cook-leanR:   #eb9c92; --cook-likelyR: #d35f4f; --cook-solidR: #be2c25;
-    /* Behind the squares the nine states stay nearly as light as the rest of
-       the country: the squares are the subject, and the district lines are
-       cue enough that these are the states in scope. */
-    --chicfill: #e8e8e4;
+    /* Behind the squares the land is the page itself: the squares are the
+       subject, and grey district lines are cue enough for where they sit. */
+    --chicfill: #ffffff;
     /* The Post sets its charts in ITC Franklin Std, which is licensed and
        served from their own CDN, so it cannot be loaded here. Libre Franklin
        is a Franklin Gothic revival and the closest face on Google Fonts, which
@@ -659,7 +658,7 @@
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-04i";
+  var BUILD = "2026-11-06a";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -2350,7 +2349,10 @@
     for (var k = 0; k < bd.length; k++) {
       if (!inPanel(pn, bd[k])) continue;
       if (bd[k].__same && greyUnredrawn() && !showingPrecincts) continue;
-      ctx.strokeStyle = (bd[k].__same && !state.district)
+      // On a rating tab an unrated district is left in the page tone, where
+      // a water-colored line would vanish; it takes the grey line too.
+      var blankHere = ratingMode() && !fillFor(bd[k].properties, bd[k]);
+      ctx.strokeStyle = ((bd[k].__same && !state.district) || blankHere)
         ? theme().baseline : theme().water;
       ctx.beginPath(); path(bd[k]); ctx.stroke();
     }
@@ -3289,7 +3291,7 @@
     }
     for (i = 0; i < ds.length; i++) {
       var g = ds[i], his = g.properties.state === keep;
-      out.push({ f: g, stroke: T.water, lw: 1.1,
+      out.push({ f: g, stroke: ratingMode() && !fillFor(g.properties, g) ? T.baseline : T.water, lw: 1.1,
                  a0: his ? 1 : (fadeIn ? 0 : 1),
                  a1: his ? 1 : (fadeIn ? 1 : 0) });
     }
