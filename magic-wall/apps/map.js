@@ -6,7 +6,7 @@
  * written.
  */
 import { createView } from "../core/view.js";
-import { loadTopo, loadTopoOffThread, dissolveBy, indexBy } from "../core/geo.js";
+import { loadTopo, dissolveBy, indexBy } from "../core/geo.js";
 import { getJSON } from "../core/fetch.js";
 import { stateProjection, fitProjection } from "../core/projection.js";
 import { innerPoint } from "../core/geom.js";
@@ -216,20 +216,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   // picked and drawn as waiting before its first file: Pennsylvania's 2026
   // chambers, whose API returns nothing until votes exist.
   let pending = new Map();        // race id -> race-shaped object
-  // 2024 presidential results by precinct (The New York Times; see
-  // scripts/build_precincts_nyt.sh), per state, fetched on the way into it.
-  // A precinct is a few pixels at the size of a state, so they replace the
-  // counties only once the map is zoomed in on part of one.
-  // Precincts draw whenever the counties on screen hold at most this many --
-  // a small state at its full view, a big one once zoomed toward a region --
-  // rather than past a fixed zoom: about the most the map holds comfortably
-  // (California's 18,539 at once was ~300 MB of shapes).
-  const PRECINCT_BUDGET = 8000;
-  const precincts = new Map();    // state -> features, or null if the state has none
-  let precinctShown = false;
-  // On by default; the Precincts button turns them off, remembered per screen.
-  let precinctsOn = true;
-  try { precinctsOn = localStorage.getItem("mw.precincts") !== "off"; } catch (_) { /* private window */ }
   // What the House and the legislatures are drawn on: the cartogram (the
   // default), the race's own district lines, or, in House 2026, the 2024
   // lines. Remembered per screen. See shapeChoices.
@@ -262,19 +248,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   canvas.parentNode.insertBefore(pane, canvas);
   pane.appendChild(canvas);
 
-  const precinctBtn = document.createElement("button");
-  precinctBtn.type = "button";
-  precinctBtn.hidden = true;
-  precinctBtn.title = "2024 presidential results by precinct (The New York Times), drawn when zoomed in";
-  precinctBtn.style.cssText = "position:absolute;top:10px;right:10px;z-index:2;font:inherit;font-size:13px;" +
+  // The look of the map's own buttons and menus.
+  const PILL_CSS = "position:absolute;top:10px;right:10px;z-index:2;font:inherit;font-size:13px;" +
     "padding:6px 10px;border-radius:6px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer;";
-  precinctBtn.addEventListener("click", (ev) => {
-    ev.stopPropagation();
-    precinctsOn = !precinctsOn;
-    try { localStorage.setItem("mw.precincts", precinctsOn ? "on" : "off"); } catch (_) { /* private window */ }
-    changed();
-  });
-  pane.appendChild(precinctBtn);
 
   /* The map's own menus, out of Map options so the choice is always in
    * sight (the user's call): Shapes at the top left, Races at the top right
@@ -299,7 +275,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     el.title = title;
     // Shown and hidden by display (syncRadioMenu): an inline display:flex
     // would win over the hidden attribute.
-    el.style.cssText = precinctBtn.style.cssText + "position:static;display:none;flex-wrap:wrap;align-items:center;" +
+    el.style.cssText = PILL_CSS + "position:static;display:none;flex-wrap:wrap;align-items:center;" +
       "gap:4px 10px;cursor:default;box-sizing:border-box;max-width:100%;";
     el.dataset.label = label;
     el.dataset.name = `mw-${label.toLowerCase()}-${++radioGroups}`;
@@ -359,7 +335,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   ratingBtn.type = "button";
   ratingBtn.hidden = true;
   ratingBtn.title = "Rating as filled shapes, or as markers on the races in play only (Lean and Toss-up)";
-  ratingBtn.style.cssText = precinctBtn.style.cssText;
+  ratingBtn.style.cssText = PILL_CSS;
   ratingBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
     ratingStyle = ratingStyle === "chiclet" ? "fill" : "chiclet";
@@ -415,18 +391,18 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }, stripBox);
   binsBtn.style.cssText += "border:0;border-radius:0;background:none;padding:0;font-size:12px;justify-content:center;";
 
-  /* The map's own controls (Precincts, Style) fold into one
+  /* The map's own controls (Style) fold into one
    * button at the top right, the user's ask: four stacked buttons covered
    * the map's corner. A press opens them as a panel over the map, and
    * another press (or Escape) folds them away. Open or folded is remembered
    * per machine. They stay in the map pane rather than the readout, which
    * is rewritten with every hover. */
-  const OPT_BTNS = [precinctBtn, ratingBtn];
+  const OPT_BTNS = [ratingBtn];
   const optsBtn = document.createElement("button");
   optsBtn.type = "button";
   optsBtn.hidden = true;
-  optsBtn.title = "Precincts and rating style for this map";
-  optsBtn.style.cssText = precinctBtn.style.cssText;
+  optsBtn.title = "Rating style for this map";
+  optsBtn.style.cssText = PILL_CSS;
   const optsPanel = document.createElement("div");
   optsPanel.className = "map-options";
   optsPanel.hidden = true;
@@ -460,7 +436,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!spec && bins.on) binsReset();
     const on = bins.on && !bins.out;
     syncRadioMenu(binsBtn, spec ? [["map", "Map"], ["bins", "Bins"]] : [], on ? "bins" : "map");
-    // Shown or hidden here, outside syncPrecinctButton, so the stack is
+    // Shown or hidden here, outside syncButtons, so the stack is
     // redone here too.
     stackButtons();
     syncStrip();
@@ -563,7 +539,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const L = view.getLayers().find((x) => x.id === "data");
       for (const f of (L && L.features) || []) {
         const t = f.properties.tier;
-        if (t !== "state" && t !== "precinct") out.push(cellFor(f));
+        if (t !== "state") out.push(cellFor(f));
       }
     } else {
       for (const f of stateFeatures) if (!focus || f.properties.id === focus) out.push(stateCell(f.properties.id));
@@ -711,24 +687,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     corner.style.maxWidth = `calc(100% - ${optsW + (calledBtn.hidden ? 0 : calledBtn.offsetWidth + 8) + 30}px)`;
   }
 
-  /** The button shows inside a state that has precincts; it says what a
-   *  press will find, and that they wait for a closer zoom. */
-  function syncPrecinctButton() {
-    // Shown before the file is fetched (it waits for a close zoom); hidden
-    // once a state turns out to have none (precincts: false).
-    // The cartogram has no ground under a cell for precincts to sit on.
-    const has = !!(focus && precincts.get(focus) !== false && !cartoOn());
-    precinctBtn.hidden = !has;
+  /** The map's menus and Map options, for what is drawn now. */
+  function syncButtons() {
     syncShapesButton();
     syncBinsButton();
     syncRatingButton();
     syncCalledButton();
     stackButtons();
-    if (!has) return;
-    precinctBtn.textContent = !precinctsOn ? "Precincts: off"
-      : !precinctVariable() ? "Precincts: Margin and Raw lead only"
-      : precinctShown ? "Precincts: on" : "Precincts: on (zoom in)";
-    precinctBtn.setAttribute("aria-pressed", String(precinctsOn));
   }
 
   const view = createView({
@@ -1478,7 +1443,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   /** A cell's rating: Cook's or StateNavigate's label, parsed. Null if unrated. */
   function ratingOf(c) {
-    if (!c || c.kind === "precinct") return null;
+    if (!c) return null;
     const r = ratedRace(c);
     const seat = r && ratedSeat(r.rid, r.unit);
     const label = seat && ratingFor(seat);
@@ -1770,15 +1735,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   /** Tonight's race a shape belongs to, for the Races filter and the flip
-   *  outline: a whole race's own id, a county read by its state's race, a
-   *  precinct by the race in view; null for anything else. */
+   *  outline: a whole race's own id, a county read by its state's race;
+   *  null for anything else. */
   function liveRaceKey(c) {
     let id = null;
     if (c.kind === "state") id = c.noRace ? null : cellRaceId(c);
     else if (c.kind === "district" || c.kind === "piece") id = c.rid;
     else if (c.kind === "unit" && c.race && LEGISLATURE.has(c.race.office)) id = `${c.race.race_id}:${c.id}`;
     else if (c.kind === "unit") id = c.race ? c.race.race_id : null;
-    else if (c.kind === "precinct") id = raceId;
     return id && id.startsWith(`${liveCycle()}-`) ? id : null;
   }
 
@@ -1840,8 +1804,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!callsApply() || chiclets()) return [];
     // A legislature's seats are its districts, which it draws at every zoom.
     const r = raceId && raceOf(raceId);
-    if (LEGISLATURE.has((r || mode()).office)) return precinctShown ? [] : data;
-    if (districtMode()) return precinctShown ? [] : data;
+    if (LEGISLATURE.has((r || mode()).office) || districtMode()) return data;
     return focus ? focusOutline(focus) : natStates();
   }
   let flipHashPat = null;
@@ -1944,92 +1907,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
   const compareDl = (c) => { const r = compareRows(c); return r.length ? dl(r) : ""; };
 
-  /** President 2024 is what is on the map inside this state. */
-  function pres2024() {
-    return raceId ? /^2024-pres-/.test(raceId) : subject() === "pres-2024";
-  }
-
-  /* Precincts load county by county, only the counties on screen
-   * (scripts/build_precinct_tiles.sh: geo/precincts-2024/<ST>/<FIPS>.json and
-   * an index.json of the state's counties). A whole state at once was up to
-   * 300 MB of shapes -- California's 18,539 precincts -- and Chrome flagged the
-   * tab (November 3); zoomed in on one county the map now holds a few hundred.
-   * precincts: state -> Set of its counties with a file, null while the index
-   * loads, false for a state with none. tiles: "ST/FIPS" -> features, null
-   * while loading. Only the open state's are kept (releasePrecincts). */
-  const tiles = new Map();
-  const TILE_SLACK = 6;           // off-screen counties kept beyond those on screen
-
-  function loadPrecincts(st) {
-    if (!st || precincts.has(st) || !bundle) return;
-    precincts.set(st, null);
-    getJSON(`${bundle.base}/geo/precincts-2024/${st}/index.json`, {}, { optional: true })
-      .then((list) => {
-        if (focus !== st) { precincts.delete(st); return; }
-        // index.json: {county: precincts in it}; an older list of counties also reads.
-        const counts = Array.isArray(list) ? list.map((c) => [c, 0]) : Object.entries(list || {});
-        precincts.set(st, counts.length ? new Map(counts) : false);
-        if (counts.length) wantPrecincts(); else syncPrecinctButton();
-      })
-      .catch(() => { precincts.set(st, false); if (focus === st) syncPrecinctButton(); });
-  }
-
-  /* The open state's counties whose box is on screen, with a margin so a pan
-   * finds its neighbors already loaded. Boxes are projected once per
-   * projection and kept. */
-  const countyBox = new WeakMap();
-  function visibleCounties() {
-    const feats = (focus && (countiesByState.get(focus) || [])) || [];
-    const proj = view.projection;
-    const path = d3.geoPath(proj);
-    const t = view.transform;
-    const W = canvas.clientWidth || 800, H = canvas.clientHeight || 600;
-    const mx = 0.15 * W / t.k, my = 0.15 * H / t.k;
-    const v = [-t.x / t.k - mx, -t.y / t.k - my, (W - t.x) / t.k + mx, (H - t.y) / t.k + my];
-    const out = [];
-    for (const f of feats) {
-      let c = countyBox.get(f);
-      if (!c || c.proj !== proj || c.fit !== proj.scale()) {
-        const [[x0, y0], [x1, y1]] = path.bounds(f);
-        c = { proj, fit: proj.scale(), b: [x0, y0, x1, y1] };
-        countyBox.set(f, c);
-      }
-      const b = c.b;
-      if (!(b[2] < v[0] || b[0] > v[2] || b[3] < v[1] || b[1] > v[3])) out.push(String(f.properties.id));
-    }
-    return out;
-  }
-
-  let tileTimer = null;
-  function tilesArrived() {           // several counties land together: one redraw
-    if (tileTimer) return;
-    tileTimer = setTimeout(() => { tileTimer = null; changed(); }, 60);
-  }
-
-  function loadTile(st, fips) {
-    const key = `${st}/${fips}`;
-    if (tiles.has(key)) return;
-    tiles.set(key, null);
-    loadTopoOffThread(`${bundle.base}/geo/precincts-2024/${st}/${fips}.json`)
-      .then((t) => {
-        if (focus !== st) { tiles.delete(key); return; }
-        tiles.set(key, t.precincts || []);
-        tilesArrived();
-      })
-      .catch(() => { tiles.set(key, []); });
-  }
-
-  /** The loaded precincts of the counties on screen, as one feature list
-   *  (the same array while that set does not change). */
-  let tileMemo = { key: "", feats: [] };
-  function precinctFeatures() {
-    if (!focus) return [];
-    const have = visibleCounties().map((c) => `${focus}/${c}`).filter((k) => tiles.get(k));
-    const key = have.join(",");
-    if (key !== tileMemo.key) tileMemo = { key, feats: have.flatMap((k) => tiles.get(k)) };
-    return tileMemo.feats;
-  }
-
   /* The full-detail counties and districts (15 MB) on the first drill into
    * a state, not at startup: a viewer who stays national never needs them.
    * Until they land the state draws from the national file. */
@@ -2059,69 +1936,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     });
   }
 
-  /* Only the open state's precincts are kept. Loaded, a big state's are
-   * ~50 MB of shapes (California's 18,539), and five states visited in a row
-   * held 240 MB until the page was reloaded (November 3), which Chrome
-   * flagged as a tab using too much memory. Leaving a state lets them go; going
-   * back fetches them again (cached by the browser, parsed off-thread).
-   * A state found to have none (false) stays remembered. */
-  function releasePrecincts(keep = null) {
-    for (const [st, v] of [...precincts]) if (st !== keep && v !== false) precincts.delete(st);
-    for (const k of [...tiles.keys()]) if (!k.startsWith(`${keep}/`)) tiles.delete(k);
-    tileMemo = { key: "", feats: [] };
-  }
-
-  /** The counties with precincts on screen, and whether they fit the budget. */
-  function onScreenPrecincts() {
-    const have = focus && precincts.get(focus);
-    if (!have) return { vis: [], fits: false };
-    const vis = visibleCounties().filter((c) => have.has(c));
-    const n = vis.reduce((a, c) => a + (have.get(c) || 0), 0);
-    return { vis, fits: vis.length > 0 && n <= PRECINCT_BUDGET };
-  }
-
-  function wantPrecincts() {
-    if (!(focus && precinctsOn && precinctVariable() && !cartoOn())) return;
-    const have = precincts.get(focus);
-    if (have === undefined) { loadPrecincts(focus); return; }
-    if (!have) return;
-    const { vis, fits } = onScreenPrecincts();
-    if (fits) for (const c of vis) loadTile(focus, c);
-    // Counties off screen are let go, oldest first, past a little slack.
-    const keep = new Set(fits ? vis.map((c) => `${focus}/${c}`) : []);
-    for (const k of tiles.keys()) {
-      if (tiles.size <= keep.size + TILE_SLACK) break;
-      if (!keep.has(k) && tiles.get(k) !== null) tiles.delete(k);
-    }
-  }
-
-  /* Zoomed in on part of a state, under any race: the 2024 presidential
-   * vote by precinct, with the race's own districts or counties outlined on
-   * top -- how a district voted for president, block by block. */
-  function precinctView() {
-    if (cartoOn() || piecesHere()) return false;
-    return !!(focus && precinctsOn && precinctVariable() && precincts.get(focus) &&
-              onScreenPrecincts().fits && precinctFeatures().length);
-  }
-
-  /* A precinct carries one thing, the 2024 presidential vote: a margin and a
-   * lead, no rating, reporting, swing or turnout. Under those the precincts
-   * step aside and the race's own units keep their color, rather than a
-   * state of "no data" grey drawn over them. */
-  function precinctVariable() {
-    return variable === "margin" || variable === "lead";
-  }
-
-  function precinctCell(f) {
-    const p = f.properties;
-    const votes = { dem: p.dem || 0, rep: p.rep || 0, other: Math.max(0, (p.total || 0) - (p.dem || 0) - (p.rep || 0)) };
-    return { kind: "precinct", id: p.id, subj: "pres-2024", votes, totals: store.partyTotals(votes, null),
-             official: p.official };
-  }
-
   /** The cell a drawn shape is colored and read out from. */
   function cellFor(f, atState = stateLevel()) {
-    if (f.properties.tier === "precinct") return precinctCell(f);
     if (f.properties.tier === "cdpiece") return pieceCell(f) || districtCell(f.properties.cd);
     if (atState) {
       return f.properties.tier === "state" ? stateCell(f.properties.id)
@@ -2173,10 +1989,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * drawn as its county pieces, each by its own count, under the district's
    * outline. Inside a state in House 2026 on Margin, Raw lead or Reporting,
    * once zoomed past PIECE_K -- a tap on a district zooms well past it --
-   * so the whole state still reads district by district. There the pieces
-   * win over Precincts, the user's call (November 6): tonight's count by
-   * county over 2024's presidential precincts; precincts still show in a
-   * state with no pieces, and at the whole-state view. The pieces are on
+   * so the whole state still reads district by district. They replaced
+   * the 2024 presidential precincts, which the map no longer draws (the
+   * user's call, November 6). The pieces are on
    * the lines the state is drawn on, one file per state, fetched on the way
    * in and let go on leaving it. */
   const PIECE_K = 1.5;
@@ -2221,7 +2036,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   /** The pieces to draw over these districts: those with a count of their own. */
   function pieceFeatures(districts) {
-    const all = !precinctShown && piecesHere();
+    const all = piecesHere();
     if (!all) return [];
     const drawn = new Set(districts.map((f) => f.properties.id));
     return all.filter((f) => drawn.has(f.properties.cd) && pieceCell(f));
@@ -2446,12 +2261,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   function layers() {
     const T = theme();
     const atState = stateLevel();
-    precinctShown = precinctView();
-    const data = precinctShown ? precinctFeatures()
-      : focus ? unitsIn(focus) : atState ? statewideUnits() : nationalUnits();
+    const data = focus ? unitsIn(focus) : atState ? statewideUnits() : nationalUnits();
     const fill = atState ? nationalFill : fillFor;
     const quietEdge = d3.interpolateRgb(T.paper, T.ink)(0.4);
-    const precinctEdge = (() => { const c = d3.color(T.water); c.opacity = 0.35; return c.formatRgb(); })();
     // Inside a state, only that state. The country's outline and its
     // neighbours still project under the state's CRS -- they just land
     // somewhere arbitrary, and drew as stray lines across the frame.
@@ -2496,26 +2308,16 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
           // Chiclets at national zoom: state lines only, or 435 district
           // hairlines bury them (and the markers).
           if (chiclets() && !focus) return null;
-          // Precinct edges are texture, faint, so the district lines over
-          // them read as the structure.
-          if (precinctShown) return precinctEdge;
           const c = fill(f);
           const line = typeof c !== "string" ? T.baseedge : c === T.basefill ? quietEdge : T.water;
           // Before a state's polls close, its district and county lines are
           // faint: the map reads as the states that can report.
           return beforeClose(f) ? faded(line) : line;
         },
-        lineWidth: precinctShown ? 0.3 : focus ? (districtMode() ? 1 : 0.5) : cd ? 0.4 : 0.3 },
-      // Over precincts, the race's own units as lines: a district's edge is
-      // what the precincts are read against. A paper-colored casing under an
-      // ink line keeps it visible on any fill.
+        lineWidth: focus ? (districtMode() ? 1 : 0.5) : cd ? 0.4 : 0.3 },
       // Over the county pieces, the districts they make up.
       { id: "piece-districts", features: piecesShown ? shownCds : [], stroke: () => T.ink, lineWidth: 1.6 },
       { id: "old-lines", features: oldLines(), stroke: () => T.ink, lineWidth: focus ? 1 : 0.5 },
-      { id: "unit-casing", features: precinctShown ? unitsIn(focus) : [],
-        stroke: () => T.paper, lineWidth: 4 },
-      { id: "unit-lines", features: precinctShown ? unitsIn(focus) : [],
-        stroke: () => T.ink, lineWidth: 2 },
       // On the cartogram the states are islands of hatched cells, and a
       // hairline in the base color vanished into them: the user asked for
       // state boundaries there, so they draw in ink, well over the 0.4 px
@@ -2760,7 +2562,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * one's rather than fighting it for the same element. */
   function readoutHTML(f) {
     const m = mode();
-    if (f && f.properties.tier === "precinct") return precinctHTML(f);
     if (districtMode()) return districtReadoutHTML(f);
     if (!f) {
       if (focus) {
@@ -2807,7 +2608,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     if (!focus && p.tier === "state") return nationalStateHTML(p.id);
 
-    if (p.tier === "precinct") return precinctHTML(f);
     const c = unitCell(p.id);
     const title = `${esc(p.name)}${p.state ? `, ${p.state}` : ""}`;
     let html = `<h2>${title}</h2><p class="hint" style="margin:-6px 0 10px">${esc(raceLabel(c.subj))}</p>`;
@@ -2846,20 +2646,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       }
     }
     return html;
-  }
-
-  /** A precinct, credited to the Times as its data agreement requires. */
-  function precinctHTML(f) {
-    const p = f.properties;
-    const c = precinctCell(f);
-    const county = unitIndex.get(p.county);
-    const where = county ? `${county.properties.name} County, ${p.state}` : p.state;
-    const name = /^\d+$/.test(p.name) ? `Precinct ${p.name}` : p.name;
-    const note = pres2024() ? "" : `<p class="hint" style="margin:-4px 0 10px">Precinct colors are the 2024 presidential vote, not ${esc(districtMode() ? mode().label : raceLabel(subject()))}.</p>`;
-    return `<h2>${esc(name)}</h2><p class="hint" style="margin:-6px 0 10px">${esc(where)} · 2024 presidential</p>` + note +
-      candidateTable(c.votes, null, BASELINE_NAMES["pres-2024"]) +
-      dl([...cellRows(c), ["Boundary", p.official ? "official" : "estimated from the voter file"],
-          ["Source", "The New York Times"]]);
   }
 
   /** A state at national zoom over counties or districts: its total for
@@ -3013,7 +2799,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const pairs = [];
       for (const dt of dl.querySelectorAll("dt")) {
         const dd = dt.nextElementSibling;
-        // The Times's precincts are credited wherever they are shown.
+        // The Times is credited wherever its data shows.
         if (pairs.length < 2 || /New York Times/.test(dd ? dd.textContent : "")) pairs.push([dt.innerHTML, dd ? dd.innerHTML : ""]);
       }
       out += `<div style="display:grid;grid-template-columns:auto 1fr;gap:1px 10px;font-size:12px;margin:4px 0 2px;border-top:1px solid var(--rule);padding-top:4px">` +
@@ -3314,9 +3100,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         refit();
         autoBaseline();
         wantDetail();
-        releasePrecincts(st);
-        wantPrecincts();               // a small state fits the budget at its full view
-        syncPrecinctButton();
+        syncButtons();
         view.setLayers(layers());
         showReadout(null);
         if (onState) onState(api.status());
@@ -3348,10 +3132,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         hovered = null;
         pinned = null;
         pressed = null;
-        releasePrecincts();
         refit();
         autoBaseline();
-        syncPrecinctButton();
+        syncButtons();
         view.setLayers(layers());
         showReadout(null);
         if (onState) onState(api.status());
@@ -3491,10 +3274,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (flipShapes(legendData()).some((f) => flipOf(cellFor(f)))) {
         keys.push(["Flip (called)", "flip"]);
       }
-    }
-    // The Times's data agreement asks for credit wherever its data shows.
-    if (precinctShown) {
-      keys.push([`${pres2024() ? "Precincts" : "Precincts: 2024 president"} · The New York Times`, "text"]);
     }
     if (cartoOn()) keys.push(["Cartogram: every district the same size", "text"]);
     if (piecesShown) keys.push(["Districts split by county: AP's count for each piece", "text"]);
@@ -4325,7 +4104,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       stateLabelBoxes = labels;
       // A state with no contest in a statewide mode has no label (above).
       drawLabels(ctx, labels, dpr, FONT(600, 12), T.ink, T.paper);
-    } else if (!precinctShown && (mode().office === "house" || LEGISLATURE.has(mode().office))) {
+    } else if (mode().office === "house" || LEGISLATURE.has(mode().office)) {
       // Inside a state each district carries its number, the user's call:
       // the House and the legislatures, on their lines or on the cartogram.
       const items = [];
@@ -4434,7 +4213,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (districtMode() || leg) {
       for (const f of feats) {
         const t = f.properties.tier;
-        if (t === "state" || t === "precinct") continue;
+        if (t === "state") continue;
         add(f, cellFor(f), focus ? num(f.properties.id) : "");
       }
     } else {
@@ -4510,7 +4289,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   /** A district with no election this year is drawn, but not a target: no
    *  outline, no readout of its own, no click. */
   function inert(f) {
-    if (!focus || !f || f.properties.tier === "precinct") return false;
+    if (!focus || !f) return false;
     const r = raceOf(raceId);
     return !!(r && LEGISLATURE.has(r.office) && unitCell(f.properties.id).notUp);
   }
@@ -4638,16 +4417,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   view.on("zoom", (t) => {
     // The county hairlines appear only once zoomed enough to tell them apart,
     // so the layer list changes with the transform.
-    const was = precinctShown;
     const wasPieces = piecesShown;
     const wasWhole = natWhole;
     natWhole = !focus && stateLevel() && view.transform.k < STATE_UNITS_K;
-    wantPrecincts();
     view.setLayers(layers());
-    // Counties give way to precincts (and back) at PRECINCT_BUDGET, and a
-    // statewide map's whole states to their counties at STATE_UNITS_K.
-    if (was !== precinctShown || wasWhole !== natWhole || wasPieces !== piecesShown) view.render();
-    syncPrecinctButton();
+    // Districts give way to their county pieces (and back) at PIECE_K, and
+    // a statewide map's whole states to their counties at STATE_UNITS_K.
+    if (wasWhole !== natWhole || wasPieces !== piecesShown) view.render();
+    syncButtons();
     // Pan and zoom are shared: the panels are one map shown twice. Both are
     // fitted to the same features in panes of the same size, so a transform
     // means the same place in both.
@@ -4698,12 +4475,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     kindsMemo = null;
     cds2026 = null;
     autoBaseline();
-    wantPrecincts();
     if (!reproject()) {
       view.setLayers(layers());
       view.render();
     }
-    syncPrecinctButton();              // after layers(): it reads whether precincts are drawn
+    syncButtons();
     binsUpdate();
     syncStrip();
     showReadout(hovered || pinned);
