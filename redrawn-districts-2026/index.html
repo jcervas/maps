@@ -659,7 +659,7 @@ breadcrumb_width: none
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-06e";
+  var BUILD = "2026-11-06f";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -1689,14 +1689,12 @@ breadcrumb_width: none
 
   function layoutStateLabels(live) {
     var ds = state.districts["2026"] || [];
-    // Only the redrawn states are named. The map draws all 435 districts so
-    // that the nine can be read against the House they sit in, but fifty
-    // abbreviations scattered over the country buries the nine it is about.
-    var want = redrawnStates();
+    // Every state is named. The nine the map is about stay in full ink; under
+    // "Redrawn" the rest are set lighter, as backdrop, so fifty abbreviations
+    // do not bury the nine.
     var byState = {};
     for (var i = 0; i < ds.length; i++) {
       var st = ds[i].properties.state;
-      if (!want[st]) continue;
       (byState[st] = byState[st] || []).push(ds[i]);
     }
     ctx.font = LABEL_FONT;
@@ -1708,7 +1706,7 @@ breadcrumb_width: none
       if (!isFinite(c[0])) return;
       var text = STATE_ABBR[st] || st;
       labels.push({
-        st: st, text: text, pn: pn,
+        st: st, text: text, pn: pn, dim: !stateInScope(st),
         x: pn.t.applyX(c[0]), y: pn.t.applyY(c[1]),
         hw: ctx.measureText(text).width / 2 + 3, hh: 8
       });
@@ -1780,7 +1778,9 @@ breadcrumb_width: none
       ctx.strokeStyle = T.paper;
       ctx.strokeText(L.text, L.x, L.y);
       ctx.fillStyle = T.ink;
+      ctx.globalAlpha = L.dim ? 0.45 : 1;
       ctx.fillText(L.text, L.x, L.y);
+      ctx.globalAlpha = 1;
     }
     ctx.restore();
   }
@@ -2370,17 +2370,13 @@ breadcrumb_width: none
     // did not touch -- needs the opposite: a line that shows against the page,
     // the same grey the state borders use.
     //
-    // Those unfilled districts hold their line back by default: the map is
-    // about the redraw, and an outline around a district the redraw skipped
-    // puts it back into the comparison it is meant to sit outside of. The
-    // lines control draws the full set when you want the whole map. Over
-    // precincts they stay, since there the district line is the only thing
-    // saying where one district ends.
+    // Those districts keep their grey line under "Redrawn" too, unfilled:
+    // the lines say where the rest of the House sits without putting it back
+    // into the comparison, which the fill would.
     var bd = backdrop();
     ctx.lineWidth = (showingPrecincts ? 1.6 : 1.1) / transform.k;
     for (var k = 0; k < bd.length; k++) {
       if (!inPanel(pn, bd[k])) continue;
-      if (bd[k].__same && greyUnredrawn() && !showingPrecincts) continue;
       // On a rating tab an unrated district is left in the page tone, where
       // a water-colored line would vanish; it takes the grey line too.
       var blankHere = ratingMode() && !fillFor(bd[k].properties, bd[k]);
