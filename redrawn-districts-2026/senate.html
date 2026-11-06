@@ -594,7 +594,7 @@ permalink: /redrawn-districts-2026/senate.html
 <script>
 (function () {
   "use strict";
-  var BUILD = "2026-11-06c";
+  var BUILD = "2026-11-06d";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   document.getElementById("build").textContent = "build " + BUILD;
 
@@ -1439,6 +1439,20 @@ permalink: /redrawn-districts-2026/senate.html
   });
   document.getElementById("kSquares").addEventListener("click", function () { setSquares(true); });
   document.getElementById("kFill").addEventListener("click", function () { setSquares(false); });
+
+  // Esc steps back, as it does on the House view. There is no zoom here, so
+  // what it undoes is a pick: a legend filter first, then the state the
+  // panel is holding. Not while a form control has focus.
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || e.defaultPrevented) return;
+    var t = e.target && e.target.tagName;
+    if (t === "SELECT" || t === "INPUT" || t === "TEXTAREA") return;
+    if (state.rating) { e.preventDefault(); setRating(state.rating); return; }
+    if (state.hover) {
+      e.preventDefault();
+      state.hover = null; showReadout(null); placeReadout(null); render();
+    }
+  });
 
   var resizeTimer = null;
   window.addEventListener("resize", function () {
