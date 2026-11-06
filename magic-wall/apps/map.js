@@ -2393,7 +2393,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       : focus ? unitsIn(focus) : atState ? statewideUnits() : nationalUnits();
     const fill = atState ? nationalFill : fillFor;
     const quietEdge = d3.interpolateRgb(T.paper, T.ink)(0.4);
-    const soloEdge = d3.interpolateRgb(T.paper, T.ink)(0.6);
     const precinctEdge = (() => { const c = d3.color(T.water); c.opacity = 0.35; return c.formatRgb(); })();
     // Inside a state, only that state. The country's outline and its
     // neighbours still project under the state's CRS -- they just land
@@ -2411,8 +2410,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     let pieces = focus && districtMode() ? pieceFeatures(data) : [];
     // Zoomed to one district (tapped, so pinned), the user's ask (November
     // 6): that district alone, its county pieces filled; no other district
-    // drawn at all, and the counties around it as outlines only, for where
-    // it is. Zoomed in without a district picked, every district's pieces.
+    // drawn at all, and no county lines but those between its own pieces
+    // (the user's follow-up: "only show the county inner lines to the
+    // district"). Zoomed in without a district picked, every district's pieces.
     const pick = pinned && (pinned.properties.tier === "cd" ? pinned.properties.id
       : pinned.properties.tier === "cdpiece" ? pinned.properties.cd : null);
     soloCd = pick && pieces.some((f) => f.properties.cd === pick) ? pick : null;
@@ -2452,8 +2452,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // what the precincts are read against. A paper-colored casing under an
       // ink line keeps it visible on any fill.
       // Over the county pieces, the districts they make up.
-      { id: "solo-counties", features: soloCd ? (fine && fine.counties.get(focus)) || countiesByState.get(focus) || [] : [],
-        stroke: () => soloEdge, lineWidth: 0.9 },
       { id: "piece-districts", features: piecesShown ? shownCds : [], stroke: () => T.ink, lineWidth: 1.6 },
       { id: "old-lines", features: oldLines(), stroke: () => T.ink, lineWidth: focus ? 1 : 0.5 },
       { id: "unit-casing", features: precinctShown ? unitsIn(focus) : [],
