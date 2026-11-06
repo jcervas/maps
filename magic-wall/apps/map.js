@@ -1035,6 +1035,22 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return cell;
   }
 
+  /* A district's county piece (geo/detail/cd-pieces, scripts/build_cd_pieces.py):
+   * AP counts a House race by the part of each county inside the district,
+   * a unit of the district's own file keyed by county FIPS. Null where the
+   * file has no such unit (a feed by district total only, Illinois's). */
+  function pieceCell(f) {
+    const p = f.properties;
+    const rid = houseRaceId(p.cd);
+    const data = store.results(rid);
+    const unit = data && (data.units || []).find((u) => u.id === p.fips);
+    if (!unit) return null;
+    const race = store.race(rid);
+    return { kind: "piece", id: p.id, cd: p.cd, st: p.state, rid, race, data, subj: rid, unit,
+             votes: unit.votes, totals: store.partyTotals(unit.votes, race),
+             reporting: store.reportingPct(unit, data), basis: store.reportingBasis(unit, data) };
+  }
+
   /* The seat count the switcher and the national readout give, by district:
    * reporting, staged (a file of zeros), waiting, no live feed. */
   function districtCounts() {
@@ -1229,6 +1245,29 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const rows = awaiting(c) ? [["Status", "Awaiting votes"], ...compareRows(c), ...ratingRows(c)] : cellRows(c);
     html += dl([...rows, ...sourceRows(c)]);
     return html;
+  }
+
+  /** A district's county piece: its own count, and the district's beside it. */
+  function pieceReadout(f) {
+    const p = f.properties;
+    const c = pieceCell(f);
+    if (!c) return districtReadout(p.cd);
+    const d = p.cd.slice(3);
+    const where = `${stateName(p.state)} ${d === "AL" ? "at-large" : `District ${Number(d)}`}`;
+    const dc = districtCell(p.cd);
+    const rows = [["Total votes", fmt(store.totalVotes(c.totals))]];
+    if (store.totalVotes(c.totals) > 0) {
+      rows.push(["Margin", marginLabel(cellValue(c, "margin"), topOf(c))],
+                ["Raw lead", leadLabel(cellValue(c, "lead"), topOf(c))]);
+    }
+    if (c.reporting != null) {
+      rows.push([c.basis === "expected vote" ? "Expected vote in" : "Precincts reporting", `${d3.format(".1f")(c.reporting)}%`]);
+    }
+    const dm = cellValue(dc, "margin");
+    if (dm != null) rows.push([`${d === "AL" ? "Statewide" : `District ${Number(d)}`}`, `${marginLabel(dm, topOf(dc))}`]);
+    return `<h2>${esc(c.unit.name || p.name)}</h2>` +
+      `<p class="hint" style="margin:-6px 0 10px">${esc(where)} · the county's part of the district</p>` +
+      candidateTable(c.votes, c.race) + dl([...rows, ...sourceRows(c)]);
   }
 
   /** A baseline's state total, for the readout under a county at national zoom. */
@@ -1631,7 +1670,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // Hidden first: under Flips only, a called seat that stays put is land too.
     if (raceHidden(c)) return d3.interpolateRgb(T.paper, T.ink)(0.14);
     const call = callOf(c);
-    if (call) return wonColor(call.party, atState);
+    // A county piece keeps its own margin; its district's call only lifts
+    // it from muted to full strength, as the district is.
+    if (call && c.kind !== "piece") return wonColor(call.party, atState);
     if (c.noFeed || c.certOnly) return T.nodata;
     if (c.noLive) return lightGrey();
     if (c.waiting) return dotFill();
@@ -1653,7 +1694,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!S || !S.call) return undefined;
     let id = null;
     if (c.kind === "state") id = c.noRace ? null : cellRaceId(c);
-    else if (c.kind === "district") id = c.rid;
+    else if (c.kind === "district" || c.kind === "piece") id = c.rid;
     else if (c.kind === "unit" && c.race && LEGISLATURE.has(c.race.office)) id = `${c.race.race_id}:${c.id}`;
     if (!id || !id.startsWith(`${FIXED_MODES.find((m) => m.districts).cycle}-`)) return undefined;
     return S.call(id) || null;
@@ -1676,7 +1717,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   function liveRaceKey(c) {
     let id = null;
     if (c.kind === "state") id = c.noRace ? null : cellRaceId(c);
-    else if (c.kind === "district") id = c.rid;
+    else if (c.kind === "district" || c.kind === "piece") id = c.rid;
     else if (c.kind === "unit" && c.race && LEGISLATURE.has(c.race.office)) id = `${c.race.race_id}:${c.id}`;
     else if (c.kind === "unit") id = c.race ? c.race.race_id : null;
     else if (c.kind === "precinct") id = raceId;
@@ -2000,7 +2041,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * vote by precinct, with the race's own districts or counties outlined on
    * top -- how a district voted for president, block by block. */
   function precinctView() {
-    if (cartoOn()) return false;
+    if (cartoOn() || piecesHere()) return false;
     return !!(focus && precinctsOn && precinctVariable() && precincts.get(focus) &&
               onScreenPrecincts().fits && precinctFeatures().length);
   }
@@ -2023,6 +2064,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   /** The cell a drawn shape is colored and read out from. */
   function cellFor(f, atState = stateLevel()) {
     if (f.properties.tier === "precinct") return precinctCell(f);
+    if (f.properties.tier === "cdpiece") return pieceCell(f) || districtCell(f.properties.cd);
     if (atState) {
       return f.properties.tier === "state" ? stateCell(f.properties.id)
         : unitCell(f.properties.id, natRaceOf.get(f.properties.state));
@@ -2067,6 +2109,63 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!race && store.baselineTier(drawKey()) === "cd" && cdsByState.has(st)) return "cd";
     // (House 2026 names house-2024 as its drawKey, so it lands here too.)
     return "county";
+  }
+
+  /* Zoomed in on a district, the user's ask (November 6): each district
+   * drawn as its county pieces, each by its own count, under the district's
+   * outline. Inside a state in House 2026 on Margin, Raw lead or Reporting,
+   * once zoomed past PIECE_K -- a tap on a district zooms well past it --
+   * so the whole state still reads district by district. There the pieces
+   * win over Precincts, the user's call (November 6): tonight's count by
+   * county over 2024's presidential precincts; precincts still show in a
+   * state with no pieces, and at the whole-state view. The pieces are on
+   * the lines the state is drawn on, one file per state, fetched on the way
+   * in and let go on leaving it. */
+  const PIECE_K = 1.5;
+  const cdPieces = new Map();       // "2024/PA" -> features; null while loading, false if none
+  let piecesShown = false;
+  const piecesLines = (st) => (newLines(st) ? "2026" : "2024");
+  function piecesWanted() {
+    return !!focus && districtMode() && mode().cycle === liveCycle() && !cartoOn() &&
+      (variable === "margin" || variable === "lead" || variable === "reporting") &&
+      !(redrawn.has(focus) && !newLines(focus));
+  }
+  function loadPieces(st) {
+    const key = `${piecesLines(st)}/${st}`;
+    if (cdPieces.has(key) || !bundle) return;
+    for (const k of [...cdPieces.keys()]) if (!k.endsWith(`/${st}`)) cdPieces.delete(k);
+    cdPieces.set(key, null);
+    loadTopo(`${bundle.base}/geo/detail/cd-pieces/${key}.topojson`)
+      .then((t) => { cdPieces.set(key, (t.pieces || []).map(rewound)); if (focus === st) refresh(); })
+      .catch(() => cdPieces.set(key, false));
+  }
+  /* A polygon wound the wrong way is, to d3, the whole globe outside it:
+   * one piece (Walker County's part of TX-08, after quantization) filled
+   * the screen. Turned the right way round, part by part. */
+  function rewound(f) {
+    const g = f.geometry;
+    if (!g || d3.geoArea(f) <= 2 * Math.PI && g.type === "Polygon") return f;
+    const fix = (poly) => (d3.geoArea({ type: "Polygon", coordinates: poly }) > 2 * Math.PI
+      ? poly.map((ring) => ring.slice().reverse()) : poly);
+    const coordinates = g.type === "Polygon" ? fix(g.coordinates)
+      : g.type === "MultiPolygon" ? g.coordinates.map(fix) : g.coordinates;
+    return { ...f, geometry: { ...g, coordinates } };
+  }
+
+  /** This state's pieces, when they are what the zoom shows; null otherwise. */
+  function piecesHere() {
+    if (!piecesWanted()) return null;
+    loadPieces(focus);
+    const all = view.transform.k >= PIECE_K && cdPieces.get(`${piecesLines(focus)}/${focus}`);
+    return all && all.some((f) => pieceCell(f)) ? all : null;
+  }
+
+  /** The pieces to draw over these districts: those with a count of their own. */
+  function pieceFeatures(districts) {
+    const all = !precinctShown && piecesHere();
+    if (!all) return [];
+    const drawn = new Set(districts.map((f) => f.properties.id));
+    return all.filter((f) => drawn.has(f.properties.cd) && pieceCell(f));
   }
 
   const TIER_MAPS = () => ({ town: townsByState, district: districtsByState, "senate-district": senatesByState,
@@ -2305,10 +2404,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const cd = !focus && (data === geo.cds || data === cds2026 || cartoNational());
     const flips = flipShapes(data);
     lastData = data;
+    // Pieces after their districts in one layer: drawn and picked over them,
+    // and a sliver the pieces leave shows (and picks) the district.
+    const pieces = focus && districtMode() ? pieceFeatures(data) : [];
+    piecesShown = pieces.length > 0;
     return [
       // The country's fill goes behind the data; its borders go over it.
       { id: "nation-fill", features: rest, fill: () => T.basefill },
-      { id: "data", features: data, fill, blank: T.nodata, pick: true,
+      { id: "data", features: piecesShown ? [...data, ...pieces] : data, fill, blank: T.nodata, pick: true,
         // Inside a state the unit boundary is structure and always draws;
         // at national zoom 3,143 hairlines are noise until zoomed in. 435
         // districts are not, and a district map without its lines is a
@@ -2337,6 +2440,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // Over precincts, the race's own units as lines: a district's edge is
       // what the precincts are read against. A paper-colored casing under an
       // ink line keeps it visible on any fill.
+      // Over the county pieces, the districts they make up.
+      { id: "piece-districts", features: piecesShown ? data : [], stroke: () => T.ink, lineWidth: 1.6 },
       { id: "old-lines", features: oldLines(), stroke: () => T.ink, lineWidth: focus ? 1 : 0.5 },
       { id: "unit-casing", features: precinctShown ? unitsIn(focus) : [],
         stroke: () => T.paper, lineWidth: 4 },
@@ -2346,7 +2451,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // hairline in the base color vanished into them: the user asked for
       // state boundaries there, so they draw in ink, well over the 0.4 px
       // district lines.
-      { id: "flip-hash", features: flips, fill: (f) => (flipOf(cellFor(f)) ? flipHash() : null) },
+      // Not over county pieces: the stripes would hide their colors, and the
+      // readout still says flip.
+      { id: "flip-hash", features: piecesShown ? [] : flips, fill: (f) => (flipOf(cellFor(f)) ? flipHash() : null) },
       { id: "state-lines", features: outlines,
         // A theme may fix the state-line color (--stateline: white in dark
         // and Studio, the user's call, November 3, 2026); otherwise it
@@ -2508,7 +2615,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       rows.push(["Source", esc(store.baselineLabel(c.subj))]);
     }
     if (fromFallback(data) && data.override !== "race") {
-      rows.push(["Source", `${FALLBACKS[data.source.provider]} (fallback)`]);
+      // AP is the primary source since the user's rule of November 6; the
+      // Times is still the fallback.
+      const prov = data.source.provider;
+      rows.push(["Source", prov === "ap" ? FALLBACKS.ap : `${FALLBACKS[prov]} (fallback)`]);
     }
     if (c.unit && c.unit.override && data && data.override_source) {
       rows.push(["Override", `this ${tierWord(tierOf(focus))}: ${esc(data.override_source.source)}`]);
@@ -2707,6 +2817,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     const st = focus || (f && f.properties.tier === "state" ? f.properties.id : null);
     if (f && f.properties.tier === "cd") return districtReadout(f.properties.id);
+    if (f && f.properties.tier === "cdpiece") return pieceReadout(f);
     if (!st) return "";
     return `<h2>${esc(stateName(st))}</h2><p class="hint" style="margin:-6px 0 10px">${esc(m.label)} — by district</p>` +
       (redrawn.has(st) ? (newLines(st)
@@ -3315,6 +3426,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       keys.push([`${pres2024() ? "Precincts" : "Precincts: 2024 president"} · The New York Times`, "text"]);
     }
     if (cartoOn()) keys.push(["Cartogram: every district the same size", "text"]);
+    if (piecesShown) keys.push(["Districts split by county: AP's count for each piece", "text"]);
     const classes = P
       ? { colors: [...P.rep].reverse().concat([P.tie], P.dem), labels: breaks.map(fmt) } : null;
     return { title, stops: note ? null : stops, classes, ends, keys };
@@ -4445,13 +4557,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // The county hairlines appear only once zoomed enough to tell them apart,
     // so the layer list changes with the transform.
     const was = precinctShown;
+    const wasPieces = piecesShown;
     const wasWhole = natWhole;
     natWhole = !focus && stateLevel() && view.transform.k < STATE_UNITS_K;
     wantPrecincts();
     view.setLayers(layers());
     // Counties give way to precincts (and back) at PRECINCT_BUDGET, and a
     // statewide map's whole states to their counties at STATE_UNITS_K.
-    if (was !== precinctShown || wasWhole !== natWhole) view.render();
+    if (was !== precinctShown || wasWhole !== natWhole || wasPieces !== piecesShown) view.render();
     syncPrecinctButton();
     // Pan and zoom are shared: the panels are one map shown twice. Both are
     // fitted to the same features in panes of the same size, so a transform

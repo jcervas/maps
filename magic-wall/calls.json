@@ -1,1744 +1,3010 @@
 {
  "calls": {
+  "2026-gov-al": {
+   "party": "rep",
+   "winner": "Thomas Tuberville",
+   "by": "AP",
+   "at": "2026-11-04T06:36:23.346Z"
+  },
+  "2026-gov-ar": {
+   "party": "rep",
+   "winner": "Sarah Huckabee Sanders",
+   "by": "AP",
+   "at": "2026-11-04T03:40:20.136Z"
+  },
+  "2026-gov-az": {
+   "party": "dem",
+   "winner": "Katie Hobbs",
+   "by": "AP",
+   "at": "2026-11-04T08:20:43.985Z"
+  },
+  "2026-gov-ca": {
+   "party": "dem",
+   "winner": "Xavier Becerra",
+   "by": "AP",
+   "at": "2026-11-04T04:00:05.615Z"
+  },
+  "2026-gov-co": {
+   "party": "dem",
+   "winner": "Phil Weiser",
+   "by": "AP",
+   "at": "2026-11-04T02:00:32.286Z"
+  },
+  "2026-gov-ct": {
+   "party": "dem",
+   "winner": "Ned Lamont",
+   "by": "AP",
+   "at": "2026-11-04T02:17:10.065Z"
+  },
+  "2026-gov-fl": {
+   "party": "rep",
+   "winner": "Byron Donalds",
+   "by": "AP",
+   "at": "2026-11-04T02:09:14.952Z"
+  },
+  "2026-gov-ga": {
+   "party": "dem",
+   "winner": "Keisha Bottoms",
+   "by": "AP",
+   "at": "2026-11-04T02:24:08.323Z"
+  },
+  "2026-gov-hi": {
+   "party": "dem",
+   "winner": "Josh Green",
+   "by": "AP",
+   "at": "2026-11-04T05:00:11.283Z"
+  },
+  "2026-gov-ia": {
+   "party": "dem",
+   "winner": "Rob Sand",
+   "by": "AP",
+   "at": "2026-11-04T04:12:21.264Z"
+  },
+  "2026-gov-id": {
+   "party": "rep",
+   "winner": "Brad Little",
+   "by": "AP",
+   "at": "2026-11-04T05:36:13.223Z"
+  },
+  "2026-gov-il": {
+   "party": "dem",
+   "winner": "JB Pritzker",
+   "by": "AP",
+   "at": "2026-11-04T01:00:40.195Z"
+  },
+  "2026-gov-ma": {
+   "party": "dem",
+   "winner": "Maura Healey",
+   "by": "AP",
+   "at": "2026-11-04T01:01:28.205Z"
+  },
+  "2026-gov-md": {
+   "party": "dem",
+   "winner": "Wes Moore",
+   "by": "AP",
+   "at": "2026-11-04T01:01:47.008Z"
+  },
+  "2026-gov-me": {
+   "party": "dem",
+   "winner": "Hannah Pingree",
+   "by": "AP",
+   "at": "2026-11-04T04:29:21.708Z"
+  },
+  "2026-gov-mi": {
+   "party": "dem",
+   "winner": "Jocelyn Benson",
+   "by": "AP",
+   "at": "2026-11-04T06:45:21.077Z"
+  },
+  "2026-gov-mn": {
+   "party": "dem",
+   "winner": "Amy Klobuchar",
+   "by": "AP",
+   "at": "2026-11-04T05:07:26.279Z"
+  },
+  "2026-gov-ne": {
+   "party": "rep",
+   "winner": "Jim Pillen",
+   "by": "AP",
+   "at": "2026-11-04T07:53:54.147Z"
+  },
+  "2026-gov-nh": {
+   "party": "rep",
+   "winner": "Kelly Ayotte",
+   "by": "AP",
+   "at": "2026-11-04T05:42:29.910Z"
+  },
+  "2026-gov-nm": {
+   "party": "dem",
+   "winner": "Deb Haaland",
+   "by": "AP",
+   "at": "2026-11-04T03:40:44.095Z"
+  },
+  "2026-gov-nv": {
+   "party": "dem",
+   "winner": "Aaron Ford",
+   "by": "AP",
+   "at": "2026-11-04T09:46:36.197Z"
+  },
+  "2026-gov-ny": {
+   "party": "dem",
+   "winner": "Kathy Hochul",
+   "by": "AP",
+   "at": "2026-11-04T02:00:05.888Z"
+  },
+  "2026-gov-oh": {
+   "party": "dem",
+   "winner": "Amy Acton",
+   "by": "AP",
+   "at": "2026-11-04T03:49:08.000Z"
+  },
+  "2026-gov-ok": {
+   "party": "rep",
+   "winner": "Mike Mazzei",
+   "by": "AP",
+   "at": "2026-11-04T04:46:46.516Z"
+  },
+  "2026-gov-or": {
+   "party": "dem",
+   "winner": "Tina Kotek",
+   "by": "AP",
+   "at": "2026-11-04T08:49:19.497Z"
+  },
+  "2026-gov-pa": {
+   "party": "dem",
+   "winner": "Josh Shapiro",
+   "by": "AP",
+   "at": "2026-11-04T01:01:56.195Z"
+  },
+  "2026-gov-ri": {
+   "party": "dem",
+   "winner": "Helena Foulkes",
+   "by": "AP",
+   "at": "2026-11-04T01:32:37.260Z"
+  },
+  "2026-gov-sc": {
+   "party": "rep",
+   "winner": "Alan Wilson",
+   "by": "AP",
+   "at": "2026-11-04T05:35:52.176Z"
+  },
+  "2026-gov-sd": {
+   "party": "rep",
+   "winner": "Larry Rhoden",
+   "by": "AP",
+   "at": "2026-11-04T04:45:56.644Z"
+  },
+  "2026-gov-tn": {
+   "party": "rep",
+   "winner": "Marsha Blackburn",
+   "by": "AP",
+   "at": "2026-11-04T05:43:19.886Z"
+  },
+  "2026-gov-tx": {
+   "party": "dem",
+   "winner": "Gina Hinojosa",
+   "by": "AP",
+   "at": "2026-11-04T04:17:30.287Z"
+  },
+  "2026-gov-vt": {
+   "party": "rep",
+   "winner": "Phil Scott",
+   "by": "AP",
+   "at": "2026-11-04T05:35:27.269Z"
+  },
+  "2026-gov-wi": {
+   "party": "dem",
+   "winner": "David Crowley",
+   "by": "AP",
+   "at": "2026-11-04T04:28:00.184Z"
+  },
+  "2026-gov-wy": {
+   "party": "rep",
+   "winner": "Eric Barlow",
+   "by": "AP",
+   "at": "2026-11-04T02:00:20.399Z"
+  },
+  "2026-house-al-01": {
+   "party": "rep",
+   "winner": "Jerry Carl",
+   "by": "AP",
+   "at": "2026-11-04T04:15:20.379Z"
+  },
+  "2026-house-al-02": {
+   "party": "dem",
+   "winner": "Shomari Figures",
+   "by": "AP",
+   "at": "2026-11-04T04:00:23.554Z"
+  },
+  "2026-house-al-03": {
+   "party": "rep",
+   "winner": "Mike Rogers",
+   "by": "AP",
+   "at": "2026-11-04T03:10:41.072Z"
+  },
+  "2026-house-al-04": {
+   "party": "rep",
+   "winner": "Robert Aderholt",
+   "by": "AP",
+   "at": "2026-11-04T02:33:00.516Z"
+  },
+  "2026-house-al-05": {
+   "party": "rep",
+   "winner": "Dale Strong",
+   "by": "AP",
+   "at": "2026-11-04T04:03:26.672Z"
+  },
+  "2026-house-al-06": {
+   "party": "rep",
+   "winner": "Gary Palmer",
+   "by": "AP",
+   "at": "2026-11-04T05:00:53.608Z"
+  },
+  "2026-house-al-07": {
+   "party": "dem",
+   "winner": "Terri Sewell",
+   "by": "AP",
+   "at": "2026-11-04T03:24:01.827Z"
+  },
+  "2026-house-ar-01": {
+   "party": "rep",
+   "winner": "Rick Crawford",
+   "by": "AP",
+   "at": "2026-11-04T02:18:30.366Z"
+  },
+  "2026-house-ar-02": {
+   "party": "rep",
+   "winner": "French Hill",
+   "by": "AP",
+   "at": "2026-11-05T17:01:35.527Z"
+  },
+  "2026-house-ar-03": {
+   "party": "rep",
+   "winner": "Steve Womack",
+   "by": "AP",
+   "at": "2026-11-04T04:48:41.905Z"
+  },
+  "2026-house-ar-04": {
+   "party": "rep",
+   "winner": "Bruce Westerman",
+   "by": "AP",
+   "at": "2026-11-04T02:17:44.240Z"
+  },
+  "2026-house-az-01": {
+   "party": "dem",
+   "winner": "Amish Shah",
+   "by": "AP",
+   "at": "2026-11-05T17:02:49.849Z"
+  },
+  "2026-house-az-03": {
+   "party": "dem",
+   "winner": "Yassamin Ansari",
+   "by": "AP",
+   "at": "2026-11-04T03:09:42.232Z"
+  },
+  "2026-house-az-04": {
+   "party": "dem",
+   "winner": "Greg Stanton",
+   "by": "AP",
+   "at": "2026-11-04T03:10:56.841Z"
+  },
+  "2026-house-az-05": {
+   "party": "rep",
+   "winner": "Mark Lamb",
+   "by": "AP",
+   "at": "2026-11-06T16:25:33.037Z"
+  },
+  "2026-house-az-06": {
+   "party": "dem",
+   "winner": "JoAnna Mendoza",
+   "by": "AP",
+   "at": "2026-11-05T19:38:13.062Z"
+  },
+  "2026-house-az-07": {
+   "party": "dem",
+   "winner": "Adelita Grijalva",
+   "by": "AP",
+   "at": "2026-11-04T03:11:34.250Z"
+  },
+  "2026-house-az-09": {
+   "party": "rep",
+   "winner": "Paul Gosar",
+   "by": "AP",
+   "at": "2026-11-04T08:45:30.365Z"
+  },
+  "2026-house-ca-01": {
+   "party": "dem",
+   "winner": "Mike McGuire",
+   "by": "AP",
+   "at": "2026-11-04T04:53:06.875Z"
+  },
+  "2026-house-ca-02": {
+   "party": "dem",
+   "winner": "Jared Huffman",
+   "by": "AP",
+   "at": "2026-11-04T04:47:40.059Z"
+  },
+  "2026-house-ca-03": {
+   "party": "dem",
+   "winner": "Ami Bera",
+   "by": "AP",
+   "at": "2026-11-04T05:36:02.003Z"
+  },
+  "2026-house-ca-05": {
+   "party": "rep",
+   "winner": "Tom McClintock",
+   "by": "AP",
+   "at": "2026-11-04T07:33:21.419Z"
+  },
+  "2026-house-ca-06": {
+   "party": "dem",
+   "winner": "Richard Pan",
+   "by": "AP",
+   "at": "2026-11-04T07:00:40.011Z"
+  },
+  "2026-house-ca-08": {
+   "party": "dem",
+   "winner": "John Garamendi",
+   "by": "AP",
+   "at": "2026-11-04T04:42:42.538Z"
+  },
+  "2026-house-ca-09": {
+   "party": "dem",
+   "winner": "Josh Harder",
+   "by": "AP",
+   "at": "2026-11-04T04:41:10.823Z"
+  },
+  "2026-house-ca-10": {
+   "party": "dem",
+   "winner": "Mark DeSaulnier",
+   "by": "AP",
+   "at": "2026-11-04T04:42:20.820Z"
+  },
+  "2026-house-ca-11": {
+   "party": "dem",
+   "winner": "Scott Wiener",
+   "by": "AP",
+   "at": "2026-11-06T16:25:58.753Z"
+  },
+  "2026-house-ca-12": {
+   "party": "dem",
+   "winner": "Lateefah Simon",
+   "by": "AP",
+   "at": "2026-11-04T05:31:03.398Z"
+  },
+  "2026-house-ca-13": {
+   "party": "dem",
+   "winner": "Adam Gray",
+   "by": "AP",
+   "at": "2026-11-04T18:03:14.496Z"
+  },
+  "2026-house-ca-15": {
+   "party": "dem",
+   "winner": "Kevin Mullin",
+   "by": "AP",
+   "at": "2026-11-04T04:43:59.873Z"
+  },
+  "2026-house-ca-16": {
+   "party": "dem",
+   "winner": "Sam Liccardo",
+   "by": "AP",
+   "at": "2026-11-04T05:36:23.781Z"
+  },
+  "2026-house-ca-17": {
+   "party": "dem",
+   "winner": "Ro Khanna",
+   "by": "AP",
+   "at": "2026-11-04T05:33:49.339Z"
+  },
+  "2026-house-ca-18": {
+   "party": "dem",
+   "winner": "Zoe Lofgren",
+   "by": "AP",
+   "at": "2026-11-04T04:57:26.923Z"
+  },
+  "2026-house-ca-19": {
+   "party": "dem",
+   "winner": "Jimmy Panetta",
+   "by": "AP",
+   "at": "2026-11-04T04:48:52.128Z"
+  },
+  "2026-house-ca-20": {
+   "party": "rep",
+   "winner": "Vince Fong",
+   "by": "AP",
+   "at": "2026-11-04T04:36:35.180Z"
+  },
+  "2026-house-ca-21": {
+   "party": "dem",
+   "winner": "Jim Costa",
+   "by": "AP",
+   "at": "2026-11-04T04:31:38.456Z"
+  },
+  "2026-house-ca-22": {
+   "party": "dem",
+   "winner": "Randy Villegas",
+   "by": "AP",
+   "at": "2026-11-04T18:17:49.897Z"
+  },
+  "2026-house-ca-24": {
+   "party": "dem",
+   "winner": "Salud Carbajal",
+   "by": "AP",
+   "at": "2026-11-04T05:02:41.079Z"
+  },
+  "2026-house-ca-25": {
+   "party": "dem",
+   "winner": "Raul Ruiz",
+   "by": "AP",
+   "at": "2026-11-04T06:12:47.012Z"
+  },
+  "2026-house-ca-26": {
+   "party": "dem",
+   "winner": "Jacqui Irwin",
+   "by": "AP",
+   "at": "2026-11-04T05:04:22.861Z"
+  },
+  "2026-house-ca-27": {
+   "party": "dem",
+   "winner": "George Whitesides",
+   "by": "AP",
+   "at": "2026-11-04T06:01:40.953Z"
+  },
+  "2026-house-ca-28": {
+   "party": "dem",
+   "winner": "Judy Chu",
+   "by": "AP",
+   "at": "2026-11-04T04:52:44.733Z"
+  },
+  "2026-house-ca-29": {
+   "party": "dem",
+   "winner": "Luz Rivas",
+   "by": "AP",
+   "at": "2026-11-05T17:03:21.636Z"
+  },
+  "2026-house-ca-30": {
+   "party": "dem",
+   "winner": "Laura Friedman",
+   "by": "AP",
+   "at": "2026-11-04T04:44:55.800Z"
+  },
+  "2026-house-ca-31": {
+   "party": "dem",
+   "winner": "Gil Cisneros",
+   "by": "AP",
+   "at": "2026-11-04T04:50:02.724Z"
+  },
+  "2026-house-ca-32": {
+   "party": "dem",
+   "winner": "Brad Sherman",
+   "by": "AP",
+   "at": "2026-11-04T04:48:12.845Z"
+  },
+  "2026-house-ca-33": {
+   "party": "dem",
+   "winner": "Pete Aguilar",
+   "by": "AP",
+   "at": "2026-11-04T04:52:28.234Z"
+  },
+  "2026-house-ca-34": {
+   "party": "dem",
+   "winner": "Angela Gonzales-Torres",
+   "by": "AP",
+   "at": "2026-11-04T18:11:54.264Z"
+  },
+  "2026-house-ca-35": {
+   "party": "dem",
+   "winner": "Norma Torres",
+   "by": "AP",
+   "at": "2026-11-04T05:09:35.262Z"
+  },
+  "2026-house-ca-36": {
+   "party": "dem",
+   "winner": "Ted Lieu",
+   "by": "AP",
+   "at": "2026-11-04T04:40:06.574Z"
+  },
+  "2026-house-ca-37": {
+   "party": "dem",
+   "winner": "Sydney Kamlager-Dove",
+   "by": "AP",
+   "at": "2026-11-04T05:34:02.171Z"
+  },
+  "2026-house-ca-38": {
+   "party": "dem",
+   "winner": "Hilda Solis",
+   "by": "AP",
+   "at": "2026-11-04T04:55:12.583Z"
+  },
+  "2026-house-ca-39": {
+   "party": "dem",
+   "winner": "Mark Takano",
+   "by": "AP",
+   "at": "2026-11-04T06:11:44.245Z"
+  },
+  "2026-house-ca-41": {
+   "party": "dem",
+   "winner": "Linda S\u00e1nchez",
+   "by": "AP",
+   "at": "2026-11-04T05:39:23.555Z"
+  },
+  "2026-house-ca-42": {
+   "party": "dem",
+   "winner": "Robert Garcia",
+   "by": "AP",
+   "at": "2026-11-04T06:23:19.545Z"
+  },
+  "2026-house-ca-43": {
+   "party": "dem",
+   "winner": "Maxine Waters",
+   "by": "AP",
+   "at": "2026-11-04T04:33:45.205Z"
+  },
+  "2026-house-ca-44": {
+   "party": "dem",
+   "winner": "Nanette Barragan",
+   "by": "AP",
+   "at": "2026-11-04T04:35:04.677Z"
+  },
+  "2026-house-ca-45": {
+   "party": "dem",
+   "winner": "Derek Tran",
+   "by": "AP",
+   "at": "2026-11-04T06:57:25.358Z"
+  },
+  "2026-house-ca-46": {
+   "party": "dem",
+   "winner": "Lou Correa",
+   "by": "AP",
+   "at": "2026-11-04T04:49:41.849Z"
+  },
+  "2026-house-ca-47": {
+   "party": "dem",
+   "winner": "Dave Min",
+   "by": "AP",
+   "at": "2026-11-05T01:15:59.925Z"
+  },
+  "2026-house-ca-48": {
+   "party": "dem",
+   "winner": "Marni von Wilpert",
+   "by": "AP",
+   "at": "2026-11-05T01:32:45.566Z"
+  },
+  "2026-house-ca-49": {
+   "party": "dem",
+   "winner": "Mike Levin",
+   "by": "AP",
+   "at": "2026-11-04T07:13:34.674Z"
+  },
+  "2026-house-ca-50": {
+   "party": "dem",
+   "winner": "Scott Peters",
+   "by": "AP",
+   "at": "2026-11-04T06:12:18.732Z"
+  },
+  "2026-house-ca-51": {
+   "party": "dem",
+   "winner": "Sara Jacobs",
+   "by": "AP",
+   "at": "2026-11-04T06:07:54.740Z"
+  },
+  "2026-house-ca-52": {
+   "party": "dem",
+   "winner": "Juan Vargas",
+   "by": "AP",
+   "at": "2026-11-04T04:45:51.621Z"
+  },
+  "2026-house-co-01": {
+   "party": "dem",
+   "winner": "Melat Kiros",
+   "by": "AP",
+   "at": "2026-11-04T02:22:24.627Z"
+  },
+  "2026-house-co-02": {
+   "party": "dem",
+   "winner": "Joe Neguse",
+   "by": "AP",
+   "at": "2026-11-04T02:34:10.952Z"
+  },
+  "2026-house-co-03": {
+   "party": "rep",
+   "winner": "Jeff Hurd",
+   "by": "AP",
+   "at": "2026-11-06T16:24:39.416Z"
+  },
+  "2026-house-co-05": {
+   "party": "dem",
+   "winner": "Jessica Killin",
+   "by": "AP",
+   "at": "2026-11-05T19:38:34.112Z"
+  },
+  "2026-house-co-06": {
+   "party": "dem",
+   "winner": "Jason Crow",
+   "by": "AP",
+   "at": "2026-11-04T02:32:27.790Z"
+  },
+  "2026-house-co-07": {
+   "party": "dem",
+   "winner": "Brittany Pettersen",
+   "by": "AP",
+   "at": "2026-11-04T03:12:06.684Z"
+  },
+  "2026-house-co-08": {
+   "party": "dem",
+   "winner": "Manny Rutinel",
+   "by": "AP",
+   "at": "2026-11-04T04:49:24.111Z"
+  },
+  "2026-house-ct-01": {
+   "party": "dem",
+   "winner": "Luke Bronin",
+   "by": "AP",
+   "at": "2026-11-04T04:04:31.485Z"
+  },
+  "2026-house-ct-02": {
+   "party": "dem",
+   "winner": "Joe Courtney",
+   "by": "AP",
+   "at": "2026-11-04T03:54:14.040Z"
+  },
+  "2026-house-ct-03": {
+   "party": "dem",
+   "winner": "Rosa DeLauro",
+   "by": "AP",
+   "at": "2026-11-04T04:42:04.756Z"
+  },
+  "2026-house-ct-04": {
+   "party": "dem",
+   "winner": "Jim Himes",
+   "by": "AP",
+   "at": "2026-11-04T02:55:14.618Z"
+  },
+  "2026-house-ct-05": {
+   "party": "dem",
+   "winner": "Jahana Hayes",
+   "by": "AP",
+   "at": "2026-11-04T04:59:57.219Z"
+  },
+  "2026-house-de-al": {
+   "party": "dem",
+   "winner": "Sarah McBride",
+   "by": "AP",
+   "at": "2026-11-04T01:50:26.609Z"
+  },
+  "2026-house-fl-01": {
+   "party": "rep",
+   "winner": "Jimmy Patronis",
+   "by": "AP",
+   "at": "2026-11-04T01:35:27.858Z"
+  },
+  "2026-house-fl-02": {
+   "party": "rep",
+   "winner": "Austin Rogers",
+   "by": "AP",
+   "at": "2026-11-04T01:52:52.121Z"
+  },
+  "2026-house-fl-03": {
+   "party": "rep",
+   "winner": "Kat Cammack",
+   "by": "AP",
+   "at": "2026-11-04T01:32:27.187Z"
+  },
+  "2026-house-fl-04": {
+   "party": "rep",
+   "winner": "Aaron Bean",
+   "by": "AP",
+   "at": "2026-11-04T01:51:37.500Z"
+  },
+  "2026-house-fl-05": {
+   "party": "rep",
+   "winner": "John Rutherford",
+   "by": "AP",
+   "at": "2026-11-04T00:38:45.451Z"
+  },
+  "2026-house-fl-06": {
+   "party": "rep",
+   "winner": "Randy Fine",
+   "by": "AP",
+   "at": "2026-11-04T01:00:47.762Z"
+  },
+  "2026-house-fl-08": {
+   "party": "rep",
+   "winner": "Mike Haridopolos",
+   "by": "AP",
+   "at": "2026-11-04T01:01:58.406Z"
+  },
   "2026-house-fl-10": {
    "party": "dem",
    "winner": "Maxwell Frost",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Only candidate listed by Wikipedia's 2026 candidate columns (read 2026-11-02); not the state's certified list",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
+   "by": "AP",
+   "at": "2026-11-04T00:00:00.000Z"
+  },
+  "2026-house-fl-11": {
+   "party": "rep",
+   "winner": "Joe Strada",
+   "by": "AP",
+   "at": "2026-11-04T01:05:15.254Z"
+  },
+  "2026-house-fl-12": {
+   "party": "rep",
+   "winner": "Gus Bilirakis",
+   "by": "AP",
+   "at": "2026-11-04T00:59:41.659Z"
+  },
+  "2026-house-fl-13": {
+   "party": "rep",
+   "winner": "Anna Luna",
+   "by": "AP",
+   "at": "2026-11-05T19:38:55.301Z"
+  },
+  "2026-house-fl-14": {
+   "party": "dem",
+   "winner": "Kathy Castor",
+   "by": "AP",
+   "at": "2026-11-04T01:13:10.744Z"
+  },
+  "2026-house-fl-15": {
+   "party": "rep",
+   "winner": "Laurel Lee",
+   "by": "AP",
+   "at": "2026-11-04T01:09:38.475Z"
+  },
+  "2026-house-fl-16": {
+   "party": "rep",
+   "winner": "Sydney Gruters",
+   "by": "AP",
+   "at": "2026-11-04T01:39:07.512Z"
+  },
+  "2026-house-fl-17": {
+   "party": "rep",
+   "winner": "Greg Steube",
+   "by": "AP",
+   "at": "2026-11-04T00:46:58.943Z"
+  },
+  "2026-house-fl-18": {
+   "party": "rep",
+   "winner": "Scott Franklin",
+   "by": "AP",
+   "at": "2026-11-04T02:37:07.257Z"
+  },
+  "2026-house-fl-19": {
+   "party": "rep",
+   "winner": "Jim Schwartzel",
+   "by": "AP",
+   "at": "2026-11-04T00:16:55.306Z"
+  },
+  "2026-house-fl-20": {
+   "party": "dem",
+   "winner": "Debbie Wasserman Schultz",
+   "by": "AP",
+   "at": "2026-11-04T00:09:03.412Z"
+  },
+  "2026-house-fl-21": {
+   "party": "rep",
+   "winner": "Brian Mast",
+   "by": "AP",
+   "at": "2026-11-04T01:13:02.479Z"
+  },
+  "2026-house-fl-22": {
+   "party": "dem",
+   "winner": "Pia Dandiya",
+   "by": "AP",
+   "at": "2026-11-04T02:11:34.875Z"
+  },
+  "2026-house-fl-23": {
+   "party": "dem",
+   "winner": "Lois Frankel",
+   "by": "AP",
+   "at": "2026-11-04T00:34:27.926Z"
+  },
+  "2026-house-fl-24": {
+   "party": "dem",
+   "winner": "Oliver Gilbert III",
+   "by": "AP",
+   "at": "2026-11-04T00:16:24.918Z"
+  },
+  "2026-house-fl-25": {
+   "party": "dem",
+   "winner": "Jared Moskowitz",
+   "by": "AP",
+   "at": "2026-11-04T01:07:33.679Z"
+  },
+  "2026-house-fl-28": {
+   "party": "rep",
+   "winner": "Carlos Gimenez",
+   "by": "AP",
+   "at": "2026-11-04T00:55:15.431Z"
+  },
+  "2026-house-ga-01": {
+   "party": "rep",
+   "winner": "James Kingston",
+   "by": "AP",
+   "at": "2026-11-04T05:14:38.399Z"
+  },
+  "2026-house-ga-02": {
+   "party": "dem",
+   "winner": "Sanford Bishop",
+   "by": "AP",
+   "at": "2026-11-04T00:59:07.999Z"
+  },
+  "2026-house-ga-03": {
+   "party": "rep",
+   "winner": "Brian Jack",
+   "by": "AP",
+   "at": "2026-11-04T01:59:18.552Z"
+  },
+  "2026-house-ga-04": {
+   "party": "dem",
+   "winner": "Henry Johnson Jr.",
+   "by": "AP",
+   "at": "2026-11-04T00:38:33.758Z"
+  },
+  "2026-house-ga-05": {
+   "party": "dem",
+   "winner": "Nikema Williams",
+   "by": "AP",
+   "at": "2026-11-04T00:24:24.416Z"
+  },
+  "2026-house-ga-06": {
+   "party": "dem",
+   "winner": "Lucy McBath",
+   "by": "AP",
+   "at": "2026-11-04T00:34:12.075Z"
+  },
+  "2026-house-ga-07": {
+   "party": "rep",
+   "winner": "Rich McCormick",
+   "by": "AP",
+   "at": "2026-11-04T02:32:39.318Z"
+  },
+  "2026-house-ga-08": {
+   "party": "rep",
+   "winner": "Austin Scott",
+   "by": "AP",
+   "at": "2026-11-04T01:28:13.912Z"
+  },
+  "2026-house-ga-09": {
+   "party": "rep",
+   "winner": "Andrew Clyde",
+   "by": "AP",
+   "at": "2026-11-04T01:10:46.450Z"
+  },
+  "2026-house-ga-10": {
+   "party": "rep",
+   "winner": "Houston Gaines",
+   "by": "AP",
+   "at": "2026-11-04T02:54:21.704Z"
+  },
+  "2026-house-ga-11": {
+   "party": "rep",
+   "winner": "John Cowan",
+   "by": "AP",
+   "at": "2026-11-04T03:17:48.781Z"
+  },
+  "2026-house-ga-12": {
+   "party": "rep",
+   "winner": "Rick Allen",
+   "by": "AP",
+   "at": "2026-11-04T03:57:29.693Z"
+  },
+  "2026-house-ga-13": {
+   "party": "dem",
+   "winner": "Jasmine Clark",
+   "by": "AP",
+   "at": "2026-11-04T00:21:31.239Z"
+  },
+  "2026-house-ga-14": {
+   "party": "rep",
+   "winner": "Clay Fuller",
+   "by": "AP",
+   "at": "2026-11-04T01:55:35.989Z"
+  },
+  "2026-house-hi-01": {
+   "party": "dem",
+   "winner": "Ed Case",
+   "by": "AP",
+   "at": "2026-11-04T06:21:07.633Z"
+  },
+  "2026-house-hi-02": {
+   "party": "dem",
+   "winner": "Jill Tokuda",
+   "by": "AP",
+   "at": "2026-11-04T06:18:30.825Z"
+  },
+  "2026-house-ia-01": {
+   "party": "dem",
+   "winner": "Christina Bohannan",
+   "by": "AP",
+   "at": "2026-11-04T05:08:30.903Z"
+  },
+  "2026-house-ia-02": {
+   "party": "dem",
+   "winner": "Lindsay James",
+   "by": "AP",
+   "at": "2026-11-04T05:19:55.506Z"
+  },
+  "2026-house-ia-03": {
+   "party": "dem",
+   "winner": "Sarah Trone Garriott",
+   "by": "AP",
+   "at": "2026-11-04T05:03:37.503Z"
+  },
+  "2026-house-ia-04": {
+   "party": "rep",
+   "winner": "Chris McGowan",
+   "by": "AP",
+   "at": "2026-11-04T04:33:34.046Z"
+  },
+  "2026-house-id-01": {
+   "party": "rep",
+   "winner": "Russ Fulcher",
+   "by": "AP",
+   "at": "2026-11-04T04:43:54.852Z"
+  },
+  "2026-house-id-02": {
+   "party": "rep",
+   "winner": "Mike Simpson",
+   "by": "AP",
+   "at": "2026-11-04T08:49:18.630Z"
+  },
+  "2026-house-il-01": {
+   "party": "dem",
+   "winner": "Jonathan Jackson",
+   "by": "AP",
+   "at": "2026-11-04T01:58:49.240Z"
+  },
+  "2026-house-il-02": {
+   "party": "dem",
+   "winner": "Donna Miller",
+   "by": "AP",
+   "at": "2026-11-04T01:55:27.549Z"
+  },
+  "2026-house-il-03": {
+   "party": "dem",
+   "winner": "Delia Ramirez",
+   "by": "AP",
+   "at": "2026-11-04T03:00:08.631Z"
+  },
+  "2026-house-il-04": {
+   "party": "dem",
+   "winner": "Patty Garcia",
+   "by": "AP",
+   "at": "2026-11-04T02:42:38.129Z"
+  },
+  "2026-house-il-05": {
+   "party": "dem",
+   "winner": "Mike Quigley",
+   "by": "AP",
+   "at": "2026-11-04T02:09:33.222Z"
+  },
+  "2026-house-il-06": {
+   "party": "dem",
+   "winner": "Sean Casten",
+   "by": "AP",
+   "at": "2026-11-04T03:37:12.313Z"
+  },
+  "2026-house-il-07": {
+   "party": "dem",
+   "winner": "La Shawn Ford",
+   "by": "AP",
+   "at": "2026-11-04T01:54:24.491Z"
+  },
+  "2026-house-il-08": {
+   "party": "dem",
+   "winner": "Melissa Bean",
+   "by": "AP",
+   "at": "2026-11-04T02:31:20.001Z"
+  },
+  "2026-house-il-09": {
+   "party": "dem",
+   "winner": "Daniel Biss",
+   "by": "AP",
+   "at": "2026-11-04T01:50:30.692Z"
+  },
+  "2026-house-il-10": {
+   "party": "dem",
+   "winner": "Brad Schneider",
+   "by": "AP",
+   "at": "2026-11-04T04:02:02.144Z"
+  },
+  "2026-house-il-11": {
+   "party": "dem",
+   "winner": "Bill Foster",
+   "by": "AP",
+   "at": "2026-11-04T02:38:07.068Z"
+  },
+  "2026-house-il-12": {
+   "party": "rep",
+   "winner": "Mike Bost",
+   "by": "AP",
+   "at": "2026-11-04T02:15:40.102Z"
+  },
+  "2026-house-il-13": {
+   "party": "dem",
+   "winner": "Nikki Budzinski",
+   "by": "AP",
+   "at": "2026-11-04T04:45:46.210Z"
+  },
+  "2026-house-il-14": {
+   "party": "dem",
+   "winner": "Lauren Underwood",
+   "by": "AP",
+   "at": "2026-11-04T03:34:13.213Z"
+  },
+  "2026-house-il-15": {
+   "party": "rep",
+   "winner": "Mary Miller",
+   "by": "AP",
+   "at": "2026-11-04T02:40:28.377Z"
+  },
+  "2026-house-il-16": {
+   "party": "rep",
+   "winner": "Darin LaHood",
+   "by": "AP",
+   "at": "2026-11-04T03:01:09.857Z"
+  },
+  "2026-house-il-17": {
+   "party": "dem",
+   "winner": "Eric Sorensen",
+   "by": "AP",
+   "at": "2026-11-04T02:48:31.642Z"
+  },
+  "2026-house-in-01": {
+   "party": "dem",
+   "winner": "Frank Mrvan",
+   "by": "AP",
+   "at": "2026-11-04T03:18:26.184Z"
+  },
+  "2026-house-in-02": {
+   "party": "rep",
+   "winner": "Rudy Yakym",
+   "by": "AP",
+   "at": "2026-11-04T07:54:36.982Z"
+  },
+  "2026-house-in-03": {
+   "party": "rep",
+   "winner": "Marlin Stutzman",
+   "by": "AP",
+   "at": "2026-11-04T04:05:08.960Z"
+  },
+  "2026-house-in-04": {
+   "party": "rep",
+   "winner": "Jim Baird",
+   "by": "AP",
+   "at": "2026-11-04T04:44:26.877Z"
+  },
+  "2026-house-in-05": {
+   "party": "dem",
+   "winner": "J.D. Ford",
+   "by": "AP",
+   "at": "2026-11-04T06:03:32.370Z"
+  },
+  "2026-house-in-06": {
+   "party": "rep",
+   "winner": "Jefferson Shreve",
+   "by": "AP",
+   "at": "2026-11-04T04:43:25.931Z"
+  },
+  "2026-house-in-07": {
+   "party": "dem",
+   "winner": "Andr\u00e9 Carson",
+   "by": "AP",
+   "at": "2026-11-04T01:38:28.530Z"
+  },
+  "2026-house-in-08": {
+   "party": "rep",
+   "winner": "Mark Messmer",
+   "by": "AP",
+   "at": "2026-11-04T02:21:38.269Z"
+  },
+  "2026-house-in-09": {
+   "party": "rep",
+   "winner": "Erin Houchin",
+   "by": "AP",
+   "at": "2026-11-04T04:50:56.091Z"
+  },
+  "2026-house-ks-01": {
+   "party": "rep",
+   "winner": "Tracey Mann",
+   "by": "AP",
+   "at": "2026-11-04T04:13:55.358Z"
+  },
+  "2026-house-ks-02": {
+   "party": "rep",
+   "winner": "Derek Schmidt",
+   "by": "AP",
+   "at": "2026-11-04T05:26:31.787Z"
+  },
+  "2026-house-ks-03": {
+   "party": "dem",
+   "winner": "Sharice Davids",
+   "by": "AP",
+   "at": "2026-11-04T03:08:30.390Z"
+  },
+  "2026-house-ks-04": {
+   "party": "rep",
+   "winner": "Ron Estes",
+   "by": "AP",
+   "at": "2026-11-04T04:10:21.984Z"
+  },
+  "2026-house-ky-01": {
+   "party": "rep",
+   "winner": "James Comer",
+   "by": "AP",
+   "at": "2026-11-04T00:56:30.063Z"
+  },
+  "2026-house-ky-02": {
+   "party": "rep",
+   "winner": "S. Guthrie",
+   "by": "AP",
+   "at": "2026-11-04T01:42:38.829Z"
+  },
+  "2026-house-ky-03": {
+   "party": "dem",
+   "winner": "Morgan McGarvey",
+   "by": "AP",
+   "at": "2026-11-04T00:03:20.762Z"
+  },
+  "2026-house-ky-04": {
+   "party": "rep",
+   "winner": "Ed Gallrein",
+   "by": "AP",
+   "at": "2026-11-04T01:43:12.412Z"
+  },
+  "2026-house-ky-05": {
+   "party": "rep",
+   "winner": "Hal Rogers",
+   "by": "AP",
+   "at": "2026-11-04T00:00:02.966Z"
+  },
+  "2026-house-ky-06": {
+   "party": "dem",
+   "winner": "Zach Dembo",
+   "by": "AP",
+   "at": "2026-11-04T03:16:11.543Z"
+  },
+  "2026-house-la-01": {
+   "party": "rep",
+   "winner": "Steve Scalise",
+   "by": "AP",
+   "at": "2026-11-04T03:58:50.646Z"
+  },
+  "2026-house-la-02": {
+   "party": "dem",
+   "winner": "Troy Carter Sr.",
+   "by": "AP",
+   "at": "2026-11-04T02:47:33.690Z"
+  },
+  "2026-house-la-03": {
+   "party": "rep",
+   "winner": "Clay Higgins",
+   "by": "AP",
+   "at": "2026-11-04T04:38:54.393Z"
+  },
+  "2026-house-la-04": {
+   "party": "rep",
+   "winner": "Mike Johnson",
+   "by": "AP",
+   "at": "2026-11-04T03:43:34.764Z"
+  },
+  "2026-house-ma-01": {
+   "party": "dem",
+   "winner": "Richard Neal",
+   "by": "AP",
+   "at": "2026-11-04T02:38:52.897Z"
   },
   "2026-house-ma-02": {
    "party": "dem",
-   "winner": "Jim McGovern",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Only candidate listed by Wikipedia's 2026 candidate columns (read 2026-11-02); not the state's certified list",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
+   "winner": "James McGovern",
+   "by": "AP",
+   "at": "2026-11-04T01:00:00.000Z"
+  },
+  "2026-house-ma-03": {
+   "party": "dem",
+   "winner": "Lori Trahan",
+   "by": "AP",
+   "at": "2026-11-04T03:18:11.300Z"
+  },
+  "2026-house-ma-04": {
+   "party": "dem",
+   "winner": "Jake Auchincloss",
+   "by": "AP",
+   "at": "2026-11-04T03:39:36.475Z"
   },
   "2026-house-ma-05": {
    "party": "dem",
    "winner": "Katherine Clark",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Only candidate listed by Wikipedia's 2026 candidate columns (read 2026-11-02); not the state's certified list",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
+   "by": "AP",
+   "at": "2026-11-04T01:00:00.000Z"
+  },
+  "2026-house-ma-06": {
+   "party": "dem",
+   "winner": "Dan Koh",
+   "by": "AP",
+   "at": "2026-11-04T03:24:39.483Z"
   },
   "2026-house-ma-07": {
    "party": "dem",
    "winner": "Ayanna Pressley",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Only candidate listed by Wikipedia's 2026 candidate columns (read 2026-11-02); not the state's certified list",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
+   "by": "AP",
+   "at": "2026-11-04T01:00:00.000Z"
+  },
+  "2026-house-ma-08": {
+   "party": "dem",
+   "winner": "Stephen Lynch",
+   "by": "AP",
+   "at": "2026-11-04T03:45:28.721Z"
+  },
+  "2026-house-ma-09": {
+   "party": "dem",
+   "winner": "Bill Keating",
+   "by": "AP",
+   "at": "2026-11-04T03:27:54.454Z"
+  },
+  "2026-house-md-01": {
+   "party": "rep",
+   "winner": "Andy Harris",
+   "by": "AP",
+   "at": "2026-11-04T04:42:01.021Z"
+  },
+  "2026-house-md-02": {
+   "party": "dem",
+   "winner": "John Olszewski Jr.",
+   "by": "AP",
+   "at": "2026-11-04T03:53:45.295Z"
+  },
+  "2026-house-md-03": {
+   "party": "dem",
+   "winner": "Sarah Elfreth",
+   "by": "AP",
+   "at": "2026-11-04T02:37:47.259Z"
+  },
+  "2026-house-md-04": {
+   "party": "dem",
+   "winner": "Glenn Ivey",
+   "by": "AP",
+   "at": "2026-11-04T02:33:43.345Z"
+  },
+  "2026-house-md-05": {
+   "party": "dem",
+   "winner": "Adrian Boafo",
+   "by": "AP",
+   "at": "2026-11-04T02:32:37.874Z"
+  },
+  "2026-house-md-06": {
+   "party": "dem",
+   "winner": "April McClain Delaney",
+   "by": "AP",
+   "at": "2026-11-04T04:23:09.099Z"
+  },
+  "2026-house-md-07": {
+   "party": "dem",
+   "winner": "Kweisi Mfume",
+   "by": "AP",
+   "at": "2026-11-04T02:27:18.793Z"
+  },
+  "2026-house-md-08": {
+   "party": "dem",
+   "winner": "Jamie Raskin",
+   "by": "AP",
+   "at": "2026-11-04T02:15:23.355Z"
+  },
+  "2026-house-me-01": {
+   "party": "dem",
+   "winner": "Chellie Pingree",
+   "by": "AP",
+   "at": "2026-11-04T03:18:52.586Z"
+  },
+  "2026-house-mi-01": {
+   "party": "rep",
+   "winner": "Jack Bergman",
+   "by": "AP",
+   "at": "2026-11-04T06:09:29.238Z"
+  },
+  "2026-house-mi-02": {
+   "party": "rep",
+   "winner": "John Moolenaar",
+   "by": "AP",
+   "at": "2026-11-04T03:45:52.252Z"
+  },
+  "2026-house-mi-03": {
+   "party": "dem",
+   "winner": "Hillary Scholten",
+   "by": "AP",
+   "at": "2026-11-04T05:54:25.475Z"
+  },
+  "2026-house-mi-04": {
+   "party": "dem",
+   "winner": "Sean McCann",
+   "by": "AP",
+   "at": "2026-11-04T18:13:09.652Z"
+  },
+  "2026-house-mi-05": {
+   "party": "rep",
+   "winner": "Tim Walberg",
+   "by": "AP",
+   "at": "2026-11-04T04:11:51.058Z"
+  },
+  "2026-house-mi-06": {
+   "party": "dem",
+   "winner": "Debbie Dingell",
+   "by": "AP",
+   "at": "2026-11-04T03:32:48.802Z"
+  },
+  "2026-house-mi-07": {
+   "party": "dem",
+   "winner": "William Lawrence",
+   "by": "AP",
+   "at": "2026-11-04T19:05:49.862Z"
+  },
+  "2026-house-mi-08": {
+   "party": "dem",
+   "winner": "Kristen McDonald Rivet",
+   "by": "AP",
+   "at": "2026-11-04T06:30:33.290Z"
+  },
+  "2026-house-mi-09": {
+   "party": "rep",
+   "winner": "Lisa McClain",
+   "by": "AP",
+   "at": "2026-11-04T04:45:00.652Z"
+  },
+  "2026-house-mi-10": {
+   "party": "dem",
+   "winner": "Christina Hines",
+   "by": "AP",
+   "at": "2026-11-04T17:26:10.023Z"
+  },
+  "2026-house-mi-11": {
+   "party": "dem",
+   "winner": "Jeremy Moss",
+   "by": "AP",
+   "at": "2026-11-04T02:23:26.129Z"
+  },
+  "2026-house-mi-12": {
+   "party": "dem",
+   "winner": "Rashida Tlaib",
+   "by": "AP",
+   "at": "2026-11-04T01:55:52.635Z"
+  },
+  "2026-house-mi-13": {
+   "party": "dem",
+   "winner": "Donavan McKinney",
+   "by": "AP",
+   "at": "2026-11-04T03:33:07.745Z"
+  },
+  "2026-house-mn-02": {
+   "party": "dem",
+   "winner": "Matt Little",
+   "by": "AP",
+   "at": "2026-11-04T05:32:43.386Z"
+  },
+  "2026-house-mn-03": {
+   "party": "dem",
+   "winner": "Kelly Morrison",
+   "by": "AP",
+   "at": "2026-11-04T05:05:19.114Z"
+  },
+  "2026-house-mn-04": {
+   "party": "dem",
+   "winner": "Betty McCollum",
+   "by": "AP",
+   "at": "2026-11-04T05:06:09.267Z"
+  },
+  "2026-house-mn-05": {
+   "party": "dem",
+   "winner": "Ilhan Omar",
+   "by": "AP",
+   "at": "2026-11-04T05:04:45.354Z"
+  },
+  "2026-house-mn-06": {
+   "party": "rep",
+   "winner": "Tom Emmer",
+   "by": "AP",
+   "at": "2026-11-04T06:42:19.677Z"
+  },
+  "2026-house-mn-07": {
+   "party": "rep",
+   "winner": "Michelle Fischbach",
+   "by": "AP",
+   "at": "2026-11-04T04:08:00.798Z"
+  },
+  "2026-house-mn-08": {
+   "party": "rep",
+   "winner": "Pete Stauber",
+   "by": "AP",
+   "at": "2026-11-04T07:11:54.417Z"
+  },
+  "2026-house-mo-01": {
+   "party": "dem",
+   "winner": "Wesley Bell",
+   "by": "AP",
+   "at": "2026-11-04T01:37:01.159Z"
+  },
+  "2026-house-mo-02": {
+   "party": "dem",
+   "winner": "Fred Wellman",
+   "by": "AP",
+   "at": "2026-11-04T04:57:28.710Z"
+  },
+  "2026-house-mo-03": {
+   "party": "rep",
+   "winner": "Bob Onder",
+   "by": "AP",
+   "at": "2026-11-04T04:02:07.426Z"
+  },
+  "2026-house-mo-04": {
+   "party": "rep",
+   "winner": "Mark Alford",
+   "by": "AP",
+   "at": "2026-11-04T02:40:45.992Z"
+  },
+  "2026-house-mo-05": {
+   "party": "dem",
+   "winner": "Emanuel Cleaver II",
+   "by": "AP",
+   "at": "2026-11-04T02:54:13.351Z"
+  },
+  "2026-house-mo-06": {
+   "party": "rep",
+   "winner": "Chris Stigall",
+   "by": "AP",
+   "at": "2026-11-04T02:48:42.995Z"
+  },
+  "2026-house-mo-07": {
+   "party": "rep",
+   "winner": "Eric Burlison",
+   "by": "AP",
+   "at": "2026-11-04T03:40:28.629Z"
+  },
+  "2026-house-mo-08": {
+   "party": "rep",
+   "winner": "Jason Smith",
+   "by": "AP",
+   "at": "2026-11-04T02:36:52.160Z"
+  },
+  "2026-house-ms-01": {
+   "party": "rep",
+   "winner": "Trent Kelly",
+   "by": "AP",
+   "at": "2026-11-04T03:05:36.317Z"
+  },
+  "2026-house-ms-02": {
+   "party": "dem",
+   "winner": "Bennie Thompson",
+   "by": "AP",
+   "at": "2026-11-04T02:45:41.646Z"
+  },
+  "2026-house-ms-03": {
+   "party": "rep",
+   "winner": "Michael Guest",
+   "by": "AP",
+   "at": "2026-11-04T03:21:31.654Z"
+  },
+  "2026-house-ms-04": {
+   "party": "rep",
+   "winner": "Mike Ezell",
+   "by": "AP",
+   "at": "2026-11-04T02:45:53.947Z"
+  },
+  "2026-house-mt-01": {
+   "party": "dem",
+   "winner": "Sam Forstag",
+   "by": "AP",
+   "at": "2026-11-05T17:02:04.546Z"
+  },
+  "2026-house-mt-02": {
+   "party": "rep",
+   "winner": "Troy Downing",
+   "by": "AP",
+   "at": "2026-11-04T04:18:51.791Z"
+  },
+  "2026-house-nc-01": {
+   "party": "dem",
+   "winner": "Don Davis",
+   "by": "AP",
+   "at": "2026-11-05T16:58:36.782Z"
+  },
+  "2026-house-nc-02": {
+   "party": "dem",
+   "winner": "Deborah Ross",
+   "by": "AP",
+   "at": "2026-11-04T01:24:28.657Z"
+  },
+  "2026-house-nc-04": {
+   "party": "dem",
+   "winner": "Valerie Foushee",
+   "by": "AP",
+   "at": "2026-11-04T01:24:37.306Z"
+  },
+  "2026-house-nc-06": {
+   "party": "dem",
+   "winner": "Cyril Jefferson",
+   "by": "AP",
+   "at": "2026-11-05T16:58:47.607Z"
+  },
+  "2026-house-nc-09": {
+   "party": "dem",
+   "winner": "Richard Ojeda II",
+   "by": "AP",
+   "at": "2026-11-05T19:39:21.200Z"
+  },
+  "2026-house-nc-11": {
+   "party": "dem",
+   "winner": "Jamie Ager",
+   "by": "AP",
+   "at": "2026-11-04T01:53:13.100Z"
+  },
+  "2026-house-nc-12": {
+   "party": "dem",
+   "winner": "Alma Adams",
+   "by": "AP",
+   "at": "2026-11-04T01:25:03.636Z"
+  },
+  "2026-house-nc-13": {
+   "party": "dem",
+   "winner": "Paul Barringer",
+   "by": "AP",
+   "at": "2026-11-05T16:59:02.063Z"
+  },
+  "2026-house-nc-14": {
+   "party": "dem",
+   "winner": "Lakesha Womack",
+   "by": "AP",
+   "at": "2026-11-05T16:59:11.444Z"
+  },
+  "2026-house-nd-al": {
+   "party": "rep",
+   "winner": "Julie Fedorchak",
+   "by": "AP",
+   "at": "2026-11-04T02:56:13.495Z"
+  },
+  "2026-house-ne-01": {
+   "party": "rep",
+   "winner": "Mike Flood",
+   "by": "AP",
+   "at": "2026-11-04T22:11:11.832Z"
+  },
+  "2026-house-ne-02": {
+   "party": "dem",
+   "winner": "Denise Powell",
+   "by": "AP",
+   "at": "2026-11-04T04:57:07.866Z"
+  },
+  "2026-house-ne-03": {
+   "party": "rep",
+   "winner": "Adrian Smith",
+   "by": "AP",
+   "at": "2026-11-04T04:08:48.912Z"
+  },
+  "2026-house-nh-01": {
+   "party": "dem",
+   "winner": "Stefany Shaheen",
+   "by": "AP",
+   "at": "2026-11-04T02:21:46.377Z"
+  },
+  "2026-house-nh-02": {
+   "party": "dem",
+   "winner": "Maggie Goodlander",
+   "by": "AP",
+   "at": "2026-11-04T04:05:53.943Z"
+  },
+  "2026-house-nj-01": {
+   "party": "dem",
+   "winner": "Donald Norcross",
+   "by": "AP",
+   "at": "2026-11-04T01:17:19.543Z"
+  },
+  "2026-house-nj-02": {
+   "party": "dem",
+   "winner": "Zack Mullock",
+   "by": "AP",
+   "at": "2026-11-05T21:29:00.736Z"
+  },
+  "2026-house-nj-03": {
+   "party": "dem",
+   "winner": "Herb Conaway",
+   "by": "AP",
+   "at": "2026-11-04T01:35:41.078Z"
+  },
+  "2026-house-nj-04": {
+   "party": "rep",
+   "winner": "Christopher Smith",
+   "by": "AP",
+   "at": "2026-11-04T02:23:29.661Z"
+  },
+  "2026-house-nj-05": {
+   "party": "dem",
+   "winner": "Josh Gottheimer",
+   "by": "AP",
+   "at": "2026-11-04T02:12:11.123Z"
+  },
+  "2026-house-nj-06": {
+   "party": "dem",
+   "winner": "Frank Pallone Jr.",
+   "by": "AP",
+   "at": "2026-11-04T02:06:31.009Z"
+  },
+  "2026-house-nj-07": {
+   "party": "dem",
+   "winner": "Rebecca Bennett",
+   "by": "AP",
+   "at": "2026-11-04T02:48:17.933Z"
+  },
+  "2026-house-nj-08": {
+   "party": "dem",
+   "winner": "Rob Menendez",
+   "by": "AP",
+   "at": "2026-11-04T01:11:12.519Z"
+  },
+  "2026-house-nj-09": {
+   "party": "dem",
+   "winner": "Nelida Pou",
+   "by": "AP",
+   "at": "2026-11-04T03:22:06.948Z"
+  },
+  "2026-house-nj-10": {
+   "party": "dem",
+   "winner": "LaMonica McIver",
+   "by": "AP",
+   "at": "2026-11-04T01:22:28.493Z"
+  },
+  "2026-house-nj-11": {
+   "party": "dem",
+   "winner": "Analilia Mejia",
+   "by": "AP",
+   "at": "2026-11-04T01:18:49.311Z"
+  },
+  "2026-house-nj-12": {
+   "party": "dem",
+   "winner": "Adam Hamawy",
+   "by": "AP",
+   "at": "2026-11-04T01:26:52.699Z"
+  },
+  "2026-house-nm-01": {
+   "party": "dem",
+   "winner": "Melanie Stansbury",
+   "by": "AP",
+   "at": "2026-11-04T05:07:37.574Z"
+  },
+  "2026-house-nm-02": {
+   "party": "dem",
+   "winner": "Gabriel Vasquez",
+   "by": "AP",
+   "at": "2026-11-04T05:12:37.370Z"
+  },
+  "2026-house-nm-03": {
+   "party": "dem",
+   "winner": "Teresa Leger Fernandez",
+   "by": "AP",
+   "at": "2026-11-04T04:19:47.209Z"
+  },
+  "2026-house-nv-01": {
+   "party": "dem",
+   "winner": "Dina Titus",
+   "by": "AP",
+   "at": "2026-11-04T09:00:54.107Z"
+  },
+  "2026-house-nv-02": {
+   "party": "dem",
+   "winner": "Teresa Benitez-Thompson",
+   "by": "AP",
+   "at": "2026-11-05T02:29:25.426Z"
+  },
+  "2026-house-nv-03": {
+   "party": "dem",
+   "winner": "Susie Lee",
+   "by": "AP",
+   "at": "2026-11-04T09:04:34.029Z"
+  },
+  "2026-house-nv-04": {
+   "party": "dem",
+   "winner": "Steven Horsford",
+   "by": "AP",
+   "at": "2026-11-04T08:53:17.226Z"
+  },
+  "2026-house-ny-01": {
+   "party": "rep",
+   "winner": "Nicholas LaLota",
+   "by": "AP",
+   "at": "2026-11-05T17:00:41.053Z"
+  },
+  "2026-house-ny-02": {
+   "party": "rep",
+   "winner": "Andrew Garbarino",
+   "by": "AP",
+   "at": "2026-11-05T17:00:30.832Z"
+  },
+  "2026-house-ny-03": {
+   "party": "dem",
+   "winner": "Thomas Suozzi",
+   "by": "AP",
+   "at": "2026-11-04T19:04:10.881Z"
+  },
+  "2026-house-ny-04": {
+   "party": "dem",
+   "winner": "Laura Gillen",
+   "by": "AP",
+   "at": "2026-11-04T19:04:26.176Z"
+  },
+  "2026-house-ny-05": {
+   "party": "dem",
+   "winner": "Gregory Meeks",
+   "by": "AP",
+   "at": "2026-11-04T02:05:56.054Z"
+  },
+  "2026-house-ny-06": {
+   "party": "dem",
+   "winner": "Grace Meng",
+   "by": "AP",
+   "at": "2026-11-04T02:22:27.667Z"
+  },
+  "2026-house-ny-07": {
+   "party": "dem",
+   "winner": "Claire Valdez",
+   "by": "AP",
+   "at": "2026-11-04T02:08:40.071Z"
+  },
+  "2026-house-ny-08": {
+   "party": "dem",
+   "winner": "Hakeem Jeffries",
+   "by": "AP",
+   "at": "2026-11-04T02:07:13.207Z"
+  },
+  "2026-house-ny-09": {
+   "party": "dem",
+   "winner": "Yvette Clarke",
+   "by": "AP",
+   "at": "2026-11-04T02:05:32.790Z"
+  },
+  "2026-house-ny-10": {
+   "party": "dem",
+   "winner": "Brad Lander",
+   "by": "AP",
+   "at": "2026-11-04T02:05:13.644Z"
+  },
+  "2026-house-ny-11": {
+   "party": "rep",
+   "winner": "Nicole Malliotakis",
+   "by": "AP",
+   "at": "2026-11-04T02:26:46.016Z"
+  },
+  "2026-house-ny-12": {
+   "party": "dem",
+   "winner": "Micah Lasher",
+   "by": "AP",
+   "at": "2026-11-04T02:04:50.543Z"
+  },
+  "2026-house-ny-13": {
+   "party": "dem",
+   "winner": "Darializa Avila Chevalier",
+   "by": "AP",
+   "at": "2026-11-04T02:07:39.132Z"
+  },
+  "2026-house-ny-14": {
+   "party": "dem",
+   "winner": "Alexandria Ocasio-Cortez",
+   "by": "AP",
+   "at": "2026-11-04T02:06:26.257Z"
+  },
+  "2026-house-ny-15": {
+   "party": "dem",
+   "winner": "Ritchie Torres",
+   "by": "AP",
+   "at": "2026-11-04T02:08:00.258Z"
+  },
+  "2026-house-ny-16": {
+   "party": "dem",
+   "winner": "George Latimer",
+   "by": "AP",
+   "at": "2026-11-04T03:31:50.028Z"
+  },
+  "2026-house-ny-17": {
+   "party": "dem",
+   "winner": "Cait Conley",
+   "by": "AP",
+   "at": "2026-11-05T23:12:39.941Z"
+  },
+  "2026-house-ny-18": {
+   "party": "dem",
+   "winner": "Pat Ryan",
+   "by": "AP",
+   "at": "2026-11-04T02:37:09.718Z"
+  },
+  "2026-house-ny-19": {
+   "party": "dem",
+   "winner": "Josh Riley",
+   "by": "AP",
+   "at": "2026-11-04T02:40:01.275Z"
+  },
+  "2026-house-ny-20": {
+   "party": "dem",
+   "winner": "Paul Tonko",
+   "by": "AP",
+   "at": "2026-11-04T03:40:40.251Z"
+  },
+  "2026-house-ny-21": {
+   "party": "rep",
+   "winner": "Anthony Constantino",
+   "by": "AP",
+   "at": "2026-11-06T16:23:12.472Z"
+  },
+  "2026-house-ny-22": {
+   "party": "dem",
+   "winner": "John Mannion",
+   "by": "AP",
+   "at": "2026-11-04T02:55:35.442Z"
+  },
+  "2026-house-ny-23": {
+   "party": "rep",
+   "winner": "Nicholas Langworthy",
+   "by": "AP",
+   "at": "2026-11-04T03:49:43.737Z"
+  },
+  "2026-house-ny-24": {
+   "party": "rep",
+   "winner": "Claudia Tenney",
+   "by": "AP",
+   "at": "2026-11-04T04:11:11.671Z"
+  },
+  "2026-house-ny-25": {
+   "party": "dem",
+   "winner": "Joseph Morelle",
+   "by": "AP",
+   "at": "2026-11-04T02:38:51.240Z"
+  },
+  "2026-house-ny-26": {
+   "party": "dem",
+   "winner": "Timothy Kennedy",
+   "by": "AP",
+   "at": "2026-11-04T02:53:41.461Z"
+  },
+  "2026-house-oh-01": {
+   "party": "dem",
+   "winner": "Greg Landsman",
+   "by": "AP",
+   "at": "2026-11-04T03:35:01.840Z"
+  },
+  "2026-house-oh-02": {
+   "party": "rep",
+   "winner": "David Taylor",
+   "by": "AP",
+   "at": "2026-11-04T02:06:02.943Z"
+  },
+  "2026-house-oh-03": {
+   "party": "dem",
+   "winner": "Joyce Beatty",
+   "by": "AP",
+   "at": "2026-11-04T00:42:11.309Z"
+  },
+  "2026-house-oh-04": {
+   "party": "rep",
+   "winner": "Jim Jordan",
+   "by": "AP",
+   "at": "2026-11-04T01:58:47.082Z"
+  },
+  "2026-house-oh-05": {
+   "party": "rep",
+   "winner": "Bob Latta",
+   "by": "AP",
+   "at": "2026-11-04T02:56:06.740Z"
+  },
+  "2026-house-oh-06": {
+   "party": "rep",
+   "winner": "Michael Rulli",
+   "by": "AP",
+   "at": "2026-11-04T02:35:01.196Z"
+  },
+  "2026-house-oh-07": {
+   "party": "dem",
+   "winner": "Brian Poindexter",
+   "by": "AP",
+   "at": "2026-11-04T06:23:33.534Z"
+  },
+  "2026-house-oh-08": {
+   "party": "rep",
+   "winner": "Warren Davidson",
+   "by": "AP",
+   "at": "2026-11-04T04:03:49.925Z"
+  },
+  "2026-house-oh-09": {
+   "party": "dem",
+   "winner": "Marcy Kaptur",
+   "by": "AP",
+   "at": "2026-11-04T07:53:04.366Z"
+  },
+  "2026-house-oh-10": {
+   "party": "dem",
+   "winner": "Kristina Knickerbocker",
+   "by": "AP",
+   "at": "2026-11-05T19:39:42.727Z"
+  },
+  "2026-house-oh-11": {
+   "party": "dem",
+   "winner": "Shontel Brown",
+   "by": "AP",
+   "at": "2026-11-04T00:52:51.929Z"
+  },
+  "2026-house-oh-12": {
+   "party": "rep",
+   "winner": "Troy Balderson",
+   "by": "AP",
+   "at": "2026-11-04T02:35:31.538Z"
+  },
+  "2026-house-oh-13": {
+   "party": "dem",
+   "winner": "Emilia Sykes",
+   "by": "AP",
+   "at": "2026-11-04T00:48:02.013Z"
+  },
+  "2026-house-oh-14": {
+   "party": "rep",
+   "winner": "David Joyce",
+   "by": "AP",
+   "at": "2026-11-04T03:06:01.335Z"
+  },
+  "2026-house-oh-15": {
+   "party": "dem",
+   "winner": "Don Leonard",
+   "by": "AP",
+   "at": "2026-11-04T03:52:04.969Z"
+  },
+  "2026-house-ok-01": {
+   "party": "rep",
+   "winner": "Mark Tedford",
+   "by": "AP",
+   "at": "2026-11-04T04:56:21.290Z"
+  },
+  "2026-house-ok-02": {
+   "party": "rep",
+   "winner": "Josh Brecheen",
+   "by": "AP",
+   "at": "2026-11-04T01:49:16.735Z"
+  },
+  "2026-house-ok-03": {
+   "party": "rep",
+   "winner": "Frank Lucas",
+   "by": "AP",
+   "at": "2026-11-04T01:59:48.663Z"
+  },
+  "2026-house-ok-04": {
+   "party": "rep",
+   "winner": "Tom Cole",
+   "by": "AP",
+   "at": "2026-11-04T02:19:54.574Z"
+  },
+  "2026-house-ok-05": {
+   "party": "rep",
+   "winner": "Stephanie Bice",
+   "by": "AP",
+   "at": "2026-11-04T22:10:38.344Z"
+  },
+  "2026-house-or-01": {
+   "party": "dem",
+   "winner": "Suzanne Bonamici",
+   "by": "AP",
+   "at": "2026-11-04T04:22:06.403Z"
+  },
+  "2026-house-or-02": {
+   "party": "rep",
+   "winner": "Cliff Bentz",
+   "by": "AP",
+   "at": "2026-11-04T05:32:52.740Z"
+  },
+  "2026-house-or-03": {
+   "party": "dem",
+   "winner": "Maxine Dexter",
+   "by": "AP",
+   "at": "2026-11-04T04:12:15.832Z"
+  },
+  "2026-house-or-04": {
+   "party": "dem",
+   "winner": "Val Hoyle",
+   "by": "AP",
+   "at": "2026-11-04T06:09:38.872Z"
+  },
+  "2026-house-or-05": {
+   "party": "dem",
+   "winner": "Janelle Bynum",
+   "by": "AP",
+   "at": "2026-11-04T06:24:39.485Z"
+  },
+  "2026-house-or-06": {
+   "party": "dem",
+   "winner": "Andrea Salinas",
+   "by": "AP",
+   "at": "2026-11-04T06:48:14.873Z"
+  },
+  "2026-house-pa-01": {
+   "party": "dem",
+   "winner": "Bob Harvie",
+   "by": "AP",
+   "at": "2026-11-04T05:37:55.727Z"
+  },
+  "2026-house-pa-02": {
+   "party": "dem",
+   "winner": "Brendan Boyle",
+   "by": "AP",
+   "at": "2026-11-04T01:28:38.680Z"
+  },
+  "2026-house-pa-03": {
+   "party": "dem",
+   "winner": "Chris Rabb",
+   "by": "AP",
+   "at": "2026-11-04T01:27:44.834Z"
+  },
+  "2026-house-pa-04": {
+   "party": "dem",
+   "winner": "Madeleine Dean",
+   "by": "AP",
+   "at": "2026-11-04T01:48:29.148Z"
+  },
+  "2026-house-pa-05": {
+   "party": "dem",
+   "winner": "Mary Scanlon",
+   "by": "AP",
+   "at": "2026-11-04T01:44:53.714Z"
+  },
+  "2026-house-pa-06": {
+   "party": "dem",
+   "winner": "Chrissy Houlahan",
+   "by": "AP",
+   "at": "2026-11-04T02:17:45.309Z"
+  },
+  "2026-house-pa-07": {
+   "party": "dem",
+   "winner": "Bob Brooks",
+   "by": "AP",
+   "at": "2026-11-04T03:27:45.871Z"
+  },
+  "2026-house-pa-08": {
+   "party": "dem",
+   "winner": "Paige Cognetti",
+   "by": "AP",
+   "at": "2026-11-04T03:41:21.541Z"
+  },
+  "2026-house-pa-09": {
+   "party": "rep",
+   "winner": "Dan Meuser",
+   "by": "AP",
+   "at": "2026-11-04T03:31:29.246Z"
+  },
+  "2026-house-pa-10": {
+   "party": "dem",
+   "winner": "Janelle Stelson",
+   "by": "AP",
+   "at": "2026-11-04T03:41:44.934Z"
+  },
+  "2026-house-pa-11": {
+   "party": "rep",
+   "winner": "Lloyd Smucker",
+   "by": "AP",
+   "at": "2026-11-04T03:55:56.813Z"
+  },
+  "2026-house-pa-12": {
+   "party": "dem",
+   "winner": "Summer Lee",
+   "by": "AP",
+   "at": "2026-11-04T01:46:45.265Z"
+  },
+  "2026-house-pa-13": {
+   "party": "rep",
+   "winner": "John Joyce",
+   "by": "AP",
+   "at": "2026-11-04T02:12:38.878Z"
+  },
+  "2026-house-pa-14": {
+   "party": "rep",
+   "winner": "Guy Reschenthaler",
+   "by": "AP",
+   "at": "2026-11-04T03:40:42.605Z"
+  },
+  "2026-house-pa-15": {
+   "party": "rep",
+   "winner": "Glenn Thompson",
+   "by": "AP",
+   "at": "2026-11-04T02:28:58.884Z"
+  },
+  "2026-house-pa-16": {
+   "party": "rep",
+   "winner": "Mike Kelly",
+   "by": "AP",
+   "at": "2026-11-04T04:03:56.220Z"
+  },
+  "2026-house-pa-17": {
+   "party": "dem",
+   "winner": "Chris Deluzio",
+   "by": "AP",
+   "at": "2026-11-04T02:01:11.790Z"
+  },
+  "2026-house-ri-01": {
+   "party": "dem",
+   "winner": "Gabriel Amo",
+   "by": "AP",
+   "at": "2026-11-04T01:32:15.576Z"
+  },
+  "2026-house-ri-02": {
+   "party": "dem",
+   "winner": "Seth Magaziner",
+   "by": "AP",
+   "at": "2026-11-04T01:36:03.351Z"
+  },
+  "2026-house-sc-03": {
+   "party": "rep",
+   "winner": "Sheri Biggs",
+   "by": "AP",
+   "at": "2026-11-04T01:33:41.525Z"
+  },
+  "2026-house-sc-04": {
+   "party": "rep",
+   "winner": "William Timmons",
+   "by": "AP",
+   "at": "2026-11-04T03:00:13.551Z"
+  },
+  "2026-house-sc-05": {
+   "party": "rep",
+   "winner": "Wes Climer",
+   "by": "AP",
+   "at": "2026-11-04T03:08:28.022Z"
+  },
+  "2026-house-sc-06": {
+   "party": "dem",
+   "winner": "James Clyburn",
+   "by": "AP",
+   "at": "2026-11-04T01:37:40.885Z"
+  },
+  "2026-house-sc-07": {
+   "party": "rep",
+   "winner": "Russell Fry",
+   "by": "AP",
+   "at": "2026-11-04T02:13:04.127Z"
+  },
+  "2026-house-sd-al": {
+   "party": "rep",
+   "winner": "Marty Jackley",
+   "by": "AP",
+   "at": "2026-11-04T04:03:59.912Z"
+  },
+  "2026-house-tn-01": {
+   "party": "rep",
+   "winner": "Diana Harshbarger",
+   "by": "AP",
+   "at": "2026-11-04T03:29:44.553Z"
+  },
+  "2026-house-tn-02": {
+   "party": "rep",
+   "winner": "Tim Burchett",
+   "by": "AP",
+   "at": "2026-11-04T04:06:32.433Z"
+  },
+  "2026-house-tn-03": {
+   "party": "rep",
+   "winner": "Chuck Fleischmann",
+   "by": "AP",
+   "at": "2026-11-04T03:40:05.919Z"
+  },
+  "2026-house-tn-05": {
+   "party": "rep",
+   "winner": "Charlie Hatcher",
+   "by": "AP",
+   "at": "2026-11-04T05:17:15.428Z"
+  },
+  "2026-house-tn-06": {
+   "party": "rep",
+   "winner": "Johnny Garrett",
+   "by": "AP",
+   "at": "2026-11-04T05:16:48.755Z"
+  },
+  "2026-house-tn-07": {
+   "party": "rep",
+   "winner": "Matt Van Epps",
+   "by": "AP",
+   "at": "2026-11-05T17:01:14.324Z"
+  },
+  "2026-house-tn-08": {
+   "party": "rep",
+   "winner": "David Kustoff",
+   "by": "AP",
+   "at": "2026-11-04T05:16:19.424Z"
+  },
+  "2026-house-tn-09": {
+   "party": "rep",
+   "winner": "Brent Taylor",
+   "by": "AP",
+   "at": "2026-11-05T19:40:13.354Z"
+  },
+  "2026-house-tx-01": {
+   "party": "rep",
+   "winner": "Nathaniel Moran",
+   "by": "AP",
+   "at": "2026-11-04T03:00:08.161Z"
+  },
+  "2026-house-tx-02": {
+   "party": "rep",
+   "winner": "Steve Toth",
+   "by": "AP",
+   "at": "2026-11-04T22:11:41.765Z"
+  },
+  "2026-house-tx-03": {
+   "party": "rep",
+   "winner": "Keith Self",
+   "by": "AP",
+   "at": "2026-11-04T07:09:45.723Z"
+  },
+  "2026-house-tx-04": {
+   "party": "rep",
+   "winner": "Pat Fallon",
+   "by": "AP",
+   "at": "2026-11-04T05:44:32.828Z"
+  },
+  "2026-house-tx-05": {
+   "party": "rep",
+   "winner": "Lance Gooden",
+   "by": "AP",
+   "at": "2026-11-04T22:11:54.444Z"
+  },
+  "2026-house-tx-06": {
+   "party": "rep",
+   "winner": "Jake Ellzey",
+   "by": "AP",
+   "at": "2026-11-04T07:20:02.967Z"
+  },
+  "2026-house-tx-07": {
+   "party": "dem",
+   "winner": "Lizzie Pannill Fletcher",
+   "by": "AP",
+   "at": "2026-11-04T02:26:22.127Z"
+  },
+  "2026-house-tx-08": {
+   "party": "rep",
+   "winner": "Jessica Hart Steinmann",
+   "by": "AP",
+   "at": "2026-11-04T06:08:38.787Z"
+  },
+  "2026-house-tx-09": {
+   "party": "dem",
+   "winner": "Leticia Gutierrez",
+   "by": "AP",
+   "at": "2026-11-04T18:02:04.375Z"
+  },
+  "2026-house-tx-10": {
+   "party": "rep",
+   "winner": "Chris Gober",
+   "by": "AP",
+   "at": "2026-11-04T06:00:38.956Z"
+  },
+  "2026-house-tx-11": {
+   "party": "rep",
+   "winner": "August Pfluger",
+   "by": "AP",
+   "at": "2026-11-04T05:36:11.524Z"
+  },
+  "2026-house-tx-12": {
+   "party": "rep",
+   "winner": "Craig Goldman",
+   "by": "AP",
+   "at": "2026-11-04T08:30:42.898Z"
+  },
+  "2026-house-tx-13": {
+   "party": "rep",
+   "winner": "Ronny Jackson",
+   "by": "AP",
+   "at": "2026-11-04T04:58:26.347Z"
+  },
+  "2026-house-tx-14": {
+   "party": "rep",
+   "winner": "Randy Weber",
+   "by": "AP",
+   "at": "2026-11-04T05:41:14.100Z"
+  },
+  "2026-house-tx-15": {
+   "party": "dem",
+   "winner": "Bobby Pulido",
+   "by": "AP",
+   "at": "2026-11-04T05:37:33.656Z"
+  },
+  "2026-house-tx-16": {
+   "party": "dem",
+   "winner": "Veronica Escobar",
+   "by": "AP",
+   "at": "2026-11-04T02:08:20.730Z"
+  },
+  "2026-house-tx-17": {
+   "party": "rep",
+   "winner": "Pete Sessions",
+   "by": "AP",
+   "at": "2026-11-04T06:59:29.171Z"
+  },
+  "2026-house-tx-18": {
+   "party": "dem",
+   "winner": "Christian Menefee",
+   "by": "AP",
+   "at": "2026-11-04T01:24:02.876Z"
+  },
+  "2026-house-tx-19": {
+   "party": "rep",
+   "winner": "Tom Sell",
+   "by": "AP",
+   "at": "2026-11-04T05:34:57.324Z"
+  },
+  "2026-house-tx-20": {
+   "party": "dem",
+   "winner": "Joaquin Castro",
+   "by": "AP",
+   "at": "2026-11-04T01:52:52.580Z"
+  },
+  "2026-house-tx-21": {
+   "party": "rep",
+   "winner": "Mark Teixeira",
+   "by": "AP",
+   "at": "2026-11-04T05:42:34.575Z"
+  },
+  "2026-house-tx-22": {
+   "party": "rep",
+   "winner": "Trever Nehls",
+   "by": "AP",
+   "at": "2026-11-04T22:12:10.165Z"
+  },
+  "2026-house-tx-23": {
+   "party": "dem",
+   "winner": "Katy Padilla Stout",
+   "by": "AP",
+   "at": "2026-11-04T06:05:50.409Z"
+  },
+  "2026-house-tx-24": {
+   "party": "rep",
+   "winner": "Beth Van Duyne",
+   "by": "AP",
+   "at": "2026-11-04T06:33:16.067Z"
+  },
+  "2026-house-tx-25": {
+   "party": "rep",
+   "winner": "Roger Williams",
+   "by": "AP",
+   "at": "2026-11-04T07:04:52.519Z"
+  },
+  "2026-house-tx-26": {
+   "party": "rep",
+   "winner": "Brandon Gill",
+   "by": "AP",
+   "at": "2026-11-04T05:47:37.881Z"
+  },
+  "2026-house-tx-27": {
+   "party": "rep",
+   "winner": "Michael Cloud",
+   "by": "AP",
+   "at": "2026-11-04T22:15:05.044Z"
+  },
+  "2026-house-tx-28": {
+   "party": "dem",
+   "winner": "Henry Cuellar",
+   "by": "AP",
+   "at": "2026-11-04T05:31:08.827Z"
+  },
+  "2026-house-tx-29": {
+   "party": "dem",
+   "winner": "Sylvia Garcia",
+   "by": "AP",
+   "at": "2026-11-04T02:27:51.201Z"
+  },
+  "2026-house-tx-30": {
+   "party": "dem",
+   "winner": "Frederick Haynes III",
+   "by": "AP",
+   "at": "2026-11-04T01:12:34.238Z"
+  },
+  "2026-house-tx-31": {
+   "party": "rep",
+   "winner": "John Carter",
+   "by": "AP",
+   "at": "2026-11-04T05:37:40.890Z"
+  },
+  "2026-house-tx-32": {
+   "party": "rep",
+   "winner": "Jace Yarbrough",
+   "by": "AP",
+   "at": "2026-11-04T22:12:21.225Z"
+  },
+  "2026-house-tx-33": {
+   "party": "dem",
+   "winner": "Colin Allred",
+   "by": "AP",
+   "at": "2026-11-04T01:10:44.669Z"
+  },
+  "2026-house-tx-34": {
+   "party": "dem",
+   "winner": "Vicente Gonzalez",
+   "by": "AP",
+   "at": "2026-11-04T03:51:38.471Z"
+  },
+  "2026-house-tx-35": {
+   "party": "dem",
+   "winner": "Johnny Garcia",
+   "by": "AP",
+   "at": "2026-11-04T06:23:57.344Z"
+  },
+  "2026-house-tx-36": {
+   "party": "rep",
+   "winner": "Brian Babin",
+   "by": "AP",
+   "at": "2026-11-04T06:36:05.832Z"
+  },
+  "2026-house-tx-37": {
+   "party": "dem",
+   "winner": "Greg Casar",
+   "by": "AP",
+   "at": "2026-11-04T03:56:17.985Z"
+  },
+  "2026-house-tx-38": {
+   "party": "rep",
+   "winner": "Jon Bonck",
+   "by": "AP",
+   "at": "2026-11-04T22:12:40.074Z"
+  },
+  "2026-house-ut-01": {
+   "party": "dem",
+   "winner": "Ben McAdams",
+   "by": "AP",
+   "at": "2026-11-04T05:26:32.273Z"
+  },
+  "2026-house-ut-02": {
+   "party": "rep",
+   "winner": "Blake Moore",
+   "by": "AP",
+   "at": "2026-11-05T17:02:26.384Z"
+  },
+  "2026-house-ut-03": {
+   "party": "rep",
+   "winner": "Celeste Maloy",
+   "by": "AP",
+   "at": "2026-11-04T05:03:50.989Z"
+  },
+  "2026-house-ut-04": {
+   "party": "rep",
+   "winner": "Mike Kennedy",
+   "by": "AP",
+   "at": "2026-11-06T01:43:45.319Z"
+  },
+  "2026-house-va-01": {
+   "party": "dem",
+   "winner": "Shannon Taylor",
+   "by": "AP",
+   "at": "2026-11-05T16:59:33.672Z"
+  },
+  "2026-house-va-02": {
+   "party": "dem",
+   "winner": "Elaine Luria",
+   "by": "AP",
+   "at": "2026-11-04T04:47:25.620Z"
+  },
+  "2026-house-va-03": {
+   "party": "dem",
+   "winner": "Robert Scott",
+   "by": "AP",
+   "at": "2026-11-04T01:08:23.968Z"
+  },
+  "2026-house-va-04": {
+   "party": "dem",
+   "winner": "Jennifer McClellan",
+   "by": "AP",
+   "at": "2026-11-04T01:33:41.774Z"
+  },
+  "2026-house-va-05": {
+   "party": "rep",
+   "winner": "John McGuire III",
+   "by": "AP",
+   "at": "2026-11-05T16:59:42.774Z"
+  },
+  "2026-house-va-06": {
+   "party": "rep",
+   "winner": "Ben Cline",
+   "by": "AP",
+   "at": "2026-11-04T02:10:30.669Z"
+  },
+  "2026-house-va-07": {
+   "party": "dem",
+   "winner": "Eugene Vindman",
+   "by": "AP",
+   "at": "2026-11-04T01:40:22.097Z"
+  },
+  "2026-house-va-08": {
+   "party": "dem",
+   "winner": "Donald Beyer Jr.",
+   "by": "AP",
+   "at": "2026-11-04T01:05:22.460Z"
+  },
+  "2026-house-va-09": {
+   "party": "rep",
+   "winner": "H. Griffith",
+   "by": "AP",
+   "at": "2026-11-04T01:29:35.869Z"
+  },
+  "2026-house-va-10": {
+   "party": "dem",
+   "winner": "Suhas Subramanyam",
+   "by": "AP",
+   "at": "2026-11-04T01:03:36.123Z"
+  },
+  "2026-house-va-11": {
+   "party": "dem",
+   "winner": "James Walkinshaw",
+   "by": "AP",
+   "at": "2026-11-04T02:10:56.310Z"
+  },
+  "2026-house-vt-al": {
+   "party": "dem",
+   "winner": "Becca Balint",
+   "by": "AP",
+   "at": "2026-11-04T00:41:47.560Z"
+  },
+  "2026-house-wa-01": {
+   "party": "dem",
+   "winner": "Suzan DelBene",
+   "by": "AP",
+   "at": "2026-11-04T04:38:49.721Z"
+  },
+  "2026-house-wa-02": {
+   "party": "dem",
+   "winner": "Rick Larsen",
+   "by": "AP",
+   "at": "2026-11-04T04:38:38.046Z"
+  },
+  "2026-house-wa-03": {
+   "party": "dem",
+   "winner": "Marie Gluesenkamp Perez",
+   "by": "AP",
+   "at": "2026-11-04T18:04:01.273Z"
+  },
+  "2026-house-wa-04": {
+   "party": "rep",
+   "winner": "Amanda McKinney",
+   "by": "AP",
+   "at": "2026-11-06T01:44:28.825Z"
+  },
+  "2026-house-wa-06": {
+   "party": "dem",
+   "winner": "Emily Randall",
+   "by": "AP",
+   "at": "2026-11-04T04:20:50.781Z"
+  },
+  "2026-house-wa-07": {
+   "party": "dem",
+   "winner": "Pramila Jayapal",
+   "by": "AP",
+   "at": "2026-11-04T04:17:15.277Z"
+  },
+  "2026-house-wa-08": {
+   "party": "dem",
+   "winner": "Kim Schrier",
+   "by": "AP",
+   "at": "2026-11-04T04:54:58.455Z"
+  },
+  "2026-house-wa-09": {
+   "party": "dem",
+   "winner": "Adam Smith",
+   "by": "AP",
+   "at": "2026-11-04T04:17:09.856Z"
+  },
+  "2026-house-wa-10": {
+   "party": "dem",
+   "winner": "Marilyn Strickland",
+   "by": "AP",
+   "at": "2026-11-04T04:21:09.952Z"
+  },
+  "2026-house-wi-01": {
+   "party": "dem",
+   "winner": "Mitchell Berman",
+   "by": "AP",
+   "at": "2026-11-04T05:48:24.571Z"
   },
   "2026-house-wi-02": {
    "party": "dem",
    "winner": "Mark Pocan",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Only candidate on the ballot (write-ins aside), per the state's candidate list",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-001": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-002": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-010": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-011": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-017": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-019": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-021": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-023": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-024": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-031": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-034": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-042": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-051": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-052": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-053": {
-   "party": "dem",
-   "winner": "Steve Malagari",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 36.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-054": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-056": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-061": {
-   "party": "dem",
-   "winner": "Liz Hanbidge",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 37.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-069": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-070": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-071": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-078": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-083": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-084": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-085": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-090": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-101": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-104": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-105": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-116": {
-   "party": "rep",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-127": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-129": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-133": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-146": {
-   "party": "dem",
-   "winner": "Joe Ciresi",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 39.9 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-148": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-149": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-150": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z",
-   "active": false,
-   "retracted_at": "2026-11-03T20:30:45Z",
-   "retracted_note": "The state's results feed lists more than one candidate"
-  },
-  "2026-statehouse-pa:PA-151": {
-   "party": "dem",
-   "winner": "Melissa Cerrato",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 40.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-152": {
-   "party": "dem",
-   "winner": "Nancy Guenst",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 36.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-163": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-164": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-172": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-174": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-175": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-179": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-180": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-181": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-182": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-184": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-185": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-186": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-188": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-190": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-191": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-194": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-195": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-197": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-198": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-200": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-201": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-202": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-203": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania House forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statesenate-pa:PA-S02": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania Senate forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statesenate-pa:PA-S08": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania Senate forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statesenate-pa:PA-S42": {
-   "party": "dem",
-   "by": "Unopposed",
-   "at": "2026-11-03T17:24:44Z",
-   "note": "Uncontested per StateNavigate's Pennsylvania Senate forecast (November 2, 2026)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T17:24:44Z"
-  },
-  "2026-statehouse-pa:PA-027": {
-   "party": "dem",
-   "winner": "Dan Deasy",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:30:45Z",
-   "note": "Only candidate on the ballot, per Pennsylvania's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:30:45Z"
-  },
-  "2026-statehouse-pa:PA-073": {
-   "party": "rep",
-   "winner": "Dallas Kephart",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:30:45Z",
-   "note": "Only candidate on the ballot, per Pennsylvania's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:30:45Z"
-  },
-  "2026-statehouse-pa:PA-155": {
-   "party": "dem",
-   "winner": "Danielle Friel Otten",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:30:45Z",
-   "note": "Only candidate on the ballot, per Pennsylvania's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:30:45Z"
-  },
-  "2026-statehouse-pa:PA-158": {
-   "party": "dem",
-   "winner": "Christina D Sappey",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:30:45Z",
-   "note": "Only candidate on the ballot, per Pennsylvania's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:30:45Z"
-  },
-  "2026-statehouse-wv:WV-008": {
-   "party": "rep",
-   "winner": "Steven L. Smith",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-009": {
-   "party": "rep",
-   "winner": "Kerry G. Murphy",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-022": {
-   "party": "rep",
-   "winner": "Aaron Holley",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-025": {
-   "party": "dem",
-   "winner": "Sean Hornbuckle",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-026": {
-   "party": "rep",
-   "winner": "Matthew Rohrbach",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-043": {
-   "party": "rep",
-   "winner": "Christopher W Toney",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-056": {
-   "party": "dem",
-   "winner": "Kayla Young",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-057": {
-   "party": "dem",
-   "winner": "Hollis T. Lewis",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-062": {
-   "party": "rep",
-   "winner": "Roger Hanshaw",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-068": {
-   "party": "rep",
-   "winner": "Chris Phillips",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-072": {
-   "party": "rep",
-   "winner": "Clay Riley",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-081": {
-   "party": "dem",
-   "winner": "Anitra Hamilton",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statehouse-wv:WV-083": {
-   "party": "rep",
-   "winner": "George Street",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-statesenate-wv:WV-S04": {
-   "party": "rep",
-   "winner": "Eric J. Tarr",
-   "by": "Unopposed",
-   "at": "2026-11-03T20:50:18Z",
-   "note": "Only candidate on the ballot, per West Virginia's results feed (read 2026-11-03)",
-   "entered_by": "scripts/call_unopposed.py",
-   "entered_at": "2026-11-03T20:50:18Z"
-  },
-  "2026-house-ky-05": {
-   "party": "rep",
    "by": "AP",
-   "at": "2026-11-04T00:03:32Z",
-   "winner": "Hal Rogers",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:03:32Z"
-  },
-  "2026-sen-va": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:03:46Z",
-   "winner": "Mark R. Warner",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:03:46Z"
-  },
-  "2026-house-fl-20": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:11:29Z",
-   "winner": "Debbie Wasserman Schultz",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:11:29Z"
-  },
-  "2026-house-ky-03": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:12:45Z",
-   "winner": "Morgan McGarvey",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:12:45Z"
-  },
-  "2026-house-fl-19": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T00:30:49Z",
-   "winner": "Jim Schwartzel",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:30:49Z"
-  },
-  "2026-house-vt-al": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:44:19Z",
-   "winner": "BECCA BALINT",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:44:19Z"
-  },
-  "2026-house-ga-04": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:44:28Z",
-   "winner": "Henry \"Hank\" Johnson Jr. (I)",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:44:28Z"
-  },
-  "2026-house-ga-05": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:44:30Z",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:44:30Z"
-  },
-  "2026-house-ga-06": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:44:33Z",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:44:33Z"
-  },
-  "2026-house-ga-13": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:44:37Z",
-   "winner": "Jasmine Clark",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:44:37Z"
-  },
-  "2026-house-fl-24": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:45:48Z",
-   "winner": "Oliver Gilbert III",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:45:48Z"
-  },
-  "2026-house-fl-23": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:46:08Z",
-   "winner": "Lois Frankel",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:46:08Z"
-  },
-  "2026-sen-ga": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T00:57:57Z",
-   "winner": "Jon Ossoff (I)",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T00:57:57Z"
-  },
-  "2026-sen-ma": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:02:32Z",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:02:32Z"
-  },
-  "2026-sen-il": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:02:42Z",
-   "winner": "Juliana Stratton",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:02:42Z"
-  },
-  "2026-sen-de": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:02:58Z",
-   "winner": "CHRIS COONS",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:02:58Z"
-  },
-  "2026-gov-pa": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:03:24Z",
-   "winner": "JOSH SHAPIRO / DAVIS, AUSTIN",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:03:24Z"
-  },
-  "2026-gov-md": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:03:32Z",
-   "winner": "Wes Moore and Aruna Miller",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:03:32Z"
-  },
-  "2026-gov-ma": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:03:39Z",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:03:39Z"
-  },
-  "2026-gov-il": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:03:48Z",
-   "winner": "JB Pritzker",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:03:48Z"
-  },
-  "2026-house-fl-25": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:10:09Z",
-   "winner": "Jared Moskowitz",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:10:09Z"
-  },
-  "2026-house-va-08": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:12:31Z",
-   "winner": "Donald S. Beyer, Jr.",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:12:31Z"
-  },
-  "2026-house-va-10": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:12:33Z",
-   "winner": "Suhas Subramanyam",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:12:33Z"
-  },
-  "2026-house-va-03": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:12:55Z",
-   "winner": "Robert C. \"Bobby\" Scott",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:12:55Z"
-  },
-  "2026-house-ga-09": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T01:13:07Z",
-   "winner": "Andrew Clyde (I)",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:13:07Z"
-  },
-  "2026-house-fl-05": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T01:13:22Z",
-   "winner": "John Rutherford",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:13:22Z"
-  },
-  "2026-house-fl-06": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T01:13:24Z",
-   "winner": "Randy Fine",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:13:24Z"
-  },
-  "2026-house-fl-08": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T01:13:32Z",
-   "winner": "Mike Haridopolos",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:13:32Z"
-  },
-  "2026-house-fl-12": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T01:13:36Z",
-   "winner": "Gus Bilirakis",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:13:36Z"
-  },
-  "2026-house-fl-15": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T01:13:41Z",
-   "winner": "Laurel Lee",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:13:41Z"
-  },
-  "2026-house-fl-14": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:13:58Z",
-   "winner": "Kathy Castor",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:13:58Z"
-  },
-  "2026-house-ga-02": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:25:11Z",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:25:11Z"
-  },
-  "2026-sen-nc": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:25:28Z",
-   "winner": "Roy Cooper",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:25:28Z"
-  },
-  "2026-sen-fl": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T01:34:54Z",
-   "winner": "Ashley Moody",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:34:54Z"
-  },
-  "2026-sen-nh": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T01:35:03Z",
-   "winner": "Chris Pappas",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T01:35:03Z"
-  },
-  "2026-gov-ga": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T02:06:31Z",
-   "winner": "Keisha Lance Bottoms",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T02:06:31Z"
-  },
-  "2026-gov-fl": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T02:11:57Z",
-   "winner": "Byron Donalds",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T02:11:57Z"
-  },
-  "2026-house-nc-11": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T02:32:22Z",
-   "winner": "Jamie Ager",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T02:32:22Z"
-  },
-  "2026-sen-wv": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T02:47:09Z",
-   "winner": "Shelley Capito",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T02:47:09Z"
-  },
-  "2026-house-nj-07": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T02:51:29Z",
-   "winner": "Rebecca Bennett",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T02:51:29Z"
-  },
-  "2026-sen-sc": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T03:00:30Z",
-   "winner": "DEM Annie Andrews",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T03:00:30Z"
-  },
-  "2026-house-pa-12": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T03:00:56Z",
-   "winner": "SUMMER LEE",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T03:00:56Z"
-  },
-  "2026-house-pa-08": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T03:01:00Z",
-   "winner": "PAIGE COGNETTI",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T03:01:00Z"
-  },
-  "2026-house-ky-06": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T03:09:05Z",
-   "winner": "Zach Dembo",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T03:09:05Z"
-  },
-  "2026-house-co-08": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T13:56:33Z",
-   "winner": "Manny Rutinel",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T13:56:33Z"
-  },
-  "2026-house-ut-01": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T13:56:49Z",
-   "winner": "BEN MCADAMS",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T13:56:49Z"
-  },
-  "2026-house-wi-01": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T13:57:09Z",
-   "winner": "Mitchell Berman",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T13:57:09Z"
-  },
-  "2026-house-wi-05": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T13:57:39Z",
-   "winner": "Scott Fitzgerald",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T13:57:39Z"
-  },
-  "2026-house-wi-06": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T13:57:41Z",
-   "winner": "Glenn Grothman",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T13:57:41Z"
-  },
-  "2026-house-wi-07": {
-   "party": "rep",
-   "by": "AP",
-   "at": "2026-11-04T13:57:45Z",
-   "winner": "Michael Alfonso",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T13:57:45Z"
-  },
-  "2026-house-wi-04": {
-   "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T13:58:19Z",
-   "winner": "Gwen Moore",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T13:58:19Z"
+   "at": "2026-11-04T02:00:00.000Z"
   },
   "2026-house-wi-03": {
    "party": "dem",
-   "by": "AP",
-   "at": "2026-11-04T13:58:35Z",
    "winner": "Rebecca Cooke",
-   "entered_by": "wall",
-   "entered_at": "2026-11-04T13:58:35Z"
+   "by": "AP",
+   "at": "2026-11-04T05:48:40.114Z"
   },
-  "2026-statehouse-pa:PA-100": {
-   "party": "rep",
-   "winner": "Dave Nissley",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lancaster); leader by 34.6 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-103": {
+  "2026-house-wi-04": {
    "party": "dem",
-   "winner": "Nate Davidson",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Cumberland, Dauphin); leader by 36.8 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Gwen Moore",
+   "by": "AP",
+   "at": "2026-11-04T02:49:38.622Z"
   },
-  "2026-statehouse-pa:PA-106": {
+  "2026-house-wi-05": {
    "party": "rep",
-   "winner": "Tom Mehaffie",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Dauphin); leader by 15.1 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Scott Fitzgerald",
+   "by": "AP",
+   "at": "2026-11-04T03:14:43.861Z"
   },
-  "2026-statehouse-pa:PA-109": {
+  "2026-house-wi-06": {
    "party": "rep",
-   "winner": "Robert Leadbeter",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Columbia); leader by 22.8 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Glenn Grothman",
+   "by": "AP",
+   "at": "2026-11-04T03:35:42.980Z"
   },
-  "2026-statehouse-pa:PA-112": {
+  "2026-house-wi-07": {
+   "party": "rep",
+   "winner": "Michael Alfonso",
+   "by": "AP",
+   "at": "2026-11-04T04:02:12.771Z"
+  },
+  "2026-house-wi-08": {
+   "party": "rep",
+   "winner": "Tony Wied",
+   "by": "AP",
+   "at": "2026-11-04T04:01:22.295Z"
+  },
+  "2026-house-wv-01": {
+   "party": "rep",
+   "winner": "Carol Miller",
+   "by": "AP",
+   "at": "2026-11-04T02:20:50.935Z"
+  },
+  "2026-house-wv-02": {
+   "party": "rep",
+   "winner": "Riley Moore",
+   "by": "AP",
+   "at": "2026-11-04T02:22:21.433Z"
+  },
+  "2026-house-wy-al": {
+   "party": "rep",
+   "winner": "Chuck Gray",
+   "by": "AP",
+   "at": "2026-11-04T04:40:29.036Z"
+  },
+  "2026-sen-al": {
+   "party": "rep",
+   "winner": "Barry Moore",
+   "by": "AP",
+   "at": "2026-11-04T04:17:58.590Z"
+  },
+  "2026-sen-ar": {
+   "party": "rep",
+   "winner": "Tom Cotton",
+   "by": "AP",
+   "at": "2026-11-04T03:40:06.259Z"
+  },
+  "2026-sen-co": {
    "party": "dem",
-   "winner": "Kyle J Mullins",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lackawanna); leader by 35.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "John Hickenlooper",
+   "by": "AP",
+   "at": "2026-11-04T02:00:32.190Z"
   },
-  "2026-statehouse-pa:PA-113": {
+  "2026-sen-de": {
    "party": "dem",
-   "winner": "Kyle T Donahue",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lackawanna); leader by 35.1 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Chris Coons",
+   "by": "AP",
+   "at": "2026-11-04T01:00:20.744Z"
   },
-  "2026-statehouse-pa:PA-114": {
+  "2026-sen-fl": {
+   "party": "rep",
+   "winner": "Ashley Moody",
+   "by": "AP",
+   "at": "2026-11-04T01:34:55.352Z"
+  },
+  "2026-sen-ga": {
    "party": "dem",
-   "winner": "Bridget Malloy Kosierowski",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lackawanna); leader by 35.4 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Jon Ossoff",
+   "by": "AP",
+   "at": "2026-11-04T00:55:21.984Z"
   },
-  "2026-statehouse-pa:PA-125": {
-   "party": "rep",
-   "winner": "Joe Kerwin",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Dauphin); leader by 24.4 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-126": {
+  "2026-sen-ia": {
    "party": "dem",
-   "winner": "Jacklyn Rusnock",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Berks); leader by 35.2 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Josh Turek",
+   "by": "AP",
+   "at": "2026-11-04T04:35:30.952Z"
   },
-  "2026-statehouse-pa:PA-128": {
+  "2026-sen-id": {
    "party": "rep",
-   "winner": "Mark M Gillen",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Berks); leader by 7.5 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Jim Risch",
+   "by": "AP",
+   "at": "2026-11-04T06:31:52.473Z"
   },
-  "2026-statehouse-pa:PA-130": {
-   "party": "rep",
-   "winner": "Melissa Brewer",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Berks); leader by 15.8 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-135": {
+  "2026-sen-il": {
    "party": "dem",
-   "winner": "Steve Samuelson",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Northampton); leader by 46.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Juliana Stratton",
+   "by": "AP",
+   "at": "2026-11-04T01:00:40.102Z"
   },
-  "2026-statehouse-pa:PA-136": {
+  "2026-sen-ks": {
    "party": "dem",
-   "winner": "Robert Freeman",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Northampton); leader by 40.6 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Adam Hamilton",
+   "by": "AP",
+   "at": "2026-11-04T04:24:51.393Z"
   },
-  "2026-statehouse-pa:PA-137": {
+  "2026-sen-ky": {
+   "party": "rep",
+   "winner": "Andy Barr",
+   "by": "AP",
+   "at": "2026-11-04T02:16:00.684Z"
+  },
+  "2026-sen-la": {
+   "party": "rep",
+   "winner": "Julia Letlow",
+   "by": "AP",
+   "at": "2026-11-04T05:31:29.298Z"
+  },
+  "2026-sen-ma": {
    "party": "dem",
-   "winner": "Jeff Warren",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Northampton); leader by 8.2 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Edward Markey",
+   "by": "AP",
+   "at": "2026-11-04T01:01:27.995Z"
   },
-  "2026-statehouse-pa:PA-138": {
-   "party": "rep",
-   "winner": "Ann Flood",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Northampton); leader by 14.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-147": {
+  "2026-sen-me": {
    "party": "dem",
-   "winner": "Margaret Burke",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 0.6 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Troy Jackson",
+   "by": "AP",
+   "at": "2026-11-04T06:02:01.517Z"
   },
-  "2026-statehouse-pa:PA-014": {
-   "party": "rep",
-   "winner": "Roman Kozak",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Beaver); leader by 16.0 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-153": {
+  "2026-sen-mi": {
    "party": "dem",
-   "winner": "Ben Sanchez",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 50.7 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Abdul El-Sayed",
+   "by": "AP",
+   "at": "2026-11-04T07:27:18.642Z"
   },
-  "2026-statehouse-pa:PA-154": {
+  "2026-sen-mn": {
    "party": "dem",
-   "winner": "Napoleon Nelson",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 80.4 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Peggy Flanagan",
+   "by": "AP",
+   "at": "2026-11-04T05:07:07.217Z"
   },
-  "2026-statehouse-pa:PA-159": {
+  "2026-sen-mt": {
+   "party": "rep",
+   "winner": "Kurt Alme",
+   "by": "AP",
+   "at": "2026-11-04T07:54:25.875Z"
+  },
+  "2026-sen-nc": {
    "party": "dem",
-   "winner": "Carol Kazeem",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Delaware); leader by 51.9 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Roy Cooper",
+   "by": "AP",
+   "at": "2026-11-04T01:23:59.591Z"
   },
-  "2026-statehouse-pa:PA-161": {
+  "2026-sen-ne": {
+   "party": "rep",
+   "winner": "Pete Ricketts",
+   "by": "AP",
+   "at": "2026-11-04T08:27:46.220Z"
+  },
+  "2026-sen-nh": {
    "party": "dem",
-   "winner": "Leanne Krueger",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Delaware); leader by 34.2 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Chris Pappas",
+   "by": "AP",
+   "at": "2026-11-04T01:20:51.833Z"
   },
-  "2026-statehouse-pa:PA-165": {
+  "2026-sen-nj": {
    "party": "dem",
-   "winner": "Jennifer O'Mara",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Delaware); leader by 35.9 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Cory Booker",
+   "by": "AP",
+   "at": "2026-11-04T01:00:53.549Z"
   },
-  "2026-statehouse-pa:PA-166": {
+  "2026-sen-nm": {
    "party": "dem",
-   "winner": "Judy Trombetta",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Delaware); leader by 35.1 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Ben Lujan",
+   "by": "AP",
+   "at": "2026-11-04T02:00:42.148Z"
   },
-  "2026-statehouse-pa:PA-168": {
+  "2026-sen-oh": {
    "party": "dem",
-   "winner": "Lisa A Borowski",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Delaware); leader by 32.6 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Sherrod Brown",
+   "by": "AP",
+   "at": "2026-11-04T04:10:04.990Z"
   },
-  "2026-statehouse-pa:PA-016": {
+  "2026-sen-ok": {
+   "party": "rep",
+   "winner": "Kevin Hern",
+   "by": "AP",
+   "at": "2026-11-04T02:36:04.840Z"
+  },
+  "2026-sen-or": {
    "party": "dem",
-   "winner": "Robert F Matzie",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Beaver); leader by 21.4 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Jeff Merkley",
+   "by": "AP",
+   "at": "2026-11-04T04:00:14.705Z"
   },
-  "2026-statehouse-pa:PA-171": {
-   "party": "rep",
-   "winner": "Kerry A Benninghoff",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Centre, Mifflin); leader by 33.5 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-193": {
-   "party": "rep",
-   "winner": "Catherine Wallen",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Adams, Cumberland); leader by 27.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-199": {
-   "party": "rep",
-   "winner": "Barb Gleim",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Cumberland); leader by 5.5 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-037": {
-   "party": "rep",
-   "winner": "Mindy Fee",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lancaster); leader by 24.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-043": {
-   "party": "rep",
-   "winner": "Keith J Greiner",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lancaster); leader by 29.4 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-049": {
+  "2026-sen-ri": {
    "party": "dem",
-   "winner": "Izzy Smith-Wade-El",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lancaster); leader by 48.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "John Reed",
+   "by": "AP",
+   "at": "2026-11-04T01:01:11.089Z"
   },
-  "2026-statehouse-pa:PA-055": {
-   "party": "rep",
-   "winner": "Jill Cooper",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Westmoreland); leader by 21.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-057": {
-   "party": "rep",
-   "winner": "Eric Nelson",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Westmoreland); leader by 16.2 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-058": {
-   "party": "rep",
-   "winner": "Eric Davanzo",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Westmoreland); leader by 21.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-059": {
-   "party": "rep",
-   "winner": "Leslie Rossi",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Westmoreland); leader by 23.1 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-005": {
-   "party": "rep",
-   "winner": "Eric Weaknecht",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Berks); leader by 22.0 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-060": {
-   "party": "rep",
-   "winner": "Abby Major",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Armstrong, Westmoreland); leader by 31.2 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-063": {
-   "party": "rep",
-   "winner": "Josh Bashline",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Armstrong, Clarion); leader by 50.0 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-065": {
-   "party": "rep",
-   "winner": "Kathy L Rapp",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Crawford, Forest, Warren); leader by 34.7 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-068": {
-   "party": "rep",
-   "winner": "Clint Owlett",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Bradford, Tioga); leader by 56.5 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-072": {
+  "2026-sen-sc": {
    "party": "dem",
-   "winner": "Frank Burns",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Cambria); leader by 17.5 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Annie Andrews",
+   "by": "AP",
+   "at": "2026-11-04T03:39:16.039Z"
   },
-  "2026-statehouse-pa:PA-075": {
+  "2026-sen-sd": {
    "party": "rep",
-   "winner": "Mike Armanini",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Clearfield, Elk); leader by 41.7 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Mike Rounds",
+   "by": "AP",
+   "at": "2026-11-04T05:02:17.689Z"
   },
-  "2026-statehouse-pa:PA-077": {
+  "2026-sen-tn": {
+   "party": "rep",
+   "winner": "Bill Hagerty",
+   "by": "AP",
+   "at": "2026-11-04T04:28:22.446Z"
+  },
+  "2026-sen-tx": {
    "party": "dem",
-   "winner": "H Scott Conklin",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Centre); leader by 35.1 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "James Talarico",
+   "by": "AP",
+   "at": "2026-11-04T04:03:28.187Z"
   },
-  "2026-statehouse-pa:PA-079": {
-   "party": "rep",
-   "winner": "Andrea C Verobish",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Blair); leader by 17.7 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-007": {
-   "party": "rep",
-   "winner": "Parke Wentling",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Mercer); leader by 14.0 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-082": {
+  "2026-sen-va": {
    "party": "dem",
-   "winner": "Paul Takac",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Centre); leader by 23.9 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Mark Warner",
+   "by": "AP",
+   "at": "2026-11-04T00:00:10.929Z"
   },
-  "2026-statehouse-pa:PA-087": {
+  "2026-sen-wv": {
    "party": "rep",
-   "winner": "Thomas Kutz",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Cumberland); leader by 8.9 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Shelley Capito",
+   "by": "AP",
+   "at": "2026-11-04T01:52:23.966Z"
   },
-  "2026-statehouse-pa:PA-088": {
+  "2026-sen-wy": {
+   "party": "rep",
+   "winner": "Harriet Hageman",
+   "by": "AP",
+   "at": "2026-11-04T02:00:20.492Z"
+  },
+  "2026-sos-al": {
+   "party": "rep",
+   "winner": "Caroleene Dobson",
+   "by": "AP",
+   "at": "2026-11-04T07:38:28.027Z"
+  },
+  "2026-sos-ar": {
+   "party": "rep",
+   "winner": "Kim Hammer",
+   "by": "AP",
+   "at": "2026-11-04T07:05:07.863Z"
+  },
+  "2026-sos-az": {
    "party": "dem",
-   "winner": "Sara Agerton",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Cumberland); leader by 13.7 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Adrian Fontes",
+   "by": "AP",
+   "at": "2026-11-04T09:04:54.824Z"
   },
-  "2026-statehouse-pa:PA-089": {
-   "party": "rep",
-   "winner": "Rob Kauffman",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Franklin); leader by 28.2 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-091": {
-   "party": "rep",
-   "winner": "Dan Moul",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Adams); leader by 17.9 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-096": {
+  "2026-sos-ca": {
    "party": "dem",
-   "winner": "Nikki Rivera",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lancaster); leader by 36.0 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Shirley Weber",
+   "by": "AP",
+   "at": "2026-11-04T04:58:03.918Z"
   },
-  "2026-statehouse-pa:PA-097": {
-   "party": "rep",
-   "winner": "Steve Mentzer",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lancaster); leader by 11.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statehouse-pa:PA-099": {
-   "party": "rep",
-   "winner": "Dave Zimmerman",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Berks, Lancaster); leader by 36.1 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
-  },
-  "2026-statesenate-pa:PA-S12": {
+  "2026-sos-co": {
    "party": "dem",
-   "winner": "Maria Collett",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Montgomery); leader by 33.3 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Amanda Gonzalez",
+   "by": "AP",
+   "at": "2026-11-04T02:52:41.376Z"
   },
-  "2026-statesenate-pa:PA-S24": {
+  "2026-sos-ct": {
    "party": "dem",
-   "winner": "Chris Thomas",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Berks, Montgomery); leader by 10.2 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Stephanie Thomas",
+   "by": "AP",
+   "at": "2026-11-04T07:19:59.499Z"
   },
-  "2026-statesenate-pa:PA-S26": {
+  "2026-sos-ga": {
    "party": "dem",
-   "winner": "Tim Kearney",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Delaware); leader by 36.9 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Penny Reynolds",
+   "by": "AP",
+   "at": "2026-11-04T03:40:29.212Z"
   },
-  "2026-statesenate-pa:PA-S36": {
+  "2026-sos-ia": {
    "party": "rep",
-   "winner": "Tom Jones",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T15:07:22Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Lancaster); leader by 9.2 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T15:07:22Z"
+   "winner": "Paul Pate",
+   "by": "AP",
+   "at": "2026-11-04T08:22:27.339Z"
   },
-  "2026-statehouse-pa:PA-111": {
+  "2026-sos-id": {
    "party": "rep",
-   "winner": "Jonathan Fritz",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Susquehanna, Wayne); leader by 40.6 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+   "winner": "Phil McGrane",
+   "by": "AP",
+   "at": "2026-11-04T05:31:09.372Z"
   },
-  "2026-statehouse-pa:PA-123": {
-   "party": "rep",
-   "winner": "Tim Twardzik",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Schuylkill); leader by 23.8 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+  "2026-sos-il": {
+   "party": "dem",
+   "winner": "Alexi Giannoulias",
+   "by": "AP",
+   "at": "2026-11-04T04:52:49.453Z"
   },
-  "2026-statehouse-pa:PA-124": {
-   "party": "rep",
-   "winner": "Jamie Barton",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Berks, Schuylkill); leader by 29.4 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+  "2026-sos-in": {
+   "party": "dem",
+   "winner": "Beau Bayh",
+   "by": "AP",
+   "at": "2026-11-04T07:21:21.950Z"
   },
-  "2026-statehouse-pa:PA-012": {
-   "party": "rep",
-   "winner": "Scott Timko",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Butler); leader by 1.8 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+  "2026-sos-ma": {
+   "party": "dem",
+   "winner": "William Galvin",
+   "by": "AP",
+   "at": "2026-11-04T04:56:30.534Z"
   },
-  "2026-statehouse-pa:PA-062": {
-   "party": "rep",
-   "winner": "Jim Struzzi",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Indiana); leader by 25.9 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+  "2026-sos-mi": {
+   "party": "dem",
+   "winner": "Garlin Gilchrist II",
+   "by": "AP",
+   "at": "2026-11-04T07:00:04.288Z"
   },
-  "2026-statehouse-pa:PA-064": {
-   "party": "rep",
-   "winner": "R Lee James",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Crawford, Venango); leader by 37.8 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+  "2026-sos-mn": {
+   "party": "dem",
+   "winner": "Steve Simon",
+   "by": "AP",
+   "at": "2026-11-04T06:42:42.613Z"
   },
-  "2026-statehouse-pa:PA-066": {
+  "2026-sos-nd": {
    "party": "rep",
-   "winner": "Brian Smith",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Indiana, Jefferson); leader by 51.5 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+   "winner": "Michael Howe",
+   "by": "AP",
+   "at": "2026-11-04T07:32:27.413Z"
   },
-  "2026-statehouse-pa:PA-076": {
+  "2026-sos-ne": {
    "party": "rep",
-   "winner": "Stephanie Borowicz",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Clinton, Union); leader by 20.4 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+   "winner": "Scott Petersen",
+   "by": "AP",
+   "at": "2026-11-04T07:35:19.589Z"
   },
-  "2026-statesenate-pa:PA-S32": {
+  "2026-sos-nm": {
+   "party": "dem",
+   "winner": "Amanda L\u00f3pez Askin",
+   "by": "AP",
+   "at": "2026-11-04T05:49:55.492Z"
+  },
+  "2026-sos-nv": {
+   "party": "dem",
+   "winner": "Francisco Aguilar",
+   "by": "AP",
+   "at": "2026-11-04T08:39:18.047Z"
+  },
+  "2026-sos-oh": {
+   "party": "dem",
+   "winner": "Allison Russo",
+   "by": "AP",
+   "at": "2026-11-04T07:26:41.699Z"
+  },
+  "2026-sos-ri": {
+   "party": "dem",
+   "winner": "Gregg Amore",
+   "by": "AP",
+   "at": "2026-11-04T01:00:00.000Z"
+  },
+  "2026-sos-sc": {
    "party": "rep",
-   "winner": "Pat Stefano",
-   "by": "Wall (AP 99% in)",
-   "at": "2026-11-04T17:23:48Z",
-   "note": "Not an AP call. Every county in the district at AP's 99% expected vote for governor (Bedford, Fayette, Somerset); leader by 41.5 pts in the state's count.",
-   "entered_by": "states-west-ne session, at the user's request",
-   "entered_at": "2026-11-04T17:23:48Z"
+   "winner": "Mark Hammond",
+   "by": "AP",
+   "at": "2026-11-04T08:43:30.881Z"
+  },
+  "2026-sos-sd": {
+   "party": "rep",
+   "winner": "Heather Baxter",
+   "by": "AP",
+   "at": "2026-11-04T07:33:41.224Z"
+  },
+  "2026-sos-vt": {
+   "party": "dem",
+   "winner": "Sarah Copeland Hanzas",
+   "by": "AP",
+   "at": "2026-11-04T07:31:05.716Z"
+  },
+  "2026-sos-wi": {
+   "party": "dem",
+   "winner": "JoCasta Zamarripa",
+   "by": "AP",
+   "at": "2026-11-04T05:38:09.368Z"
+  },
+  "2026-sos-wy": {
+   "party": "rep",
+   "winner": "Robert Short",
+   "by": "AP",
+   "at": "2026-11-04T04:28:35.416Z"
   }
  }
 }
