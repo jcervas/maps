@@ -276,7 +276,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   pane.appendChild(precinctBtn);
 
   // Radio buttons, not a button that cycles: House 2026 has three choices,
-  // and a reader should see them all and pick one (the user's call). Native
+  // and a reader should see them all and pick one (the user's call). A menu
+  // of its own at the map's top left, not folded into Map options (the
+  // user's call), so the choice is always in sight. Native
   // radios sharing a name, so the arrow keys move between them; the name is
   // this map's own, since a split screen has two.
   const shapesBtn = document.createElement("div");
@@ -284,8 +286,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   shapesBtn.setAttribute("role", "radiogroup");
   shapesBtn.setAttribute("aria-label", "Shapes");
   shapesBtn.title = "Draw the districts as an equal-size cartogram (one cell per seat) or on their lines";
-  shapesBtn.style.cssText = precinctBtn.style.cssText + "display:flex;flex-wrap:wrap;align-items:center;" +
-    "gap:4px 10px;cursor:default;";
+  // Shown and hidden by display (syncShapesButton): an inline display:flex
+  // would win over the hidden attribute. It wraps short of Map options.
+  shapesBtn.style.cssText = precinctBtn.style.cssText + "right:auto;left:10px;flex-wrap:wrap;align-items:center;" +
+    "gap:4px 10px;cursor:default;box-sizing:border-box;max-width:calc(100% - 150px);";
   const shapesName = `mw-shapes-${++shapesGroups}`;
   for (const t of ["click", "pointerdown", "mousedown", "wheel"]) {
     shapesBtn.addEventListener(t, (ev) => ev.stopPropagation());
@@ -359,17 +363,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   });
   pane.appendChild(binsBtn);
 
-  /* The map's own controls (Shapes, Seats, Precincts, Style) fold into one
+  /* The map's own controls (Seats, Precincts, Style, Races) fold into one
    * button at the top right, the user's ask: four stacked buttons covered
    * the map's corner. A press opens them as a panel over the map, and
    * another press (or Escape) folds them away. Open or folded is remembered
    * per machine. They stay in the map pane rather than the readout, which
    * is rewritten with every hover. */
-  const OPT_BTNS = [shapesBtn, binsBtn, precinctBtn, ratingBtn, calledBtn];
+  const OPT_BTNS = [binsBtn, precinctBtn, ratingBtn, calledBtn];
   const optsBtn = document.createElement("button");
   optsBtn.type = "button";
   optsBtn.hidden = true;
-  optsBtn.title = "Shapes, seats, precincts and rating style for this map";
+  optsBtn.title = "Seats, precincts, rating style and which races for this map";
   optsBtn.style.cssText = precinctBtn.style.cssText;
   const optsPanel = document.createElement("div");
   optsPanel.className = "map-options";
@@ -636,7 +640,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   function syncShapesButton() {
     const c = shapeChoices();
     shapesBtn.hidden = c.length < 2;
+    shapesBtn.style.display = shapesBtn.hidden ? "none" : "flex";
     if (shapesBtn.hidden) return;
+    // Under a split panel's title, which is drawn at the same corner.
+    shapesBtn.style.top = `${titleOn ? 40 * (theme().scale || 1) : 10}px`;
     const lines = mode().office === "house" && !raceId ? `${mode().cycle} lines` : "District lines";
     const want = c.map((v) => `${v}=${SHAPE_LABEL[v] || lines}`).join("|");
     if (shapesBtn.dataset.opts !== want) {
@@ -2933,7 +2940,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     else {
       const k = theme().scale || 1;
       tip.style.left = "10px";
-      tip.style.top = `${titleOn ? 40 * k : 10}px`;
+      // Below the Shapes menu when it is there, which holds the same corner.
+      tip.style.top = `${!shapesBtn.hidden ? shapesBtn.offsetTop + shapesBtn.offsetHeight + 6
+        : titleOn ? 40 * k : 10}px`;
     }
   }
 
