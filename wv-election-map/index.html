@@ -1164,10 +1164,13 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
     dropSelIfNeeded();
     renderAll();
   }
-  function setMode(m) { S.mode = m; dropSelIfNeeded(); renderAll(); }
+  function setMode(m) { S.mode = m; S.autoPrec = false; dropSelIfNeeded(); renderAll(); }
   function setLines(l) { S.lines = l; dropSelIfNeeded(); renderAll(); }
   function select(d) {
     if (d && !canSelect()) return;   // a 2012–2020 race can be shown inside today's districts only in precinct view
+    // A 2026 race opens a chosen district in precinct view, and goes back to districts when it is cleared
+    if (d && cur().live && S.mode === 'district') { S.mode = 'precinct'; S.autoPrec = true; }
+    else if (!d && S.autoPrec) { S.mode = 'district'; S.autoPrec = false; }
     S.sel = d || null; hideTip(); hover(null);
     zoomTo(S.sel); renderAll();
   }
