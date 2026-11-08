@@ -260,7 +260,31 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * radios sharing a name, so the arrow keys move between them; the name
    * is this map's own, since a split screen has two. The top-left column
    * wraps short of what is at the top right (stackButtons). */
+  /* On a phone (a pane under NARROW_W wide), after the user's
+   * redrawn-districts explorer: the menus are segmented buttons across the
+   * top, a group to a line where they do not fit, the map fits under them, the
+   * control bar spans the bottom with the legend above it, and a picked
+   * shape's card docks at the bottom rather than over the map's corner.
+   * See applyNarrow. */
+  const NARROW_W = 600;
+  const narrow = () => pane.clientWidth > 0 && pane.clientWidth < NARROW_W;
+  if (!document.getElementById("mw-map-narrow")) {
+    const st = document.createElement("style");
+    st.id = "mw-map-narrow";
+    st.textContent = `
+.map-pane.narrow [role=radiogroup] { flex-wrap: nowrap !important; flex: none; padding: 3px !important;
+  gap: 2px !important; font-size: 13px !important; max-width: none !important; }
+.map-pane.narrow [role=radiogroup] > span { padding: 0 5px; font-size: 11px; font-weight: 600 !important;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
+.map-pane.narrow [role=radiogroup] label { position: relative; padding: 6px 9px; border-radius: 4px; min-height: 18px; }
+.map-pane.narrow [role=radiogroup] input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.map-pane.narrow [role=radiogroup] label:has(input:checked) { background: var(--ink); color: var(--paper); }
+.map-pane.narrow [role=radiogroup] label:has(input:focus-visible) { outline: 2px solid var(--accent, var(--ink)); }
+.map-pane.narrow .mw-ctlstrip [role=radiogroup] { justify-content: center; }`;
+    document.head.append(st);
+  }
   const corner = document.createElement("div");
+  corner.className = "mw-corner";
   corner.style.cssText = "position:absolute;top:10px;left:10px;z-index:2;display:flex;flex-direction:column;" +
     "align-items:flex-start;gap:6px;max-width:calc(100% - 150px);";
   for (const t of ["click", "pointerdown", "mousedown", "wheel"]) {
@@ -491,6 +515,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const W = pane.clientWidth;
     stripBox.hidden = stripEl.hidden && binsBtn.hidden;
     stripBox.style.cssText = "position:absolute;right:10px;bottom:10px;z-index:2;" + (stripEl.hidden ? "min-width:0;"
+      : narrow() ? "left:8px;right:8px;bottom:8px;min-width:0;"
       : `width:${Math.round(Math.max(260, Math.min(380, W - 270)))}px;`);
     binsBtn.style.borderTop = stripEl.hidden ? "0" : "1px solid var(--rule)";
     binsBtn.style.marginTop = stripEl.hidden ? "0" : "5px";
@@ -568,7 +593,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const on = legendOn && (variable === "rating" || variable === "vsrating") && !variableNote(variable) &&
       binsCover() < 0.5;
     const key = [on, variable, focus, raceId, modeKey, chiclets(), [...ratingPick].join(), pane.clientWidth,
-                 stripBox.hidden].join("|");
+                 stripBox.hidden, stripBox.offsetHeight].join("|");
     if (barMemo.feats === feats && barMemo.key === key) return;
     barMemo = { feats, key };
     const cells = on ? ratedInView() : [];
@@ -634,9 +659,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         `margin-right:3px;border:1px solid var(--baseedge);background:${swatch(fill)}"></i>${esc(lab)}</span>`).join(" ") : "";
 
     const W = pane.clientWidth;
-    const room = stripBox.hidden ? 0 : stripBox.offsetWidth + 20;
-    ratingBar.style.cssText = "position:absolute;left:10px;bottom:10px;z-index:2;box-sizing:border-box;" +
-      `width:${Math.round(Math.max(220, Math.min(340, W - room - 30)))}px;padding:7px 9px 6px;border-radius:4px;` +
+    // On a phone the bar sits above the full-width control bar.
+    const over = narrow() && !stripBox.hidden;
+    const room = stripBox.hidden || over ? 0 : stripBox.offsetWidth + 20;
+    ratingBar.style.cssText = `position:absolute;left:10px;bottom:${over ? stripBox.offsetHeight + 16 : 10}px;z-index:2;box-sizing:border-box;` +
+      `width:${Math.round(over ? W - 20 : Math.max(220, Math.min(340, W - room - 30)))}px;padding:7px 9px 6px;border-radius:4px;` +
       "background:color-mix(in srgb,var(--paper) 92%,transparent);color:var(--ink);font-size:11px;line-height:1.35;";
     ratingBar.innerHTML =
       `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">` +
@@ -689,6 +716,26 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     syncRadioMenu(shapesBtn, shapeChoices().map((v) => [v, SHAPE_LABEL[v] || lines]), shapesNow());
   }
 
+  /** Phone or not (see NARROW_W): the menus in rows across the top, or
+   *  Shapes at the top left and Races at the top right. Checked with every
+   *  sync and every frame, since the pane resizes with the window. */
+  let wasNarrow = null;
+  function applyNarrow() {
+    const n = narrow();
+    if (n === wasNarrow) return false;
+    wasNarrow = n;
+    pane.classList.toggle("narrow", n);
+    corner.style.flexDirection = n ? "row" : "column";
+    corner.style.flexWrap = n ? "wrap" : "nowrap";
+    corner.style.alignItems = n ? "center" : "flex-start";
+    corner.style.left = n ? "8px" : "10px";
+    // Races joins the row on a phone; at the top right otherwise.
+    if (n) corner.appendChild(calledBtn);
+    else pane.appendChild(calledBtn);
+    calledBtn.style.position = n ? "static" : "absolute";
+    return true;
+  }
+
   /** The options button shows while any of its controls applies; the panel
    *  opens under it, whichever controls are showing. */
   function stackButtons() {
@@ -698,10 +745,18 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     optsBtn.textContent = optsOpen ? "Map options \u25B4" : "Map options \u25BE";
     optsBtn.setAttribute("aria-expanded", String(optsOpen));
     optsPanel.style.top = `${10 + (optsBtn.offsetHeight || 34) + 6}px`;
-    // Races to the left of Map options; Shapes wraps short of both.
+    // Races to the left of Map options; Shapes wraps short of both. On a
+    // phone the rows of menus run to Map options.
+    applyNarrow();
     const optsW = optsBtn.hidden ? 0 : optsBtn.offsetWidth + 8;
-    calledBtn.style.right = `${10 + optsW}px`;
-    corner.style.maxWidth = `calc(100% - ${optsW + (calledBtn.hidden ? 0 : calledBtn.offsetWidth + 8) + 30}px)`;
+    if (narrow()) {
+      corner.style.maxWidth = "none";
+      corner.style.right = `${8 + optsW}px`;
+    } else {
+      calledBtn.style.right = `${10 + optsW}px`;
+      corner.style.right = "auto";
+      corner.style.maxWidth = `calc(100% - ${optsW + (calledBtn.hidden ? 0 : calledBtn.offsetWidth + 8) + 30}px)`;
+    }
   }
 
   /** The map's menus and Map options, for what is drawn now. */
@@ -2755,6 +2810,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   canvas.addEventListener("pointerleave", () => { pointer = null; updateTip(); });
 
   function placeTip() {
+    tipAt(false);
     const W = pane.clientWidth, H = pane.clientHeight;
     const w = tip.offsetWidth, h = tip.offsetHeight;
     let x = pointer.x + 16, y = pointer.y + 16;
@@ -2783,8 +2839,23 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   /** The docked card at the top left, below the menus there (Shapes,
    *  Circles), which come and go with the zoom: syncButtons places it again. */
+  /** The card at the pane's bottom edge, full width (a phone's dock), or
+   *  placed by left and top. */
+  function tipAt(bottom) {
+    tip.style.right = bottom ? "8px" : "auto";
+    tip.style.bottom = bottom ? "8px" : "auto";
+    tip.style.maxWidth = bottom ? "none" : "300px";
+    tip.style.maxHeight = bottom ? "45%" : "none";
+    tip.style.overflowY = bottom ? "auto" : "visible";
+    tip.style.pointerEvents = bottom ? "auto" : "none";
+    if (bottom) { tip.style.left = "8px"; tip.style.top = "auto"; }
+  }
   function dockTip() {
     if (tip.dataset.mode !== "dock") return;
+    // On a phone the card covers the bottom of the map, the control bar
+    // with it, rather than the corner the menus hold.
+    if (narrow()) { tipAt(true); return; }
+    tipAt(false);
     const k = theme().scale || 1;
     tip.style.left = "10px";
     tip.style.top = `${corner.offsetHeight ? corner.offsetTop + corner.offsetHeight + 6
@@ -3029,7 +3100,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return out.map((b) => ({ x0: b.x - 6, y0: b.y - 6, x1: b.x + b.w + 6, y1: b.y + b.h + 6 }));
   }
   function boxesSig() {
-    return [pane.clientWidth, pane.clientHeight,
+    return [pane.clientWidth, pane.clientHeight, Math.round(topInset()),
             ...overlayBoxes().map((b) => [b.x0, b.y0, b.x1, b.y1].map(Math.round).join(","))].join("|");
   }
   function samplesOf(feats) {
@@ -3042,8 +3113,33 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     fitSamples.set(feats, out);
     return out;
   }
+  /** How far down the menus across the map's top reach (Shapes, Races,
+   *  Map options), so the fit starts under them. */
+  function topInset() {
+    let y = 0;
+    for (const el of [corner, calledBtn, optsBtn]) {
+      if (el.hidden || !el.offsetHeight || el.parentNode !== pane) continue;
+      y = Math.max(y, el.offsetTop + el.offsetHeight + 4);
+    }
+    return y;
+  }
+  /* On a phone the map is width-bound: fitted, it sits right under the
+   * menus, as the redrawn-districts explorer's does under its controls,
+   * and the room left over falls between it and the legend. */
   function fitClear(proj, feats) {
-    const E = view.extentBox();
+    fitClearAt(proj, feats);
+    if (!narrow()) return proj;
+    const top = Math.max(view.extentBox()[0][1], topInset());
+    const by0 = d3.geoPath(proj).bounds({ type: "FeatureCollection", features: feats })[0][1];
+    if (by0 > top + 1) {
+      const [tx, ty] = proj.translate();
+      proj.translate([tx, ty - (by0 - top)]);
+    }
+    return proj;
+  }
+  function fitClearAt(proj, feats) {
+    const E0 = view.extentBox();
+    const E = [[E0[0][0], Math.max(E0[0][1], topInset())], E0[1]];
     fitProjection(proj, feats, E);
     fitSig = boxesSig();
     const boxes = overlayBoxes();
@@ -3360,7 +3456,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       widest = Math.max(widest, rx - x);
     }
     const h = (20 + (L.stops ? 26 : 0) + 16 * rows) * k;
-    const y = H - h - 10 * k;
+    // On a phone, above the full-width control bar.
+    const y = (narrow() && !stripBox.hidden ? stripBox.offsetTop - 8 : H - 10 * k) - h;
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = T.paper;
     ctx.fillRect(x - 6 * k, y - 4 * k, widest + 12 * k, h + 4 * k);
@@ -4111,6 +4208,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   view.on("overlay", ({ ctx, dpr, W, H, transform }) => {
     if (!geo) return;
     const T = theme();
+    if (applyNarrow()) requestAnimationFrame(() => { syncButtons(); syncStrip(); });
     circleMax = 0;
     if (focus && circlesOn() && binsCover() < 0.5) drawLeadCircles(ctx, dpr, W, H, transform);
     if (!focus) {
@@ -4158,7 +4256,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (bins.on) drawBins(ctx, dpr, W, H);
     syncRatingBar();
     legendBox = null;
-    if (legendOn && binsCover() < 0.5 && ratingBar.hidden) drawLegend(ctx, dpr, W, H);
+    // On a phone a picked shape's card covers the bottom, where the legend
+    // sits: the legend steps aside until the card goes.
+    const cardDown = narrow() && tip.dataset.mode === "dock" && tip.style.display !== "none";
+    if (legendOn && binsCover() < 0.5 && ratingBar.hidden && !cardDown) drawLegend(ctx, dpr, W, H);
     if (titleOn) drawTitle(ctx, dpr);
     fitWatch(transform);
   });

@@ -335,17 +335,8 @@ footer code { font-family: inherit; }
     height: auto; min-height: 100%;
   }
   #readout { border-left: 0; border-top: 1px solid var(--rule); }
-  /* A sticky rail would cover most of a phone once it wraps, so only the
-     badge stays: pinned to the bottom corner, over everything, with its own
-     background. */
-  .badge {
-    position: fixed; left: 0.6rem; bottom: 0.6rem; z-index: 20;
-    max-width: calc(100vw - 1.2rem);
-    background: var(--paper);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-  }
-  .badge[data-level="bad"] { background: color-mix(in srgb, var(--bad) 14%, var(--paper)); }
-  footer { padding-bottom: 3.4rem; }
+  /* The badge stays in the rail and scrolls away with it: pinned over the
+     page it covered the map's legend and the readout. */
   .rail select, .tools select { max-width: 11rem; }
 }
 
@@ -497,3 +488,34 @@ tr.editor td { background: var(--accent-soft); text-align: left; }
 /* "Saved to 3" after shift + a number key, then empty (shell.js flash). */
 .flash { font-weight: 600; color: var(--ink-soft); }
 .flash:empty { display: none; }
+
+/* Phones. The model is jonathancervas.com/maps/redrawn-districts-2026: a
+   few labeled rows of full-width controls above a map that fills the
+   screen, nothing floating over it. The header was six rows of buttons. */
+#nationalPick { display: none; }
+@media (max-width: 700px) {
+  .rail { row-gap: 0.45rem; }
+  /* Name and badge on the first row; the place (and the way back) on the
+     next: a 40% basis is too wide to share the first row, narrow enough to
+     sit beside "\2190 United States". */
+  .rail .brand { flex: none; }
+  .rail .badge { margin-left: auto; }
+  .rail .where { flex: 1 1 40%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* The apps as one segmented row the width of the screen. */
+  #apps { flex-basis: 100%; }
+  #apps button { flex: 1 1 0; padding-left: 0.3rem; padding-right: 0.3rem; }
+  #splitBtn, #paneSeg { display: none !important; }
+  /* Office and year in one menu instead of the bar. */
+  #nationalField { display: none !important; }
+  #nationalPick:not([hidden]) { display: flex; }
+  #nationalPick, .rail label.field:has(#race) { flex-basis: 100%; }
+  #nationalPick select, .rail #race { flex: 1; max-width: none; }
+  .rail .field > span:first-child { min-width: 4.6rem; }
+  /* Drawing is for the wall, not a phone: behind More with the rest. */
+  .drawtools { display: none; }
+  body.more-open .drawtools { display: flex; }
+  /* The map gets most of the screen, but no more than the width can use:
+     the nation at 375px wide is about 260px tall, plus the map's own menus
+     and legend; a state zoomed in uses the rest. */
+  body.app-map { grid-template-rows: auto auto minmax(520px, min(88svh, calc(75vw + 330px))) auto auto; }
+}

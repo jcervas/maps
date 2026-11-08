@@ -45,6 +45,12 @@ permalink: /magic-wall/
   <nav class="field" id="nationalField" aria-label="Election" hidden>
     <ul class="offices" id="national" role="menubar"></ul>
   </nav>
+  <!-- The same elections as one menu, for phones, where seven office buttons
+       were three rows of the header (wall.css shows one or the other). -->
+  <label class="field" id="nationalPick" hidden>
+    <span>Election</span>
+    <select id="nationalSel"></select>
+  </label>
 
   <label class="field">
     <span>Race</span>
@@ -190,6 +196,6 @@ permalink: /magic-wall/
      fetches: a browser caches an ES module by URL, so an unversioned
      shell.js kept running after an edit and the footer was the only
      sign. Bump this with BUILD in shell.js. -->
-<script type="module" src="shell.js?v=2026-11-03i"></script>
+<script type="module" src="shell.js?v=2026-11-08a"></script>
 </body>
 </html>

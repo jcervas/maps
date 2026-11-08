@@ -20,7 +20,7 @@ import { createUpdates } from "./apps/updates.js";
 import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 
-const BUILD = "2026-11-03i";
+const BUILD = "2026-11-08a";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -264,14 +264,22 @@ function modeSummary(m) {
 function fillNational(status) {
   const modes = status.raceModes || [];
   el("nationalField").hidden = !modes.length;
+  el("nationalPick").hidden = !modes.length;
   if (!modes.length) return;
   const bar = el("national");
+  const pick = el("nationalSel");
   const sig = modes.map((m) => `${m.key}:${m.office}:${modeSummary(m)}`).join(",");
   if (bar.dataset.sig !== sig) {
     bar.dataset.sig = sig;
     const known = OFFICES.map(([k]) => k);
     const offices = [...OFFICES, ...[...new Set(modes.map((m) => m.office))]
       .filter((o) => o && !known.includes(o)).map((o) => [o, o[0].toUpperCase() + o.slice(1)])];
+    pick.innerHTML = offices.map(([office, label]) => {
+      const mine = modes.filter((m) => m.office === office)
+        .sort((a, b) => String(b.cycle).localeCompare(String(a.cycle)));
+      return mine.length ? `<optgroup label="${label}">${mine.map((m) =>
+        `<option value="${m.key}">${label} ${m.cycle || m.label}</option>`).join("")}</optgroup>` : "";
+    }).join("");
     bar.innerHTML = offices.map(([office, label]) => {
       const mine = modes.filter((m) => m.office === office)
         .sort((a, b) => String(b.cycle).localeCompare(String(a.cycle)));
@@ -297,6 +305,7 @@ function fillNational(status) {
   for (const b of bar.querySelectorAll("[data-mode]")) {
     b.setAttribute("aria-checked", String(b.dataset.mode === status.raceMode));
   }
+  pick.value = status.raceMode || "";
 }
 
 function pressed(selector, match) {
@@ -637,6 +646,12 @@ async function main() {
   }
 
   el("back").addEventListener("click", () => app.unfocus());
+  el("nationalSel").addEventListener("change", (ev) => {
+    const pane = ctl();
+    if (pane.setRaceMode) pane.setRaceMode(ev.target.value);
+    if (table) table.render();
+    ev.target.blur();
+  });
   el("race").addEventListener("change", (ev) => {
     ctl().setRace(ev.target.value);
     if (table) table.render();
