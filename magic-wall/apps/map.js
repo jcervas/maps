@@ -225,13 +225,21 @@ function halvesProjection(states) {
   };
   // Height over width of the two halves laid out, for sizing the stage.
   P.aspect = (bw[1][1] - bw[0][1] + be[1][1] - be[0][1] + SPLIT_GAP * W0) / W0;
+  // Where the box's top really is: under the menus over the map, which the
+  // view's own refit does not know about (set by the map, see halvesProj).
+  P.top = null;
   P.fitExtent = (E, obj) => {
     k = 1; tx = 0; ty = 0;
     const [[bx0, by0], [bx1, by1]] = d3.geoPath(P).bounds(obj);
-    const w = E[1][0] - E[0][0], h = E[1][1] - E[0][1];
+    const y0 = Math.max(E[0][1], P.top ? P.top() : 0);
+    const w = E[1][0] - E[0][0], h = E[1][1] - y0;
     k = Math.min(w / (bx1 - bx0), h / (by1 - by0));
     tx = E[0][0] + (w - k * (bx1 - bx0)) / 2 - k * bx0;
-    ty = E[0][1] + (h - k * (by1 - by0)) / 2 - k * by0;
+    // At the top of the box, not in its middle: the halves are width-bound
+    // and belong right under the menus. Every fit lands there this way,
+    // the view's own refit on a resize included, rather than centered until
+    // fitClear moves it up (a band of blank screen over the map meanwhile).
+    ty = y0 - k * by0;
     return P;
   };
   return P;
@@ -2337,7 +2345,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
   let halves = null;              // { of: stateFeatures, proj }
   function halvesProj() {
-    if (!halves || halves.of !== stateFeatures) halves = { of: stateFeatures, proj: halvesProjection(stateFeatures) };
+    if (!halves || halves.of !== stateFeatures) {
+      halves = { of: stateFeatures, proj: halvesProjection(stateFeatures) };
+      halves.proj.top = topInset;
+    }
     return halves.proj;
   }
   /* The two halves need more height than a phone's stage has, and only the
