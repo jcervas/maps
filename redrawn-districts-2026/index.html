@@ -659,7 +659,7 @@ breadcrumb_width: none
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-06f";
+  var BUILD = "2026-11-08a";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -1381,7 +1381,7 @@ breadcrumb_width: none
   // An uncalled race the party already holding the seat leads: nothing is
   // expected to change there, so it is drawn faint and the races that could
   // flip carry the view. Not when its own band is picked out of the legend.
-  var QUIET_ALPHA = 0.25;
+  var QUIET_ALPHA = 0.6;
   function resultQuiet(f, info) {
     if (state.color !== "result" || state.hover === f) return false;
     var i = info || resultInfo(f);
