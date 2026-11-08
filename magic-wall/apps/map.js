@@ -101,6 +101,142 @@ const OFFICE_LABEL = { president: "President", senate: "Senate", governor: "Gove
 // pa_leg.py): picked inside the state from the Race menu, never a national
 // mode or a state's default race, and read out as seats rather than votes.
 const LEGISLATURE = new Set(["state-house", "state-senate"]);
+/* The phone's national map, after the user's redrawn-districts explorer
+ * (buildPanels there): the country is wide and a phone is tall, so fitted
+ * whole it is a third of the screen high with everything too small to aim
+ * at. Cut in two at state lines -- the western borders of Minnesota, Iowa,
+ * Missouri, Arkansas and Louisiana -- and stacked east above west (where
+ * most of the close seats are, so what a reader meets first), each half
+ * fitted to the full width, it draws about twice the size. Alaska and Hawaii
+ * ride in the western half, at its lower left, as the composite puts them. */
+const SPLIT_EAST = new Set(["AL", "AR", "CT", "DC", "DE", "FL", "GA", "IA", "IL", "IN", "KY", "LA", "MA",
+  "MD", "ME", "MI", "MN", "MO", "MS", "NC", "NH", "NJ", "NY", "OH", "PA", "RI", "SC", "TN", "VA", "VT",
+  "WI", "WV"]);
+const SPLIT_GAP = 0.05;           // between the halves, as a share of the width
+
+/* The two halves as one projection, so every layer, label, hit test and
+ * cached path works on it unchanged: each half is its own geoAlbersUsa,
+ * fitted to the same width and laid one under the other, and the whole is
+ * k * layout + t, which is what the view's path cache assumes of a refit.
+ * A shape goes to the half its state is in, decided once per polygon from a
+ * point inside it -- never per vertex, or a county on the cut would send its
+ * border to the other half and draw a spike across the screen. */
+function halvesProjection(states) {
+  const fc = (fs) => ({ type: "FeatureCollection", features: fs });
+  const east = states.filter((f) => SPLIT_EAST.has(f.properties.id));
+  const west = states.filter((f) => !SPLIT_EAST.has(f.properties.id));
+  const W0 = 1000;
+  const pe = d3.geoAlbersUsa().fitWidth(W0, fc(east));
+  const be = d3.geoPath(pe).bounds(fc(east));
+  pe.translate([pe.translate()[0] - be[0][0], pe.translate()[1] - be[0][1]]);
+  const pw = d3.geoAlbersUsa().fitWidth(W0, fc(west));
+  const bw = d3.geoPath(pw).bounds(fc(west));
+  pw.translate([pw.translate()[0] - bw[0][0],
+                pw.translate()[1] - bw[0][1] + (be[1][1] - be[0][1]) + SPLIT_GAP * W0]);
+
+  // Which half a point is in: the state whose outline holds it, by box then
+  // by ray casting on lon/lat (planar is plenty inside one state).
+  const rings = [];
+  for (const f of states) {
+    const g = f.geometry;
+    if (!g) continue;
+    const polys = g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
+    for (const poly of polys) {
+      const ring = poly[0];
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const [x, y] of ring) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      rings.push({ x0, y0, x1, y1, ring, east: SPLIT_EAST.has(f.properties.id) });
+    }
+  }
+  const inside = (ring, x, y) => {
+    let c = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  };
+  const isEast = (x, y) => {
+    for (const r of rings) {
+      if (x < r.x0 || x > r.x1 || y < r.y0 || y > r.y1) continue;
+      if (inside(r.ring, x, y)) return r.east;
+    }
+    // In no state's outline (a bay, a generalized coast): by longitude.
+    return x > -95.5 && x < -60;
+  };
+  // A point inside a ring: the middle of the first stretch a horizontal
+  // line through its middle crosses.
+  const interior = (ring) => {
+    let y0 = Infinity, y1 = -Infinity;
+    for (const p of ring) { if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+    const y = (y0 + y1) / 2;
+    const xs = [];
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > y) !== (yj > y)) xs.push((xj - xi) * (y - yi) / (yj - yi) + xi);
+    }
+    xs.sort((a, b) => a - b);
+    return xs.length >= 2 ? [(xs[0] + xs[1]) / 2, y] : ring[0];
+  };
+
+  let k = 1, tx = 0, ty = 0;
+  const half = (east) => (east ? pe : pw);
+  const P = (ll) => {
+    const q = half(isEast(ll[0], ll[1]))(ll);
+    return q && [q[0] * k + tx, q[1] * k + ty];
+  };
+  P.invert = ([x, y]) => {
+    const u = [(x - tx) / k, (y - ty) / k];
+    const e = pe.invert(u);
+    if (e && isEast(e[0], e[1])) return e;
+    return pw.invert(u);
+  };
+  P.scale = (v) => (v === undefined ? k : (k = v, P));
+  P.translate = (v) => (v === undefined ? [tx, ty] : ([tx, ty] = v, P));
+  P.stream = (out) => {
+    const sink = {
+      point(x, y) { out.point(x * k + tx, y * k + ty); },
+      lineStart() { out.lineStart(); }, lineEnd() { out.lineEnd(); },
+      polygonStart() { out.polygonStart(); }, polygonEnd() { out.polygonEnd(); },
+      sphere() { if (out.sphere) out.sphere(); },
+    };
+    const se = pe.stream(sink), sw = pw.stream(sink);
+    const replay = (s, lines) => { for (const l of lines) { s.lineStart(); for (const [x, y] of l) s.point(x, y); s.lineEnd(); } };
+    let poly = null, line = null;
+    return {
+      polygonStart() { poly = []; },
+      polygonEnd() {
+        const s = poly.length && isEast(...interior(poly[0])) ? se : sw;
+        s.polygonStart(); replay(s, poly); s.polygonEnd();
+        poly = null;
+      },
+      lineStart() { line = []; },
+      lineEnd() {
+        if (poly) poly.push(line);
+        else if (line.length) replay(isEast(...line[line.length >> 1]) ? se : sw, [line]);
+        line = null;
+      },
+      point(x, y) {
+        if (line) line.push([x, y]);
+        else (isEast(x, y) ? se : sw).point(x, y);
+      },
+      sphere() {},
+    };
+  };
+  // Height over width of the two halves laid out, for sizing the stage.
+  P.aspect = (bw[1][1] - bw[0][1] + be[1][1] - be[0][1] + SPLIT_GAP * W0) / W0;
+  P.fitExtent = (E, obj) => {
+    k = 1; tx = 0; ty = 0;
+    const [[bx0, by0], [bx1, by1]] = d3.geoPath(P).bounds(obj);
+    const w = E[1][0] - E[0][0], h = E[1][1] - E[0][1];
+    k = Math.min(w / (bx1 - bx0), h / (by1 - by0));
+    tx = E[0][0] + (w - k * (bx1 - bx0)) / 2 - k * bx0;
+    ty = E[0][1] + (h - k * (by1 - by0)) / 2 - k * by0;
+    return P;
+  };
+  return P;
+}
+
 // Each map's radio menus (Shapes, Races, Seats) get names of their own: a
 // split screen has two maps.
 let radioGroups = 0;
@@ -2192,7 +2328,45 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
   /** What the national projection is fitted to. */
   function nationalFrame() {
-    return cartoNational() ? carto.states : geo.nation;
+    return cartoNational() ? carto.states : splitNational() ? stateFeatures : geo.nation;
+  }
+  /** The phone's national map in two halves (see halvesProjection): on a
+   *  narrow pane, at national zoom, on real ground (not the cartogram). */
+  function splitNational() {
+    return narrow() && !focus && !cartoNational() && stateFeatures.length > 0;
+  }
+  let halves = null;              // { of: stateFeatures, proj }
+  function halvesProj() {
+    if (!halves || halves.of !== stateFeatures) halves = { of: stateFeatures, proj: halvesProjection(stateFeatures) };
+    return halves.proj;
+  }
+  /* The two halves need more height than a phone's stage has, and only the
+   * map knows how much: the menus above, both halves at the full width,
+   * the legend and the control bar below. wall.css reads --mw-stage-h for
+   * the map's row on a phone (wall-shell's hook); unset, the stage keeps
+   * its own height. The left panel of a split screen only. */
+  let stageH = null;
+  function sizeStage() {
+    if (link) return;
+    let want = null;
+    if (splitNational() && !bins.on) {
+      const pad = 22;
+      const mapH = (pane.clientWidth - 2 * pad) * halvesProj().aspect;
+      const below = (legendBox ? legendBox.h + 10 : 90) + (stripBox.hidden ? 0 : stripBox.offsetHeight + 10);
+      want = `${Math.ceil(topInset() + mapH + pad + below + 8)}px`;
+    }
+    if (want === stageH) return;
+    stageH = want;
+    // Taller than the screen, the map has to let a finger scroll the page:
+    // a vertical swipe is the page's, a tap, a sideways drag or a pinch the
+    // map's (wall.css gives the canvas touch-action: none).
+    canvas.style.touchAction = want ? "pan-y" : "";
+    if (want) document.documentElement.style.setProperty("--mw-stage-h", want);
+    else document.documentElement.style.removeProperty("--mw-stage-h");
+  }
+  /** The national projection for this pane: whole, or in halves. */
+  function natProj() {
+    return splitNational() ? halvesProj() : nationalProj;
   }
   /** House 2026 on the 2024 lines: a redrawn state stays crosshatched, its
    *  districts listed, with the old lines over it for where things were. */
@@ -2344,7 +2518,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // Inside a state, only that state. The country's outline and its
     // neighbours still project under the state's CRS -- they just land
     // somewhere arbitrary, and drew as stray lines across the frame.
-    const rest = focus || cartoNational() ? [] : geo.nation;
+    // The country's own outline is one shape across both halves of the
+    // phone's split, so there the states' outlines stand in for it.
+    const rest = focus || cartoNational() || splitNational() ? [] : geo.nation;
     // In a statewide mode a state with no contest (no Secretary of State in
     // Pennsylvania) is left out: no outline, no label, just the country's.
     const outlines = focus ? focusOutline(focus)
@@ -3210,7 +3386,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       transform: d3.zoomIdentity,
       // The cartogram's national cells are layout pixels, not ground, so
       // there is nothing to morph between: it crossfades.
-      items: cartoNational() ? [] : as(st, next, () => morphItems(st, false)),
+      // Nor between the phone's two halves and a state: it crossfades too.
+      items: cartoNational() || splitNational() ? [] : as(st, next, () => morphItems(st, false)),
       apply: () => {
         focus = st;
         hovered = null;
@@ -3242,12 +3419,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // same projection at the same fit finds all 3,144 still valid, where a
     // new one would rebuild them in the first frame after the morph.
     const toCarto = as(null, null, cartoNational);
-    const projB = toCarto ? fitClear(cartoProj, carto.states) : fitClear(nationalProj, geo.nation);
+    const toHalves = !toCarto && narrow() && stateFeatures.length > 0;
+    const projB = toCarto ? fitClear(cartoProj, carto.states)
+      : toHalves ? fitClear(halvesProj(), stateFeatures) : fitClear(nationalProj, geo.nation);
     startMorph();
     view.transitionTo({
       projection: projB,
       transform: d3.zoomIdentity,
-      items: toCarto ? [] : morphItems(from, true),
+      items: toCarto || toHalves ? [] : morphItems(from, true),
       apply: () => {
         focus = null;
         raceId = null;
@@ -4208,7 +4387,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   view.on("overlay", ({ ctx, dpr, W, H, transform }) => {
     if (!geo) return;
     const T = theme();
-    if (applyNarrow()) requestAnimationFrame(() => { syncButtons(); syncStrip(); });
+    if (applyNarrow()) requestAnimationFrame(() => { syncButtons(); syncStrip(); if (!focus) changed(); });
+    sizeStage();
     circleMax = 0;
     if (focus && circlesOn() && binsCover() < 0.5) drawLeadCircles(ctx, dpr, W, H, transform);
     if (!focus) {
@@ -4663,7 +4843,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * or shapes that crosses between them crossfades to the other, refitted. */
   function reproject() {
     if (focus || !geo || morphing()) return false;
-    const want = cartoNational() ? cartoProj : nationalProj;
+    const want = cartoNational() ? cartoProj : natProj();
     if (view.projection === want) return false;
     const projB = fitClear(want, nationalFrame());
     view.transitionTo({ projection: projB, transform: d3.zoomIdentity, items: [],

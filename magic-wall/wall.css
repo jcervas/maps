@@ -517,5 +517,7 @@ tr.editor td { background: var(--accent-soft); text-align: left; }
   /* The map gets most of the screen, but no more than the width can use:
      the nation at 375px wide is about 260px tall, plus the map's own menus
      and legend; a state zoomed in uses the rest. */
-  body.app-map { grid-template-rows: auto auto minmax(520px, min(88svh, calc(75vw + 330px))) auto auto; }
+  /* map.js sets --mw-stage-h when it stacks the nation's two halves and
+     knows the height they need; otherwise this default. */
+  body.app-map { grid-template-rows: auto auto var(--mw-stage-h, minmax(520px, min(88svh, calc(75vw + 330px)))) auto auto; }
 }
