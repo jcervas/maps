@@ -542,8 +542,6 @@ breadcrumb_width: none
     <div class="seg" role="group" aria-labelledby="l-color">
       <button id="cElection" aria-pressed="false">2024 result</button>
       <button id="cDemo" aria-pressed="false">Demographics</button>
-      <button id="cCook" aria-pressed="false">Cook rating</button>
-      <button id="cFlip" aria-pressed="false">Changing hands</button>
       <button id="cResult" aria-pressed="true">2026 result</button>
     </div>
   </div>
@@ -659,7 +657,7 @@ breadcrumb_width: none
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-08a";
+  var BUILD = "2026-11-08b";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -4087,8 +4085,9 @@ breadcrumb_width: none
   var buildEl = document.getElementById("build");
   if (buildEl) buildEl.textContent = "build " + BUILD;
 
-  document.getElementById("cCook").addEventListener("click", function () { setColor("cook"); });
-  document.getElementById("cFlip").addEventListener("click", function () { setColor("flip"); });
+  // The Cook rating and Changing hands tabs were dropped once the results
+  // were in: the 2026 result tab says what they forecast. Their modes are
+  // still in the code but nothing switches to them.
   document.getElementById("cResult").addEventListener("click", function () { setColor("result"); });
 
   function setColor(c) {
@@ -4120,9 +4119,8 @@ breadcrumb_width: none
     // The bands belong to the Cook scale; every other tab reads by something
     // else, so a pick made here does not survive leaving it.
     state.rating = null;
-    ["election", "demo", "cook", "flip", "result"].forEach(function (m) {
-      var id = m === "election" ? "cElection" : m === "cook" ? "cCook"
-             : m === "flip" ? "cFlip" : m === "result" ? "cResult" : "cDemo";
+    ["election", "demo", "result"].forEach(function (m) {
+      var id = m === "election" ? "cElection" : m === "result" ? "cResult" : "cDemo";
       document.getElementById(id).setAttribute("aria-pressed", String(c === m));
     });
     document.getElementById("varWrap").hidden = (c !== "demo");

@@ -533,8 +533,6 @@ breadcrumb_width: none
     <label id="l-color">Color by</label>
     <div class="seg" role="group" aria-labelledby="l-color">
       <button id="cElection" aria-pressed="false">2024 result</button>
-      <button id="cCook" aria-pressed="false">Cook rating</button>
-      <button id="cFlip" aria-pressed="false">Changing hands</button>
       <button id="cResult" aria-pressed="true">2026 result</button>
     </div>
   </div>
@@ -591,7 +589,7 @@ breadcrumb_width: none
 <script>
 (function () {
   "use strict";
-  var BUILD = "2026-11-08a";
+  var BUILD = "2026-11-08b";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   document.getElementById("build").textContent = "build " + BUILD;
 
@@ -1399,12 +1397,12 @@ breadcrumb_width: none
   /* ------------------------------------------------------------ controls */
 
   function setPressed(ids, on) { ids.forEach(function (id) { document.getElementById(id).setAttribute("aria-pressed", String(id === on)); }); }
-  var COLOR_IDS = { election: "cElection", cook: "cCook", flip: "cFlip", result: "cResult" };
+  var COLOR_IDS = { election: "cElection", result: "cResult" };
   function setColor(c) {
     state.color = c;
     // The bands belong to the Cook scale, so a pick does not survive the tab.
     state.rating = null; updateHint();
-    setPressed(["cElection", "cCook", "cFlip", "cResult"], COLOR_IDS[c]);
+    setPressed(["cElection", "cResult"], COLOR_IDS[c]);
     updateLegend(); if (!state.hover) showReadout(null); render();
   }
 
@@ -1434,8 +1432,9 @@ breadcrumb_width: none
     updateLegend(); if (!state.hover) showReadout(null); render();
   }
   document.getElementById("cElection").addEventListener("click", function () { setColor("election"); });
-  document.getElementById("cCook").addEventListener("click", function () { setColor("cook"); });
-  document.getElementById("cFlip").addEventListener("click", function () { setColor("flip"); });
+  // The Cook rating and Changing hands tabs were dropped once the results
+  // were in: the 2026 result tab says what they forecast. Their modes are
+  // still in the code but nothing switches to them.
   document.getElementById("cResult").addEventListener("click", function () { setColor("result"); });
   document.getElementById("swatches").addEventListener("click", function (e) {
     var el = e.target.closest("[data-cat]");
