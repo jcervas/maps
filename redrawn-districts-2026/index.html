@@ -191,6 +191,11 @@ breadcrumb_width: none
     text-transform: uppercase; color: var(--ink-soft);
   }
   .cmp .seg button { font-size: 0.78rem; padding: 0.18rem 0.55rem; }
+  .cmp > span.ctykey {
+    text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 11.5px;
+    display: inline-flex; align-items: center; gap: 4px; color: var(--ink-soft);
+  }
+  .ctykey i { display: inline-block; width: 11px; height: 9px; border: 1px solid var(--rule); }
   select.var {
     font: inherit; font-size: 0.86rem; color: var(--ink); background: var(--paper);
     border: 1px solid var(--rule); border-radius: 3px; padding: 0.3rem 0.4rem; max-width: 17rem;
@@ -619,6 +624,15 @@ breadcrumb_width: none
       <button id="cOn" aria-pressed="true">On</button>
     </div>
   </div>
+  <div class="cmp" id="ctyWrap" hidden>
+    <span id="l-cty">Counties</span>
+    <div class="seg" role="group" aria-labelledby="l-cty">
+      <button id="tOff" aria-pressed="false">Off</button>
+      <button id="tMargin" aria-pressed="true">Margin</button>
+      <button id="tCircles" aria-pressed="false">Circles</button>
+    </div>
+    <span class="ctykey" id="ctyKey"></span>
+  </div>
 </div>
 
 <div class="stage" id="stage">
@@ -690,7 +704,7 @@ breadcrumb_width: none
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-09b";
+  var BUILD = "2026-11-09c";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -773,6 +787,7 @@ breadcrumb_width: none
     focus: null,         // state abbreviation when zoomed in
     district: null,      // district number when one is singled out
     compare: true,       // outline the singled-out district's counterpart
+    county: "margin",    // a selected 2026 district's county pieces: off | margin | circles
     rating: null,        // Cook rating picked out of the legend, or null
     demoVar: "largest_race",
     demoCache: {},       // ST -> { byId: Map, cats: [] }
@@ -931,6 +946,7 @@ breadcrumb_width: none
       stops: stops,
       nodata: g("--nodata") || "#dcdcdc",
       uncalled: g("--uncalled") || "#c9c9c6",
+      dem: g("--dem") || "#1366b3", rep: g("--rep") || "#be2c25",
       chicfill: g("--chicfill") || "#e8e8e4",
       cook: {
         "Solid Democrat":    g("--cook-solidD")  || "#1366b3",
@@ -1586,7 +1602,7 @@ breadcrumb_width: none
       // Inside a state, only that state's: the others project somewhere
       // arbitrary under its CRS and would be squares pointing at nothing.
       if (state.focus && ds[i].properties.state !== state.focus) continue;
-      if (wantsSquare(ds[i])) want.push(ds[i]);
+      if (wantsSquare(ds[i]) && !(countyActive() && singledOut(ds[i]))) want.push(ds[i]);
     }
     // The lines control changes which seats are wanted, and two different
     // sets can be the same size, so it is part of the key rather than left
@@ -2460,6 +2476,8 @@ breadcrumb_width: none
     // is a reference, not a second selection. A translucent counterpart was
     // tried and laid a second color over the rating. The outline can be
     // switched off beside the hint when the two shapes crowd each other.
+    drawCountyPieces(pn);
+
     if (state.district) {
       var sel = districtFeature(state.district);
       if (sel) {
@@ -3092,6 +3110,177 @@ breadcrumb_width: none
       : (p.old_district_best_match || null);
   }
 
+  /* ---------------------------------------------- county pieces (AP) */
+  // Zoomed in on a 2026 district, its county pieces -- the part of each
+  // county inside it, which is how AP reports a House race -- drawn as the
+  // magic wall draws them: shaded by margin in the wall's nine steps, or as
+  // plain land under a circle per piece, its area the vote lead, in the
+  // leader's color. Geometry is the wall's own (built by its
+  // build_cd_pieces.py and published beside this map); the votes are AP's,
+  // fetched for the one race when it is selected and again after five
+  // minutes. AP's feed allows cross-origin reads.
+  var CTY_STEPS = ["#be2c25", "#d35f4f", "#eb9f92", "#f9dddb", "#ffffff",
+                   "#d3e7fa", "#98b4e0", "#5784c5", "#1366b3"];
+  var CTY_CLAMP = 40, CTY_R = 30, CTY_TTL = 5 * 60 * 1000;
+  var AP_RACES = "https://interactives.apelections.org/election-results/data-live/2026-11-03/results/races/";
+  var ctyPieces = {}, ctyRaces = {};
+  var ctyScale = d3.scaleQuantize().domain([-CTY_CLAMP, CTY_CLAMP]).range(CTY_STEPS);
+
+  function countyActive() {
+    return state.county !== "off" && !!state.district && !!state.focus && state.year === "2026";
+  }
+  function ctyCd() {
+    return state.focus + "-" + (state.district === "00" ? "AL" : state.district);
+  }
+  function ctyRaceId() {
+    var r = state.results && state.results.byKey[state.focus + "-" + state.district];
+    return r && r.race_id;
+  }
+  function loadPieces(st) {
+    if (!ctyPieces[st]) {
+      ctyPieces[st] = fetch("../magic-wall/geo/detail/cd-pieces/2026/" + st + ".topojson")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (t) {
+          if (!t) return null;
+          var by = {};
+          topojson.feature(t, t.objects.pieces).features.forEach(function (f) {
+            (by[f.properties.cd] = by[f.properties.cd] || []).push(f);
+          });
+          ctyPieces[st] = Promise.resolve(by); ctyPieces[st].value = by;
+          return by;
+        })
+        .catch(function () { delete ctyPieces[st]; return null; });
+    }
+    return ctyPieces[st];
+  }
+  var AP_PARTY = { Dem: "D", GOP: "R" };
+  function loadRace(st, rid) {
+    var c = ctyRaces[rid];
+    if (c && (c.loading || Date.now() - c.t < CTY_TTL)) return c.loading || Promise.resolve(c);
+    var get = function (f) {
+      return fetch(AP_RACES + st + "/" + rid + "/" + f + ".json", { cache: "no-cache" })
+        .then(function (r) { return r.ok ? r.json() : null; });
+    };
+    var entry = ctyRaces[rid] = c || { t: 0, byFips: null };
+    entry.loading = Promise.all([get("metadata"), get("detail")]).then(function (res) {
+      var meta = res[0], det = res[1];
+      entry.loading = null;
+      if (!meta || !det) return entry;
+      var party = {}, names = {};
+      Object.keys(meta.candidates || {}).forEach(function (id) {
+        var c = meta.candidates[id];
+        party[id] = AP_PARTY[c.party] || "I";
+        names[id] = [c.first, c.last].filter(Boolean).join(" ");
+      });
+      // New England reports by town; a town's FIPS starts with its county's.
+      var by = {};
+      Object.keys(det).forEach(function (k) {
+        var u = det[k];
+        if (!u || u.reportingunitLevel !== 2 || !u.fipsCode) return;
+        var f5 = String(u.fipsCode).slice(0, 5);
+        var row = by[f5] = by[f5] || { votes: {}, name: u.reportingunitName };
+        (u.candidates || []).forEach(function (c) {
+          row.votes[c.candidateID] = (row.votes[c.candidateID] || 0) + (c.voteCount || 0);
+        });
+      });
+      entry.byFips = by; entry.party = party; entry.names = names; entry.t = Date.now();
+      return entry;
+    }).catch(function () { entry.loading = null; return entry; });
+    return entry.loading;
+  }
+  function ensureCounty() {
+    if (!countyActive()) return;
+    var rid = ctyRaceId();
+    if (!rid) return;
+    Promise.all([loadPieces(state.focus), loadRace(state.focus, rid)]).then(function () {
+      if (countyActive()) { render(); updateCountyKey(); }
+    });
+  }
+  // One piece's count: the D-minus-R margin in points, and the leader's lead
+  // in votes, with the leader's party.
+  function pieceCount(f, race) {
+    var row = race && race.byFips && race.byFips[f.properties.fips];
+    if (!row) return null;
+    var tot = 0, by = { D: 0, R: 0 }, cands = [];
+    Object.keys(row.votes).forEach(function (id) {
+      var v = row.votes[id], p = race.party[id] || "I";
+      tot += v; by[p] = (by[p] || 0) + v; cands.push({ id: id, v: v, p: p });
+    });
+    if (!tot) return null;
+    cands.sort(function (a, b) { return b.v - a.v; });
+    return { margin: 100 * (by.D - by.R) / tot, total: tot,
+             lead: cands[0].v - (cands[1] ? cands[1].v : 0), leader: cands[0].p };
+  }
+  function countyPiecesNow() {
+    var st = state.focus, pc = ctyPieces[st] && ctyPieces[st].value;
+    var race = ctyRaces[ctyRaceId()];
+    if (!pc || !race || !race.byFips) return null;
+    return { pieces: pc[ctyCd()] || [], race: race };
+  }
+  var ctyLeadMax = 0;
+  function drawCountyPieces(pn) {
+    if (!countyActive()) return;
+    var now = countyPiecesNow();
+    if (!now || !now.pieces.length) return;
+    var T = theme(), circles = state.county === "circles";
+    var items = [];
+    ctx.save();
+    ctx.lineJoin = "round";
+    now.pieces.forEach(function (f) {
+      if (!inPanel(pn, f)) return;
+      var c = pieceCount(f, now.race);
+      ctx.beginPath(); path(f);
+      ctx.fillStyle = circles ? T.chicfill : c ? ctyScale(Math.max(-CTY_CLAMP, Math.min(CTY_CLAMP, c.margin))) : T.nodata;
+      ctx.fill();
+      ctx.lineWidth = 0.8 / transform.k;
+      ctx.strokeStyle = circles ? T.baseline : T.paper;
+      ctx.stroke();
+      if (circles && c && c.lead > 0) {
+        var ll = innerPoint(f), pt = ll && pn.proj(ll);
+        if (pt && isFinite(pt[0])) items.push({ x: pt[0], y: pt[1], lead: c.lead, p: c.leader });
+      }
+    });
+    ctyLeadMax = items.length ? d3.max(items, function (d) { return d.lead; }) : 0;
+    items.sort(function (a, b) { return b.lead - a.lead; });
+    items.forEach(function (d) {
+      var r = Math.max(2, CTY_R * Math.sqrt(d.lead / ctyLeadMax)) / transform.k;
+      ctx.beginPath(); ctx.arc(d.x, d.y, r, 0, 2 * Math.PI);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = d.p === "D" ? T.dem : d.p === "R" ? T.rep : T.cook["Toss Up"];
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1.2 / transform.k;
+      ctx.strokeStyle = T.paper;
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+  function updateCountyKey() {
+    var w = document.getElementById("ctyWrap");
+    w.hidden = !(state.district && state.focus && state.year === "2026" && ctyRaceId());
+    ["tOff", "tMargin", "tCircles"].forEach(function (id, i) {
+      document.getElementById(id).setAttribute("aria-pressed",
+        String(state.county === ["off", "margin", "circles"][i]));
+    });
+    var key = document.getElementById("ctyKey");
+    if (state.county === "margin") {
+      key.innerHTML = "R+40 " + CTY_STEPS.map(function (c) {
+        return '<i style="background:' + c + '"></i>';
+      }).join("") + " D+40 &middot; AP";
+    } else if (state.county === "circles") {
+      key.textContent = "Circle area: vote lead" +
+        (ctyLeadMax ? " (largest " + d3.format(",")(ctyLeadMax) + ")" : "") + " \u00b7 AP";
+    } else key.textContent = "";
+  }
+  function setCounty(m) {
+    if (state.county === m) return;
+    state.county = m;
+    ensureCounty(); render(); updateCountyKey();
+  }
+  document.getElementById("tOff").addEventListener("click", function () { setCounty("off"); });
+  document.getElementById("tMargin").addEventListener("click", function () { setCounty("margin"); });
+  document.getElementById("tCircles").addEventListener("click", function () { setCounty("circles"); });
+
   var overlapData = null, overlapLoading = null;
   function loadOverlap() {
     if (overlapData) return Promise.resolve(overlapData);
@@ -3164,6 +3353,8 @@ breadcrumb_width: none
 
   function updateHint() {
     updateOverlap();
+    ensureCounty();
+    updateCountyKey();
     var h = document.getElementById("hint");
     var cw = document.getElementById("cmpWrap");
     var otherYr = state.year === "2024" ? "2026" : "2024";
