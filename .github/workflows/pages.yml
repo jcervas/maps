@@ -1,0 +1,107 @@
+# Builds and deploys the site to GitHub Pages, in place of the built-in
+# "pages build and deployment" workflow that a branch source runs.
+#
+# Why this exists: the built-in workflow gives the deploy step one try.
+# deploy-pages then polls GitHub while the Pages backend copies the artifact
+# ("syncing_files"), and gives up after 10 minutes. That limit is hard-coded in
+# the action (MAX_TIMEOUT = 600000) and a larger `timeout:` input is clamped to
+# it. A normal deploy of this site takes 10-20 seconds. When the Pages backend
+# is slow, though, syncing_files can run past 10 minutes, the action cancels
+# the deployment, and the run fails. The artifact is the same ~55 MB every time,
+# so the content is not the cause. A second try usually goes through, so this
+# workflow tries the deploy up to three times in the same job, re-using the
+# artifact the build job already uploaded.
+#
+# The build steps match the built-in workflow's: the same jekyll-build-pages
+# action and the same inputs, so the site it produces is the same.
+#
+# For this to take effect, set Settings -> Pages -> Build and deployment ->
+# Source to "GitHub Actions". While the source is still "Deploy from a
+# branch", the built-in workflow keeps running on every push too.
+
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time. A newer push waits for the deploy in flight rather than
+# canceling it. Canceling it would leave the site on an older version, and when
+# two deploys overlap the second fails with "in progress deployment" (seen on
+# 11/5/2026). GitHub keeps only the newest waiting run, so pushes that arrive
+# while a deploy is retrying cannot build up a backlog.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: .
+          destination: ./_site
+          future: false
+          build_revision: ${{ github.sha }}
+          verbose: true
+          token: ${{ github.token }}
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    # Three tries of at most 10 minutes each, plus the waits between them.
+    timeout-minutes: 40
+    environment:
+      name: github-pages
+      url: ${{ steps.result.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: try1
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+
+      - name: Wait before retrying
+        if: steps.try1.outcome == 'failure'
+        run: sleep 60
+
+      - name: Deploy to GitHub Pages (retry 1)
+        id: try2
+        if: steps.try1.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+
+      - name: Wait before retrying again
+        if: steps.try2.outcome == 'failure'
+        run: sleep 120
+
+      - name: Deploy to GitHub Pages (retry 2)
+        id: try3
+        if: steps.try2.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+
+      - name: Record the page URL
+        id: result
+        if: always()
+        env:
+          URL: ${{ steps.try3.outputs.page_url || steps.try2.outputs.page_url || steps.try1.outputs.page_url }}
+        run: echo "page_url=$URL" >> "$GITHUB_OUTPUT"
