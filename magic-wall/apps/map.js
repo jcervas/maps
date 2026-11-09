@@ -2248,10 +2248,20 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   /** This state's pieces, when they are what the zoom shows; null otherwise. */
+  /* Or zoomed to a tapped district, at whatever scale that took: a big
+   * district fitted to a phone's width is under PIECE_K, and Iowa's 1st
+   * (most of the state's east) never showed its counties there (the user,
+   * November 8). Until another shape is picked or the view goes back to the
+   * whole state. */
+  let zoomedCd = null;              // the district a tap zoomed to
+  const pinnedCd = () => pinned && (pinned.properties.tier === "cd" ? pinned.properties.id
+    : pinned.properties.tier === "cdpiece" ? pinned.properties.cd : null);
   function piecesHere() {
     if (!piecesWanted()) return null;
     loadPieces(focus);
-    const all = view.transform.k >= PIECE_K && cdPieces.get(`${piecesLines(focus)}/${focus}`);
+    const k = view.transform.k;
+    const near = k >= PIECE_K || (zoomedCd && pinnedCd() === zoomedCd);
+    const all = near && cdPieces.get(`${piecesLines(focus)}/${focus}`);
     return all && all.some((f) => pieceCell(f)) ? all : null;
   }
 
@@ -2547,8 +2557,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // drawn at all, and no county lines but those between its own pieces
     // (the user's follow-up: "only show the county inner lines to the
     // district"). Zoomed in without a district picked, every district's pieces.
-    const pick = pinned && (pinned.properties.tier === "cd" ? pinned.properties.id
-      : pinned.properties.tier === "cdpiece" ? pinned.properties.cd : null);
+    const pick = pinnedCd();
     soloCd = pick && pieces.some((f) => f.properties.cd === pick) ? pick : null;
     if (soloCd) pieces = pieces.filter((f) => f.properties.cd === soloCd);
     piecesShown = pieces.length > 0;
@@ -3010,7 +3019,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   function updateTip() {
     const follow = hovered && pointer && hovered !== pinned &&
       !(pinned && String(hovered.properties.id) === String(pinned.properties.id));
-    const f = bins.on || !tipOn ? null : follow ? hovered : pinned;
+    // Never on a phone, the user's call (November 8): the card covered the
+    // map and said what the readout under it says. A touch screen that is
+    // not narrow (the wall itself) keeps it.
+    const phone = narrow() && !!(window.matchMedia && window.matchMedia("(hover: none)").matches);
+    const f = bins.on || !tipOn || phone ? null : follow ? hovered : pinned;
     const was = tip.dataset.mode;
     // The city names make room for the docked card, so its coming and
     // going redraws them (next frame: this runs from the view's own events).
@@ -4759,6 +4772,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // Inside a state, the background is the way out -- once the view is back
     // at the whole state; zoomed in, it first returns to the whole state.
     if (!f) {
+      zoomedCd = null;
       if (view.transform.k > 1.05) view.animateTo(d3.zoomIdentity);
       else unfocus();
       return;
@@ -4774,7 +4788,35 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     pinned = featureById(f.properties.id);
     showReadout(pinned, f.properties.id);
     if (split) split.highlight(f.properties.id);
-    if (again && pinned) view.zoomToFeatures([pinned], { margin: 0.6, maxScale: 60 });
+    if (again && pinned) {
+      zoomedCd = pinnedCd();
+      if (narrow()) zoomClear(pinned);
+      else view.zoomToFeatures([pinned], { margin: 0.6, maxScale: 60 });
+    }
+  }
+
+  /** On a phone, a shape zoomed to fills the room the menus (above) and the
+   *  legend and control bar (below) leave, rather than the whole pane with
+   *  its top under the menus and its foot under the legend. */
+  function zoomClear(f, settle = true) {
+    const W = pane.clientWidth, H = pane.clientHeight;
+    // The Circles row, and the legend's line for the pieces, come in with the
+    // pieces this zoom brings: their room too.
+    const coming = !piecesShown && piecesWanted();
+    const y0 = topInset() + 4 + (coming && circlesBtn.hidden ? shapesBtn.offsetHeight + 6 : 0);
+    const y1 = (legendBox ? legendBox.y - (coming ? 16 * (theme().scale || 1) : 0)
+      : stripBox.hidden ? H : stripBox.offsetTop) - 4;
+    const [[x0, by0], [x1, by1]] = d3.geoPath(view.projection).bounds(f);
+    if (!(x1 > x0 && by1 > by0 && y1 > y0)) return;
+    const k = Math.min(60, 0.92 * Math.min((W - 16) / (x1 - x0), (y1 - y0) / (by1 - by0)));
+    const t = d3.zoomIdentity.translate(W / 2, (y0 + y1) / 2).scale(k).translate(-(x0 + x1) / 2, -(by0 + by1) / 2);
+    const cur = view.transform;
+    if (!settle && Math.abs(cur.k - t.k) < 0.01 * t.k && Math.abs(cur.x - t.x) < 2 && Math.abs(cur.y - t.y) < 2) return;
+    view.animateTo(t, settle ? 650 : 250);
+    // Once there, the menus and the legend have what this zoom brought (the
+    // Circles row, the pieces' legend line): fitted again to the room they
+    // really leave, if that moved.
+    if (settle) setTimeout(() => { if (pinned === f && focus) zoomClear(f, false); }, 720);
   }
 
   view.on("zoom", (t) => {
