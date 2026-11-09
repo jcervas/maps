@@ -27,6 +27,18 @@ import { DISTRICT_PRES_2024 } from "../data/district_pres.js";
  * the 2026 lines. Not the Cook Political Report's PVI, which weights 2024
  * and 2020 together; the readout says so. */
 const NATION_D_2024 = 75017613 / (75017613 + 77302580);
+
+/* Same-party races -- California's top two, D against D or R against R --
+ * colored by candidate (the user, November 9: "CA-04 is an example"). The
+ * race's leader keeps the party's color; the runner-up has one of their
+ * own, the same in every county: teal against a Democrat, orange against
+ * a Republican, neither read as the other party nor as an independent's
+ * purple. Steps lightest to strongest, matched by eye to --ramp-steps; a
+ * theme can set --alt-dem-steps / --alt-rep-steps (wall.css) to override. */
+const ALT_STEPS = {
+  dem: ["#d5efec", "#8fd0c8", "#3ea69c", "#0e7c74"],
+  rep: ["#fde3c6", "#f7b56d", "#ec8b2b", "#c76800"],
+};
 export function districtPVI(id) {
   const v = DISTRICT_PRES_2024[id];
   if (!v || !(v[0] + v[1])) return null;
@@ -1433,9 +1445,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         const m = cellValue(c, "margin");
         // A check once the race is called for the leader (calls.json).
         const call = t && callFor(c);
-        const won = call && call.party === t.leader.party
-          ? ` <span class="mw-won" title="Called by ${esc(call.by)}" style="color:${partyColor(t.leader.party)};font-weight:800">✓</span>` : "";
-        who = t ? `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${partyColor(t.leader.party)}"></span> ${esc(name)}${won}` : "";
+        const sw = t ? (t.same && t.leader.alt ? altColor(t.same) : partyColor(t.leader.party)) : "";
+        const sn = (n) => (surname(n) || "").toLowerCase();
+        const won = call && call.party === t.leader.party && (!t.same || !call.winner || sn(call.winner) === sn(name))
+          ? ` <span class="mw-won" title="Called by ${esc(call.by)}" style="color:${sw};font-weight:800">✓</span>` : "";
+        who = t ? `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${sw}"></span> ${esc(name)}${won}` : "";
         by = `${m === 0 ? "Tied" : marginLabel(m, t)}${c.reporting != null ? ` · ${d3.format(".0f")(c.reporting)}%` : ""}` +
           (c.partial ? ` · <span style="color:var(--warn)">partial</span>` : "");
       } else {
@@ -1581,9 +1595,71 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   /* Who leads a cell, computed once per cell. */
   function topOf(c) {
     if (!c || !c.votes) return null;
-    if (c._top === undefined) c._top = store.topTwo(c.votes, c.race || store.race(c.subj));
+    if (c._top === undefined) {
+      const race = c.race || store.race(c.subj);
+      const pair = samePair(race);
+      c._top = pair ? pairTopTwo(c.votes, race, pair) : store.topTwo(c.votes, race);
+    }
     return c._top;
   }
+
+  /* A race whose two leading candidates (over the whole race) are of one
+   * party: { party, lead, trail } by candidate id, else null. Legislature
+   * files hold every district at once and are never one pair. */
+  const pairMemo = new Map();
+  function samePair(race) {
+    if (!race || !race.race_id || LEGISLATURE.has(race.office)) return null;
+    const data = store.results(race.race_id);
+    if (!data) return null;
+    const memo = pairMemo.get(race.race_id);
+    if (memo && memo.data === data) return memo.pair;
+    const party = new Map((race.candidates || []).map((x) => [x.id, x.party]));
+    const tot = new Map();
+    const add = (votes) => { for (const [k, v] of Object.entries(votes || {})) tot.set(k, (tot.get(k) || 0) + (Number(v) || 0)); };
+    if (data.statewide && data.statewide.votes) add(data.statewide.votes);
+    else for (const u of data.units || []) add(u.votes);
+    const top = [...tot].filter(([k]) => party.has(k)).sort((a, b) => b[1] - a[1]);
+    let pair = null;
+    if (top.length >= 2 && top[0][1] > 0) {
+      const p = party.get(top[0][0]);
+      if ((p === "dem" || p === "rep") && party.get(top[1][0]) === p) pair = { party: p, lead: top[0][0], trail: top[1][0] };
+    }
+    pairMemo.set(race.race_id, { data, pair });
+    return pair;
+  }
+
+  /** topTwo by candidate rather than by party, for a same-party race. */
+  function pairTopTwo(votes, race, pair) {
+    const byId = new Map((race.candidates || []).map((x) => [x.id, x]));
+    const rows = Object.entries(votes || {}).filter(([k]) => byId.has(k))
+      .map(([k, v]) => ({ key: k, party: byId.get(k).party || "other", name: byId.get(k).name, votes: Number(v) || 0, alt: k === pair.trail }))
+      .sort((a, b) => b.votes - a.votes);
+    const [a, b] = rows;
+    if (!a || a.votes <= 0) return null;
+    const bv = b ? b.votes : 0;
+    return { leader: a, second: b || null, pts: (100 * (a.votes - bv)) / (a.votes + bv), lead: a.votes - bv, same: pair.party };
+  }
+
+  /** The side a shape is colored from: leadSide, or the runner-up's own
+   *  ramp ("alt-dem", "alt-rep") where they lead in a same-party race. */
+  function colorSide(c, key = variable) {
+    const s = leadSide(c, key);
+    const t = s && topOf(c);
+    return t && t.same && t.leader.alt ? `alt-${t.same}` : s;
+  }
+
+  /** A candidate's color: the runner-up of a same-party race has theirs. */
+  function candColor(race, id, party) {
+    const pair = samePair(race);
+    return pair && id === pair.trail ? altColor(pair.party) : partyColor(party);
+  }
+
+  function altSteps(party) {
+    const css = getComputedStyle(document.documentElement).getPropertyValue(`--alt-${party}-steps`);
+    const list = css.split(",").map((x) => x.trim()).filter(Boolean);
+    return list.length >= 2 ? list : ALT_STEPS[party];
+  }
+  const altColor = (party) => { const st = altSteps(party); return st[st.length - 1]; };
 
   /* "dem", "rep", or "ind" for anyone else ahead -- King in Maine, Osborn in
    * Nebraska -- who is colored on a ramp of their own rather than as a
@@ -1812,6 +1888,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       dem: side(cls.slice(mid + 1)),
       // An independent's ramp, lightness-matched to the parties' (wall.css).
       ind: ind && ind.length >= 2 ? side(ind) : side(cls.slice(mid + 1)),
+      // A same-party race's runner-up (ALT_STEPS).
+      "alt-dem": side(altSteps("dem")),
+      "alt-rep": side(altSteps("rep")),
     };
     return classCache;
   }
@@ -1826,16 +1905,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (v === 0) return P.tie;
     let i = 0;
     while (i < breaks.length && Math.abs(v) >= breaks[i]) i++;
-    return (side === "ind" ? P.ind : v < 0 ? P.rep : P.dem)[i];
+    return (side === "ind" ? P.ind : side && P[side] ? P[side] : v < 0 ? P.rep : P.dem)[i];
   }
 
   function colorFor(v, key = variable, atState = false, side = null) {
     if (v == null) return null;
     const s = stepped(v, breaksFor(key, atState), side);
     if (s) return s;
-    if (side === "ind") {
+    if (side === "ind" || (side && side.startsWith("alt-"))) {
       const clamp = key === "lead" ? (atState ? LEAD_CLAMP_STATE : LEAD_CLAMP_UNIT) : MARGIN_CLAMP;
-      return d3.interpolateLab(theme().paper, theme().ind)(Math.min(1, Math.abs(v) / clamp));
+      const hue = side === "ind" ? theme().ind : altColor(side.slice(4));
+      return d3.interpolateLab(theme().paper, hue)(Math.min(1, Math.abs(v) / clamp));
     }
     switch (key) {
       case "margin": return diverge(v, MARGIN_CLAMP);
@@ -1929,7 +2009,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (variable === "swing" && beforeVotes(c)) {
       const b = compareCell(c);
       const v = b && cellValue(b, "margin");
-      if (v != null) return colorFor(v, "margin", atState, leadSide(b, "margin"));
+      if (v != null) return colorFor(v, "margin", atState, colorSide(b, "margin"));
     }
     // A called race is its winner's color at full strength, votes or not
     // (an unopposed seat is called before a vote is counted).
@@ -1938,12 +2018,12 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const call = callOf(c);
     // A county piece keeps its own margin; its district's call only lifts
     // it from muted to full strength, as the district is.
-    if (call && c.kind !== "piece") return wonColor(call.party, atState);
+    if (call && c.kind !== "piece") return wonColor(call.party, atState, callSide(c, call));
     if (c.noFeed || c.certOnly) return T.nodata;
     if (c.noLive) return lightGrey();
     if (c.waiting) return dotFill();
     if (awaiting(c)) return hatchFill();
-    const fill = colorFor(cellValue(c), variable, atState, leadSide(c));
+    const fill = colorFor(cellValue(c), variable, atState, colorSide(c));
     // Counted but not called: the same margin, muted toward the paper, so a
     // call reads as the shape filling in -- the networks' convention.
     return call === null && typeof fill === "string" ? pendingColor(fill) : fill;
@@ -2080,8 +2160,19 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return `<p class="hint" style="color:var(--warn);font-weight:600">Flip: ${esc(was)} seat, called for the ${esc(now)} candidate.</p>`;
   }
 
-  function wonColor(party, atState) {
-    const side = party === "dem" || party === "rep" ? party : "ind";
+  /** The side a call is drawn in: the runner-up's own color when a
+   *  same-party race is called for the candidate who trailed overall. */
+  function callSide(c, call) {
+    const race = c.race || store.race(c.rid || c.subj);
+    const pair = samePair(race);
+    if (!pair || call.party !== pair.party || !call.winner) return null;
+    const trail = (race.candidates || []).find((x) => x.id === pair.trail);
+    const sn = (n) => (surname(n) || "").toLowerCase();
+    return trail && sn(trail.name) === sn(call.winner) ? `alt-${pair.party}` : null;
+  }
+
+  function wonColor(party, atState, sideIn = null) {
+    const side = sideIn || (party === "dem" || party === "rep" ? party : "ind");
     const clamp = variable === "lead" ? (atState ? LEAD_CLAMP_STATE : LEAD_CLAMP_UNIT) : MARGIN_CLAMP;
     return colorFor(party === "rep" ? -clamp : clamp, variable, atState, side) || theme()[side] || theme().ind;
   }
@@ -2676,6 +2767,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * independent. `who` is the cell's top two, or null for a D/R number. */
   const PARTY_LETTER = { dem: "D", rep: "R" };
   function sideLabel(v, who) {
+    // "D+5" says nothing in a race between two Democrats.
+    if (who && who.same) return surname(who.leader.name) || PARTY_LETTER[who.same];
     const p = who && who.leader.party;
     if (p && !PARTY_LETTER[p]) return surname(who.leader.name) || "Ind.";
     return v >= 0 ? "D" : "R";
@@ -2729,11 +2822,12 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (sn) won = rows.findIndex((r) => (surname(r.name) || "").toLowerCase() === sn.toLowerCase());
       if (won < 0) won = rows.findIndex((r) => r.party === call.party);
     }
+    const color = (r) => candColor(race, r.id, r.party);
     const check = (r) => ` <span class="mw-won" title="Called by ${esc(call.by)}" aria-label="winner, called by ${esc(call.by)}" ` +
-      `style="color:${partyColor(r.party)};font-weight:800">✓</span>`;
+      `style="color:${color(r)};font-weight:800">✓</span>`;
     return `<table class="cands" style="width:100%;border-collapse:collapse;margin:0 0 10px;font-variant-numeric:tabular-nums">${
       rows.map((r, i) => `<tr>
-        <td style="padding:2px 0;width:10px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${partyColor(r.party)}"></span></td>
+        <td style="padding:2px 0;width:10px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${color(r)}"></span></td>
         <td style="padding:2px 6px${i === won ? ";font-weight:700" : ""}">${esc(r.name)}${r.incumbent ? ' <span title="Incumbent" style="color:var(--ink-soft);font-size:11px">(i)</span>' : ""}${i === won ? check(r) : ""}</td>
         <td style="padding:2px 0;text-align:right;font-weight:600">${r.share == null || r.votes === 0 ? "—" : pct(r.share)}</td>
         <td style="padding:2px 0 2px 8px;text-align:right;color:var(--ink-soft)">${fmt(r.votes)}</td></tr>`).join("")
@@ -3567,6 +3661,24 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * what is drawn, so it is cached on the data layer's feature list and the
    * results it was read from. */
   let indMemo = { key: null, feats: null, shown: false };
+  /** The parties with a same-party race among the shapes drawn, D first. */
+  let sameMemo = { key: null, feats: null, shown: [] };
+  function samePartiesShown() {
+    const L = view.getLayers().find((x) => x.id === "data");
+    const feats = (L && L.features) || [];
+    const key = `${subject()}|${variable}|${store.results(raceId || "") ? store.results(raceId).updated : ""}|${feats.length}`;
+    if (sameMemo.feats === feats && sameMemo.key === key) return sameMemo.shown;
+    const atState = stateLevel();
+    const found = new Set();
+    for (const f of feats) {
+      if (f.properties.tier === "state" && !atState) continue;
+      const t = topOf(cellFor(f, atState));
+      if (t && t.same) found.add(t.same);
+    }
+    sameMemo = { key, feats, shown: ["dem", "rep"].filter((p) => found.has(p)) };
+    return sameMemo.shown;
+  }
+
   function independentShown() {
     if (variable !== "margin" && variable !== "lead") return false;
     const L = view.getLayers().find((x) => x.id === "data");
@@ -3649,6 +3761,15 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const P = !note && breaks ? partisanClasses(breaks.length + 1) : null;
     if (!note && independentShown()) {
       keys.push(["Independent ahead", P ? P.ind[Math.floor(P.ind.length / 2)] : T.ind]);
+    }
+    // A same-party race on screen: which color is which candidate.
+    if (!note && (variable === "margin" || variable === "lead")) {
+      for (const party of samePartiesShown()) {
+        const L = PARTY_LETTER[party];
+        const mid = (a) => a[Math.floor(a.length / 2)];
+        keys.push([`${L} vs. ${L}: race leader`, P ? mid(P[party]) : T[party]],
+                  [`${L} vs. ${L}: runner-up`, P ? mid(P[`alt-${party}`]) : altColor(party)]);
+      }
     }
     keys.push(["No data", T.nodata]);
     // Called races solid, the rest muted (callOf): on tonight's maps of
@@ -4640,7 +4761,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const ll = anchorOf(f);
       const pt = ll && view.projection(ll);
       if (!pt) continue;
-      items.push({ x: transform.applyX(pt[0]), y: transform.applyY(pt[1]), lead: Math.abs(v), party: t.leader.party });
+      items.push({ x: transform.applyX(pt[0]), y: transform.applyY(pt[1]), lead: Math.abs(v), party: t.leader.party,
+                   color: t.same && t.leader.alt ? altColor(t.same) : partyColor(t.leader.party) });
     }
     if (!items.length) return;
     circleMax = d3.max(items, (d) => d.lead);
@@ -4654,7 +4776,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       ctx.beginPath();
       ctx.arc(d.x, d.y, r, 0, 2 * Math.PI);
       ctx.globalAlpha = 0.85;
-      ctx.fillStyle = partyColor(d.party);
+      ctx.fillStyle = d.color;
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.lineWidth = 1.2;
