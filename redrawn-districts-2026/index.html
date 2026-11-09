@@ -657,7 +657,7 @@ breadcrumb_width: none
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-08b";
+  var BUILD = "2026-11-09a";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -2368,13 +2368,15 @@ breadcrumb_width: none
     // did not touch -- needs the opposite: a line that shows against the page,
     // the same grey the state borders use.
     //
-    // Those districts keep their grey line under "Redrawn" too, unfilled:
-    // the lines say where the rest of the House sits without putting it back
-    // into the comparison, which the fill would.
+    // Under "Redrawn" the district lines stay inside the nine states that
+    // redrew -- every district there, its unchanged ones too, in grey and
+    // unfilled. The other states keep their outline and a label but no
+    // district lines; "All" draws every line in the House.
     var bd = backdrop();
     ctx.lineWidth = (showingPrecincts ? 1.6 : 1.1) / transform.k;
     for (var k = 0; k < bd.length; k++) {
       if (!inPanel(pn, bd[k])) continue;
+      if (!showingPrecincts && !stateInScope(bd[k].properties.state)) continue;
       // On a rating tab an unrated district is left in the page tone, where
       // a water-colored line would vanish; it takes the grey line too.
       var blankHere = ratingMode() && !fillFor(bd[k].properties, bd[k]);
@@ -3322,6 +3324,7 @@ breadcrumb_width: none
     }
     for (i = 0; i < ds.length; i++) {
       var g = ds[i], his = g.properties.state === keep;
+      if (!stateInScope(g.properties.state)) continue;
       out.push({ f: g, stroke: ratingMode() && !fillFor(g.properties, g) ? T.baseline : T.water, lw: 1.1,
                  a0: his ? 1 : (fadeIn ? 0 : 1),
                  a1: his ? 1 : (fadeIn ? 1 : 0) });
