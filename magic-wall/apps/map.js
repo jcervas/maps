@@ -17,6 +17,25 @@ import { stateName } from "../data/states.js";
 import { ballotText, createControlStrip, ensureStyles } from "./seatbar.js";
 import { CHAMBER_TITLES, ALL_CHAMBERS } from "../data/seats.js";
 import { ratingFor, legLabel, ratingSource, parseRating, RATINGS, LEG_RATINGS } from "../data/ratings.js";
+import { DISTRICT_PRES_2024 } from "../data/district_pres.js";
+
+/* A district's PVI, Cook's formula on one election: its share of the 2024
+ * two-party presidential vote for Harris less the nation's, in points,
+ * rounded; "EVEN" under half a point. The nation's is the official count
+ * (FEC: Harris 75,017,613, Trump 77,302,580). The district's is the estimate
+ * in data/district_pres.js, The New York Times's precinct results laid over
+ * the 2026 lines. Not the Cook Political Report's PVI, which weights 2024
+ * and 2020 together; the readout says so. */
+const NATION_D_2024 = 75017613 / (75017613 + 77302580);
+export function districtPVI(id) {
+  const v = DISTRICT_PRES_2024[id];
+  if (!v || !(v[0] + v[1])) return null;
+  const d = Math.round(100 * (v[0] / (v[0] + v[1]) - NATION_D_2024));
+  return d === 0 ? "EVEN" : `${d > 0 ? "D" : "R"}+${Math.abs(d)}`;
+}
+const PVI_NOTE = "PVI: the district's 2024 presidential vote against the nation's, " +
+  "estimated from The New York Times's precinct results. Not Cook's PVI, which also weights 2020.";
+const PVI_SHORT = "PVI: 2024 vote vs. the nation, est. from The New York Times's precinct results.";
 
 // Canvas text follows the broadcast type scale (theme().scale: 1, 1.5, 2):
 // 12 px is a laptop size and unreadable on a wall seen from across a room.
@@ -42,12 +61,13 @@ const TURNOUT_CLAMP = 1.2;
 // Partisan colors are classes with round breaks a viewer can read off the
 // key -- a county is "R+10 to 20", not some fraction of the way along a
 // blend. White is an exact tie and nothing else: R+0.3 is still a Republican
-// lead and is drawn light red. So four breaks make five classes a side, one
-// more than the four colors a side in --ramp-steps (wall.css); the extra
-// class is made in between them (partisanClasses). The clamps above are only
-// for a theme without steps, which falls back to the blend.
+// lead and is drawn light red. Margin has three classes a side, 0-10, 10-20
+// and 20+ (the user, November 9); the others have four breaks, five classes
+// a side, one more than the four colors a side in --ramp-steps (wall.css).
+// partisanClasses respreads the theme's steps to the count. The clamps above
+// are only for a theme without steps, which falls back to the blend.
 const BREAKS = {
-  margin: [5, 10, 20, 30],
+  margin: [10, 20],
   swing: [2, 5, 10, 15],
   leadUnit: [1000, 5000, 25000, 100000],
   leadState: [10000, 50000, 250000, 1000000],
@@ -350,6 +370,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   let moving = 0;                 // when a drill-in or -out morph started, or 0
   let pendingTap = null;          // a tap made during that morph, replayed after it
   let pinned = null;              // a tapped unit stays in the readout
+  let pinnedAt = null;            // its id, for a split panel that has no such shape
+  let lastAside = null;           // the aside's last HTML, so a redraw that changes nothing is skipped
+  let lastAsideNode = null;
   let legendOn = true;
   let seatsUp = new Map();        // "2026 senate GA" -> seat, from the holdover file
   let redrawn = new Set();        // states with new House lines for 2026, from the same file
@@ -490,7 +513,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       shapes = v;
       try { localStorage.setItem("mw.shapes", shapes); } catch (_) { /* private window */ }
       hovered = null;
-      pinned = null;
+      pinned = null; pinnedAt = null;
       changed();
     });
   /* Circles, the user's ask (November 6): over a district's county pieces,
@@ -1408,7 +1431,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         const top = t && store.candidateRows(c.votes, c.race).find((r) => r.party === t.leader.party);
         const name = t && (t.leader.name || (top && top.name) || t.leader.key);
         const m = cellValue(c, "margin");
-        who = t ? `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${partyColor(t.leader.party)}"></span> ${esc(name)}` : "";
+        // A check once the race is called for the leader (calls.json).
+        const call = t && callFor(c);
+        const won = call && call.party === t.leader.party
+          ? ` <span class="mw-won" title="Called by ${esc(call.by)}" style="color:${partyColor(t.leader.party)};font-weight:800">✓</span>` : "";
+        who = t ? `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${partyColor(t.leader.party)}"></span> ${esc(name)}${won}` : "";
         by = `${m === 0 ? "Tied" : marginLabel(m, t)}${c.reporting != null ? ` · ${d3.format(".0f")(c.reporting)}%` : ""}` +
           (c.partial ? ` · <span style="color:var(--warn)">partial</span>` : "");
       } else {
@@ -1469,23 +1496,25 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   function districtReadout(id) {
     const c = districtCell(id);
     const d = id.slice(3);
+    const pvi = districtPVI(id);
     let html = `<h2>${esc(stateName(c.st))} ${d === "AL" ? "at-large" : `District ${Number(d)}`}</h2>` +
-      `<p class="hint" style="margin:-6px 0 10px">${esc(mode().label)}</p>`;
+      `<p class="hint" style="margin:-6px 0 10px">${esc(mode().label)}${pvi
+        ? `<span class="mw-pvi-tag"> · <span title="${esc(PVI_NOTE)}">PVI <span style="color:var(--ink);font-weight:600">${pvi}</span></span></span>` : ""}</p>`;
+    const pviNote = pvi ? `<p class="hint mw-pvi" style="margin:6px 0 0;font-size:0.786rem">${esc(PVI_NOTE)}</p>` : "";
     if (!c.data) {
       const what = c.awaiting ? "results file staged; no votes yet."
         : c.waiting ? "feed waiting for the state to publish its 2026 results."
         : c.certOnly ? "no live feed. Numbers arrive only as an override, from certified results."
         : "no live feed for this race.";
-      return html + `<p class="hint">${what}</p>` + compareDl(c) + ratingDl(c) + onBallot(c.rid);
+      return html + `<p class="hint">${what}</p>` + compareDl(c) + ratingDl(c) + onBallot(c.rid) + pviNote;
     }
     if (c.partial) {
       html += `<p class="hint" style="color:var(--warn);font-weight:600">Partial: ${esc(partialWhat(c))}, not the district total.</p>`;
     }
     html += flipHint(c);
-    html += candidateTable(c.votes, c.race);
-    const rows = awaiting(c) ? [["Status", "Awaiting votes"], ...compareRows(c), ...ratingRows(c)] : cellRows(c);
-    html += dl([...rows, ...sourceRows(c)]);
-    return html;
+    html += candHead(c, pvi) + candidateTable(c.votes, c.race, null, callFor(c));
+    if (awaiting(c)) html += compareDl(c);
+    return html + srcLine(c) + pviNote;
   }
 
   /** A district's county piece: its own count, and the district's beside it. */
@@ -1496,19 +1525,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const d = p.cd.slice(3);
     const where = `${stateName(p.state)} ${d === "AL" ? "at-large" : `District ${Number(d)}`}`;
     const dc = districtCell(p.cd);
-    const rows = [["Total votes", fmt(store.totalVotes(c.totals))]];
-    if (store.totalVotes(c.totals) > 0) {
-      rows.push(["Margin", marginLabel(cellValue(c, "margin"), topOf(c))],
-                ["Raw lead", leadLabel(cellValue(c, "lead"), topOf(c))]);
-    }
-    if (c.reporting != null) {
-      rows.push([c.basis === "expected vote" ? "Expected vote in" : "Precincts reporting", `${d3.format(".1f")(c.reporting)}%`]);
-    }
     const dm = cellValue(dc, "margin");
-    if (dm != null) rows.push([`${d === "AL" ? "Statewide" : `District ${Number(d)}`}`, `${marginLabel(dm, topOf(dc))}`]);
+    const whole = dm != null ? ` (district ${dm === 0 ? "tied" : marginLabel(dm, topOf(dc))})` : "";
     return `<h2>${esc(c.unit.name || p.name)}</h2>` +
-      `<p class="hint" style="margin:-6px 0 10px">${esc(where)} · the county's part of the district</p>` +
-      candidateTable(c.votes, c.race) + dl([...rows, ...sourceRows(c)]);
+      `<p class="hint" style="margin:-6px 0 10px">${esc(where)}${whole} · the county's part of the district</p>` +
+      candHead(c) + candidateTable(c.votes, c.race, null, callFor(c)) + srcLine(c);
   }
 
   /** A baseline's state total, for the readout under a county at national zoom. */
@@ -2665,12 +2686,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return `${side}${side.length > 1 ? " " : ""}+${d3.format(".1f")(Math.abs(pts))}`;
   }
 
-  function leadLabel(v, who = null) {
-    if (v == null) return "—";
-    if (v === 0) return "tied";
-    return `${sideLabel(v, who)} +${fmt(Math.abs(v))}`;
-  }
-
   function partyColor(p) {
     const T = theme();
     return p === "dem" ? T.dem : p === "rep" ? T.rep : p === "ind" ? T.ind : T.inkSoft;
@@ -2692,59 +2707,73 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   /* The candidate block: who, how many, what share. Shares are of all votes,
    * which is what a candidate actually got; only the margin is two-party. */
-  function candidateTable(votes, race, names) {
+  function candidateTable(votes, race, names, call = null) {
     const rows = store.candidateRows(votes, race, names).filter((r) => r.votes > 0 || r.id !== "other");
     if (!rows.length) return "";
     const pct = d3.format(".1%");
+    // The called winner: by name when the call names one, else the party's
+    // first row (rows run by votes).
+    let won = -1;
+    if (call) {
+      const sn = call.winner && surname(call.winner);
+      if (sn) won = rows.findIndex((r) => (surname(r.name) || "").toLowerCase() === sn.toLowerCase());
+      if (won < 0) won = rows.findIndex((r) => r.party === call.party);
+    }
+    const check = (r) => ` <span class="mw-won" title="Called by ${esc(call.by)}" aria-label="winner, called by ${esc(call.by)}" ` +
+      `style="color:${partyColor(r.party)};font-weight:800">✓</span>`;
     return `<table class="cands" style="width:100%;border-collapse:collapse;margin:0 0 10px;font-variant-numeric:tabular-nums">${
-      rows.map((r) => `<tr>
+      rows.map((r, i) => `<tr>
         <td style="padding:2px 0;width:10px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${partyColor(r.party)}"></span></td>
-        <td style="padding:2px 6px">${esc(r.name)}${r.incumbent ? ' <span title="Incumbent" style="color:var(--ink-soft);font-size:11px">(i)</span>' : ""}</td>
+        <td style="padding:2px 6px${i === won ? ";font-weight:700" : ""}">${esc(r.name)}${r.incumbent ? ' <span title="Incumbent" style="color:var(--ink-soft);font-size:11px">(i)</span>' : ""}${i === won ? check(r) : ""}</td>
         <td style="padding:2px 0;text-align:right;font-weight:600">${r.share == null || r.votes === 0 ? "—" : pct(r.share)}</td>
         <td style="padding:2px 0 2px 8px;text-align:right;color:var(--ink-soft)">${fmt(r.votes)}</td></tr>`).join("")
     }</table>`;
   }
 
-  /** Rows for the definition list under the candidates, one cell. */
-  function cellRows(c) {
-    const rows = [];
-    if (!c.totals) return rows;
-    const total = store.totalVotes(c.totals);
-    rows.push(["Total votes", fmt(total)]);
-    if (total > 0) {
-      rows.push(["Margin", marginLabel(cellValue(c, "margin"), topOf(c))]);
-      rows.push(["Raw lead", leadLabel(cellValue(c, "lead"), topOf(c))]);
+  /* No definition list in the readout (the user, November 9). Over the
+   * candidates, in gray: how much is in at the left, the margin at the
+   * right. Under them, the source and its age. What is left of the old
+   * list -- a legislature's seat counts, a race with no votes yet -- is one
+   * gray line. */
+  const dl = (rows) => rows.length
+    ? `<p class="hint mw-facts" style="margin:4px 0 8px;font-size:0.857rem">${
+        rows.map(([k, v]) => `${k}: <span style="color:var(--ink);font-weight:600">${v}</span>`).join(" · ")}</p>` : "";
+
+  function candHead(c, pvi = null) {
+    const total = c.totals ? store.totalVotes(c.totals) : 0;
+    let left = "";
+    if (awaiting(c)) left = "Awaiting votes";
+    else if (c.reporting != null) {
+      const pc = `${d3.format(".0f")(c.reporting)}%`;
+      left = c.basis === "expected vote" ? `${pc} of expected vote` : c.basis === "certified" ? "Certified"
+        : `${pc} of precincts`;
     }
-    if (c.precincts && Array.isArray(c.precincts) && c.precincts[1]) {
-      rows.push(["Precincts", `${fmt(c.precincts[0])} of ${fmt(c.precincts[1])}`]);
-    }
-    if (c.reporting != null) {
-      // Precincts reporting is not percent of the vote, and the label says
-      // which one this is (docs/schema.md §2).
-      const basis = c.basis === "expected vote" ? "Expected vote in"
-        : c.basis === "certified" ? "Reporting (certified)" : "Precincts reporting";
-      rows.push([basis, `${d3.format(".1f")(c.reporting)}%`]);
-    }
-    rows.push(...ratingRows(c));
-    if (c.baseTotals && total > 0) {
-      const label = store.baselineLabel(baselineKey);
-      const sw = cellValue(c, "swing");
-      if (sw != null) rows.push([`Swing vs ${label}`, `${marginLabel(sw)} margin`]);
-      const to = cellValue(c, "turnout");
-      if (to != null) rows.push([`Turnout vs ${label}`, d3.format(".1%")(to)]);
-      // An estimate and labeled as one: the vote still to come if this
-      // place turns out exactly as it did in the baseline. Not a projection,
-      // and meaningless for a certified file, where nothing is outstanding.
-      if (c.data && !c.data.final) {
-        const left = Math.max(0, store.totalVotes(c.baseTotals) - total);
-        rows.push(["Est. outstanding", `~${fmt(left)} <span style="color:var(--ink-soft);font-weight:400">(if turnout = ${esc(label)})</span>`]);
-      }
-    }
-    return rows;
+    const m = total > 0 ? cellValue(c, "margin") : null;
+    const mText = m == null ? "" : m === 0 ? "tied" : marginLabel(m, topOf(c));
+    const right = m != null ? `Margin <span style="font-weight:700">${mText}</span>` : "";
+    if (!left && !right) return "";
+    // The hover card's version (tipHTML): the lead in votes, and the PVI in
+    // the margin's place where the shape is a district.
+    const lv = total > 0 ? cellValue(c, "lead") : null;
+    const lead = lv == null ? "" : lv === 0 ? "tied" : `${sideLabel(lv, topOf(c))} +${fmt(Math.abs(lv))}`;
+    const inShort = awaiting(c) ? "Awaiting votes" : c.reporting != null && c.basis !== "certified"
+      ? `${d3.format(".0f")(c.reporting)}% in` : c.basis === "certified" ? "Certified" : "";
+    const data = ` data-in="${esc(inShort)}" data-lead="${esc(lead)}" data-margin="${esc(mText)}"${pvi ? ` data-pvi="${esc(pvi)}"` : ""}`;
+    return `<div class="mw-chead"${data} style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;` +
+      `margin:0 0 2px;font-size:0.857rem;color:var(--ink-soft);font-variant-numeric:tabular-nums"><span>${left}</span><span>${right}</span></div>`;
   }
 
-  const dl = (rows) =>
-    `<dl>${rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+  const srcLine = (c) => {
+    const r = sourceRows(c);
+    return r.length ? `<p class="hint mw-src" style="margin:2px 0 0;font-size:0.786rem">${r.map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>` : "";
+  };
+
+  /** The call on the race a readout's candidates are from, any map variable. */
+  function callFor(c) {
+    const S = seatsSrc();
+    const id = S && S.call && liveRaceKey(c);
+    return (id && S.call(id)) || null;
+  }
 
   function sourceRows(c) {
     const rows = [];
@@ -2825,9 +2854,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       parts.push(`<p class="hint" style="color:var(--warn);font-weight:600">Partial: ${esc(what)}, not a statewide total.</p>`);
     }
     parts.push(flipHint(c));
-    parts.push(candidateTable(c.votes, c.race, names));
-    const rows = awaiting(c) ? [["Status", "Awaiting votes"], ...compareRows(c), ...ratingRows(c)] : cellRows(c);
-    parts.push(dl([...rows, ...sourceRows(c)]));
+    parts.push(candHead(c) + candidateTable(c.votes, c.race, names, callFor(c)));
+    if (awaiting(c)) parts.push(compareDl(c));
+    parts.push(srcLine(c));
     return parts.join("");
   }
 
@@ -2898,14 +2927,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       html += `<p class="hint">${c.waiting ? `Waiting for ${esc(stateName(c.race.state))} to publish its ${esc(c.subj.slice(0, 4))} results.`
         : "No live feed for this race."}</p>` + compareDl(c) + ratingDl(c);
     } else if (c.unopposed) {
-      html += dl([["Result", `Unopposed (${c.unopposed === "dem" ? "Democratic" : c.unopposed === "rep" ? "Republican" : esc(c.unopposed)})`],
-                  ["Votes", "none printed for an unopposed seat"], ...sourceRows(c)]);
+      html += `<p class="hint">Unopposed (${c.unopposed === "dem" ? "Democratic" : c.unopposed === "rep" ? "Republican" : esc(c.unopposed)}): ` +
+        `no votes printed for an unopposed seat.</p>` + srcLine(c);
     } else if (c.votes) {
-      html += candidateTable(c.votes, c.race, BASELINE_NAMES[c.subj]);
-      const rows = awaiting(c) ? [["Status", "Awaiting votes"], ...compareRows(c), ...ratingRows(c)] : cellRows(c);
-      html += dl([...rows, ...sourceRows(c)]);
+      html += candHead(c) + candidateTable(c.votes, c.race, BASELINE_NAMES[c.subj], callFor(c));
+      if (awaiting(c)) html += compareDl(c);
+      html += srcLine(c);
     } else {
-      html += dl([["Result", "none in this file"], ...sourceRows(c)]);
+      html += `<p class="hint">No result in this file.</p>` + srcLine(c);
     }
     // At national zoom a county is read against its state: the statewide
     // total for the same baseline goes underneath.
@@ -2913,9 +2942,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const sc = baselineStateCell(p.state);
       if (sc) {
         html += `<h3 style="margin:14px 0 6px;font-size:14px">${esc(stateName(p.state))} statewide</h3>` +
-          candidateTable(sc.votes, null, BASELINE_NAMES[sc.subj]) +
-          dl([["Margin", marginLabel(cellValue(sc, "margin"), topOf(sc))],
-              ["Total votes", fmt(store.totalVotes(sc.totals))]]);
+          candHead(sc) + candidateTable(sc.votes, null, BASELINE_NAMES[sc.subj]);
       }
     }
     return html;
@@ -2955,11 +2982,16 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       (focus ? `<p class="hint">${redrawn.has(st) && !newLines(st) ? "" : "Point at a district. Tap it to zoom in. "}Tap outside the state to go back.</p>` : "");
   }
 
+  /* The hover card follows the pointer; the aside does not (the user,
+   * November 9: "the aside shouldn't change on hover, only on click"). It
+   * reads what was last clicked or tapped, and with nothing pinned the state
+   * or national summary, whatever `f` the caller was pointing at. */
   function showReadout(f, id = undefined) {
     updateTip();
     if (!readout) return;
-    let html = bins.on && !bins.out ? binsHTML() : withPlaces(readoutHTML(f), f);
-    const at = id !== undefined ? id : f ? f.properties.id : null;
+    const g = pinned;
+    let html = bins.on && !bins.out ? binsHTML() : withPlaces(readoutHTML(g), g);
+    const at = g ? g.properties.id : pinnedAt;
     // In split screen the other panel's reading of the same place goes
     // underneath, headed by what that panel is showing.
     if (split) {
@@ -2967,7 +2999,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         `<p class="hint" style="margin:0 0 6px;text-transform:uppercase;font-size:11px;letter-spacing:.04em">Right panel · ${esc(split.paneTitle())}</p>` +
         split.readoutFor(at);
     }
-    readout.innerHTML = html;
+    // Rewritten only when it changes (or someone else wrote to it), so a
+    // pointer moving over the map does not churn the aside.
+    if (html !== lastAside || !lastAsideNode || readout.firstChild !== lastAsideNode) {
+      readout.innerHTML = html;
+      lastAside = html;
+      lastAsideNode = readout.firstChild;
+    }
   }
 
   /** A district's readout names its largest places under its heading. */
@@ -3074,6 +3112,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // The line under the heading, then any short ones after it ("38
     // districts, none reporting"); a paragraph of explanation stays in the readout.
     let n = 0;
+    // The card has the PVI in its margin row; not twice.
+    for (const x of root.querySelectorAll(".mw-pvi-tag")) x.remove();
     for (let el = h2 && h2.nextElementSibling; el && n < 3 && el.classList.contains("hint"); el = el.nextElementSibling) {
       if (n && el.textContent.length > 80) continue;
       out += `<div style="color:var(--ink-soft);font-size:12px;margin:0 0 4px">${el.innerHTML}</div>`;
@@ -3088,20 +3128,29 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       for (const r of rows.slice(4)) r.remove();
       table.style.margin = "4px 0";
       table.style.fontSize = "12.5px";
+      // Over the candidates: how much is in and the lead in votes at the
+      // left; at the right the district's PVI where there is one, else the
+      // margin in points (the user, November 9).
+      const head = root.querySelector(".mw-chead");
+      if (head) {
+        const d = head.dataset;
+        const left = [d.in, d.lead && `${d.lead} votes`].filter(Boolean).join(" · ");
+        const right = d.pvi ? `PVI <span style="font-weight:700;color:var(--ink)">${esc(d.pvi)}</span>`
+          : d.margin ? `Margin <span style="font-weight:700;color:var(--ink)">${esc(d.margin)}</span>` : "";
+        out += `<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink-soft);` +
+          `margin:4px 0 0;font-variant-numeric:tabular-nums"><span>${esc(left)}</span><span>${right}</span></div>`;
+      }
       out += table.outerHTML;
       if (rows.length > 4) out += `<div style="color:var(--ink-soft);font-size:11px">+${rows.length - 4} more</div>`;
     }
-    const dl = root.querySelector("dl");
-    if (dl) {
-      const pairs = [];
-      for (const dt of dl.querySelectorAll("dt")) {
-        const dd = dt.nextElementSibling;
-        // The Times is credited wherever its data shows.
-        if (pairs.length < 2 || /New York Times/.test(dd ? dd.textContent : "")) pairs.push([dt.innerHTML, dd ? dd.innerHTML : ""]);
-      }
-      out += `<div style="display:grid;grid-template-columns:auto 1fr;gap:1px 10px;font-size:12px;margin:4px 0 2px;border-top:1px solid var(--rule);padding-top:4px">` +
-        pairs.map(([a, b]) => `<span style="color:var(--ink-soft)">${a}</span><span style="font-weight:600;text-align:right">${b}</span>`).join("") + `</div>`;
-    } else if (!table) {
+    const facts = root.querySelector(".mw-facts");
+    if (facts && !table) out += `<div style="color:var(--ink-soft);font-size:12px;margin:4px 0 2px">${facts.innerHTML}</div>`;
+    // The Times is credited wherever its data shows.
+    const credit = [...root.querySelectorAll(".mw-src, .mw-pvi")].filter((x) => /New York Times/.test(x.textContent));
+    for (const x of credit) {
+      out += `<div style="color:var(--ink-soft);font-size:11px;margin:2px 0 0">${x.classList.contains("mw-pvi") ? esc(PVI_SHORT) : x.innerHTML}</div>`;
+    }
+    if (!table && !facts) {
       const hint = root.querySelector(".hint:not(:first-of-type)") || null;
       if (hint && !out.includes(hint.innerHTML)) out += `<div style="color:var(--ink-soft);font-size:12px">${hint.innerHTML}</div>`;
     }
@@ -3415,7 +3464,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       apply: () => {
         focus = st;
         hovered = null;
-        pinned = null;
+        pinned = null; pinnedAt = null;
         pressed = null;
         // Nothing else changes the variable: a reader who was looking at
         // swing stays on swing.
@@ -3455,7 +3504,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         focus = null;
         raceId = null;
         hovered = null;
-        pinned = null;
+        pinned = null; pinnedAt = null;
         pressed = null;
         refit();
         autoBaseline();
@@ -4786,6 +4835,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // From the right panel the feature is that panel's; pin this panel's
     // feature with the same id, and read the place out by id either way.
     pinned = featureById(f.properties.id);
+    pinnedAt = f.properties.id;
     showReadout(pinned, f.properties.id);
     if (split) split.highlight(f.properties.id);
     if (again && pinned) {
@@ -5014,7 +5064,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (!raceModes().some((m) => m.key === key)) return;
       modeKey = key;
       hovered = null;
-      pinned = null;
+      pinned = null; pinnedAt = null;
       if (focus) raceId = raceFor(focus);
       changed();
     },
@@ -5024,7 +5074,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     nationalRace() { return modeKey; },
     setRace(id) {
       raceId = id || null;
-      pinned = null;
+      pinned = null; pinnedAt = null;
       // The tier can change with the race -- a Massachusetts presidential
       // file draws towns where the baseline drew counties -- so the layer
       // list is rebuilt, not just recolored.
