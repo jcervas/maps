@@ -1498,7 +1498,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const d = id.slice(3);
     const pvi = districtPVI(id);
     let html = `<h2>${esc(stateName(c.st))} ${d === "AL" ? "at-large" : `District ${Number(d)}`}</h2>` +
-      `<p class="hint" style="margin:-6px 0 10px">${esc(mode().label)}${pvi
+      `<p class="hint" style="margin:-6px 0 10px">${esc(mode().label)}${pvi && !c.data
         ? `<span class="mw-pvi-tag"> · <span title="${esc(PVI_NOTE)}">PVI <span style="color:var(--ink);font-weight:600">${pvi}</span></span></span>` : ""}</p>`;
     const pviNote = pvi ? `<p class="hint mw-pvi" style="margin:6px 0 0;font-size:0.786rem">${esc(PVI_NOTE)}</p>` : "";
     if (!c.data) {
@@ -1524,12 +1524,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!c) return districtReadout(p.cd);
     const d = p.cd.slice(3);
     const where = `${stateName(p.state)} ${d === "AL" ? "at-large" : `District ${Number(d)}`}`;
-    const dc = districtCell(p.cd);
-    const dm = cellValue(dc, "margin");
-    const whole = dm != null ? ` (district ${dm === 0 ? "tied" : marginLabel(dm, topOf(dc))})` : "";
-    return `<h2>${esc(c.unit.name || p.name)}</h2>` +
-      `<p class="hint" style="margin:-6px 0 10px">${esc(where)}${whole} · the county's part of the district</p>` +
-      candHead(c) + candidateTable(c.votes, c.race, null, callFor(c)) + srcLine(c);
+    // "(part)" where the district takes only some of the county (the user,
+    // November 9); a whole county is just its name. The PVI is the district's.
+    const pvi = districtPVI(p.cd);
+    return `<h2>${esc(c.unit.name || p.name)}${p.part ? ` <span style="font-weight:400;color:var(--ink-soft)">(part)</span>` : ""}</h2>` +
+      `<p class="hint" style="margin:-6px 0 10px">${esc(where)}</p>` +
+      candHead(c, pvi) + candidateTable(c.votes, c.race, null, callFor(c)) + srcLine(c) +
+      (pvi ? `<p class="hint mw-pvi" style="margin:6px 0 0;font-size:0.786rem">${esc(PVI_NOTE)}</p>` : "");
   }
 
   /** A baseline's state total, for the readout under a county at national zoom. */
@@ -2252,7 +2253,16 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     for (const k of [...cdPieces.keys()]) if (!k.endsWith(`/${st}`)) cdPieces.delete(k);
     cdPieces.set(key, null);
     loadTopo(`${bundle.base}/geo/detail/cd-pieces/${key}.topojson`)
-      .then((t) => { cdPieces.set(key, (t.pieces || []).map(rewound)); if (focus === st) refresh(); })
+      .then((t) => {
+        // A county with pieces in more than one district is "(part)" in
+        // each (slivers were dropped at build, so a line that only grazes a
+        // county does not count).
+        const feats = (t.pieces || []).map(rewound);
+        const n = d3.rollup(feats, (v) => v.length, (f) => f.properties.fips);
+        for (const f of feats) f.properties.part = n.get(f.properties.fips) > 1;
+        cdPieces.set(key, feats);
+        if (focus === st) refresh();
+      })
       .catch(() => cdPieces.set(key, false));
   }
   /* A polygon wound the wrong way is, to d3, the whole globe outside it:
@@ -2750,12 +2760,15 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     const m = total > 0 ? cellValue(c, "margin") : null;
     const mText = m == null ? "" : m === 0 ? "tied" : marginLabel(m, topOf(c));
-    const right = m != null ? `Margin <span style="font-weight:700">${mText}</span>` : "";
-    if (!left && !right) return "";
-    // The hover card's version (tipHTML): the lead in votes, and the PVI in
-    // the margin's place where the shape is a district.
+    // A district, or a county piece of one, has its PVI where the margin
+    // was (the user, November 9); anything else keeps its margin.
+    const right = pvi ? `<span title="${esc(PVI_NOTE)}">PVI <span style="font-weight:700">${esc(pvi)}</span></span>`
+      : m != null ? `Margin <span style="font-weight:700">${mText}</span>` : "";
     const lv = total > 0 ? cellValue(c, "lead") : null;
     const lead = lv == null ? "" : lv === 0 ? "tied" : `${sideLabel(lv, topOf(c))} +${fmt(Math.abs(lv))}`;
+    // With the PVI there, the margin goes; the lead in votes says who is ahead.
+    if (pvi && lead) left = left ? `${left} · ${lead} votes` : `${lead} votes`;
+    if (!left && !right) return "";
     const inShort = awaiting(c) ? "Awaiting votes" : c.reporting != null && c.basis !== "certified"
       ? `${d3.format(".0f")(c.reporting)}% in` : c.basis === "certified" ? "Certified" : "";
     const data = ` data-in="${esc(inShort)}" data-lead="${esc(lead)}" data-margin="${esc(mText)}"${pvi ? ` data-pvi="${esc(pvi)}"` : ""}`;
