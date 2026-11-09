@@ -192,10 +192,40 @@ permalink: /magic-wall/
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-<!-- The build tag is on the module too, not just on the data files it
-     fetches: a browser caches an ES module by URL, so an unversioned
-     shell.js kept running after an edit and the footer was the only
-     sign. Bump this with BUILD in shell.js. -->
-<script type="module" src="shell.js?v=2026-11-08a"></script>
+<!-- The build tag is on every module, not just on the data files they
+     fetch: a browser caches an ES module by URL, so an unversioned
+     shell.js kept running after an edit, and once shell.js was tagged,
+     the modules it imports stayed stale on the public site for Pages'
+     ten minutes (an old map.js under a new shell, November 9, 2026). An
+     import map points each module's plain URL at the tagged one, so every
+     import of it, from any file, gets the same single copy. A module
+     missing from this list still loads, only untagged. Bump BUILD here
+     with BUILD in shell.js. -->
+<script>
+(function () {
+  var BUILD = "2026-11-09a";
+  var MODULES = [
+    "apps/battle.js", "apps/boards.js", "apps/calls.js", "apps/map.js",
+    "apps/seatbar.js", "apps/sources.js", "apps/table.js",
+    "apps/telestrate.js", "apps/updates.js", "core/fetch.js", "core/geo.js",
+    "core/geom.js", "core/input.js", "core/labels.js", "core/morph.js",
+    "core/pick.js", "core/projection.js", "core/theme.js", "core/view.js",
+    "core/zoom.js", "data/calls.js", "data/district_pres.js",
+    "data/freshness.js", "data/overrides.js", "data/poller.js",
+    "data/presets.js", "data/ratings.js", "data/replay.js", "data/seats.js",
+    "data/states.js", "data/store.js"
+  ];
+  var imports = {};
+  MODULES.forEach(function (m) { imports["./" + m] = "./" + m + "?v=" + BUILD; });
+  var map = document.createElement("script");
+  map.type = "importmap";
+  map.textContent = JSON.stringify({ imports: imports });
+  document.head.appendChild(map);          // before the first module loads
+  var shell = document.createElement("script");
+  shell.type = "module";
+  shell.src = "shell.js?v=" + BUILD;
+  document.body.appendChild(shell);
+})();
+</script>
 </body>
 </html>
