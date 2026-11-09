@@ -349,6 +349,33 @@ breadcrumb_width: none
     max-width: 52rem; flex: none;
   }
 
+  /* A selected district's makeup: which districts on the other map its
+     people come from (or, on the 2024 map, went to), largest first. */
+  .overlap {
+    background: var(--paper); border-top: 1px solid var(--rule);
+    padding-block: 10px 12px; font-size: 12.25px; line-height: 14.7px;
+    max-width: 52rem; flex: none;
+  }
+  .overlap .lt {
+    font-size: 10.5px; letter-spacing: 0.06em; font-weight: 600;
+    text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.4rem;
+  }
+  .overlap table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .overlap th {
+    font-size: 10.5px; font-weight: 600; color: var(--ink-soft); text-align: left;
+    padding: 0 14px 4px 0; border-bottom: 1px solid var(--rule);
+  }
+  .overlap td { padding: 4px 14px 4px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  .overlap th.num, .overlap td.num { text-align: right; }
+  .overlap .bar {
+    display: inline-block; height: 8px; background: var(--ink-soft);
+    opacity: 0.45; vertical-align: middle; margin-left: 6px; border-radius: 1px;
+  }
+  .overlap .d { color: var(--dem); font-weight: 600; }
+  .overlap .r { color: var(--rep); font-weight: 600; }
+  .overlap .muted { color: var(--ink-soft); }
+  .overlap .tier { border-top: 0; padding-top: 0; }
+
   .legend .lt {
     font-size: 10.5px; letter-spacing: 0.06em; font-weight: 600;
     text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.4rem;
@@ -412,6 +439,7 @@ breadcrumb_width: none
     .rde header { order: 0; }
     .stage { order: 1; }
     .legend { order: 2; }
+    .overlap { order: 2; }
     .controls { order: 3; border-top: 1px solid var(--rule); padding-top: 0.7rem; }
     .hintbar { order: 4; }
     .rde footer { order: 5; }
@@ -640,6 +668,11 @@ breadcrumb_width: none
     <div class="swatches" id="swatches" hidden></div>
     <div class="tier" id="tierNote" hidden></div>
   </div>
+  <div class="overlap gutter" id="overlap" hidden>
+    <div class="lt" id="overlapTitle"></div>
+    <table id="overlapTable"></table>
+    <div class="tier" id="overlapNote"></div>
+  </div>
 
 <footer class="gutter">
   Census block equivalency files (119th and 120th Congress) &middot; 2024 presidential results via
@@ -657,7 +690,7 @@ breadcrumb_width: none
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-09a";
+  var BUILD = "2026-11-09b";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -3059,7 +3092,78 @@ breadcrumb_width: none
       : (p.old_district_best_match || null);
   }
 
+  var overlapData = null, overlapLoading = null;
+  function loadOverlap() {
+    if (overlapData) return Promise.resolve(overlapData);
+    if (!overlapLoading) {
+      overlapLoading = fetch(dataUrl("overlap.json"))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { overlapData = j; return j; })
+        .catch(function () { overlapLoading = null; return null; });
+    }
+    return overlapLoading;
+  }
+
+  // Shown for a selected district the redraw changed: on the 2026 map, the
+  // 2024 districts its people come from; on the 2024 map, the 2026 districts
+  // its people went to. Shares are of 2020 census population. Pieces under
+  // half a percent are folded into one row, since a 2026 district can take
+  // a few hundred people from a neighbour and they say nothing.
+  function updateOverlap() {
+    var box = document.getElementById("overlap");
+    var f = state.district ? districtFeature(state.district) : null;
+    if (!f || f.__same || !state.focus) { box.hidden = true; return; }
+    var want = state.focus + "-" + state.district, yr = state.year;
+    loadOverlap().then(function (d) {
+      var now = state.district ? districtFeature(state.district) : null;
+      if (now !== f || state.year !== yr) return;      // the selection moved on
+      var rows = d && d[yr === "2026" ? "new" : "old"][want];
+      if (!rows || !rows.length) { box.hidden = true; return; }
+      var to2026 = yr === "2024";
+      var name = (STATE_NAME[state.focus] || state.focus) + " " + state.district;
+      document.getElementById("overlapTitle").textContent = to2026
+        ? "Where the 2024 " + name + " went"
+        : "Where the 2026 " + name + " comes from";
+      var total = rows.reduce(function (a, x) { return a + x[1]; }, 0);
+      var big = rows.filter(function (x) { return x[2] >= 0.005; });
+      var small = rows.filter(function (x) { return x[2] < 0.005; });
+      var fmtN = d3.format(","), fmtP = function (x) { return (100 * x).toFixed(1) + "%"; };
+      var html = "<thead><tr><th>" + (to2026 ? "2026 district" : "2024 district") + "</th>" +
+        (to2026 ? "" : "<th>Represented by</th>") +
+        '<th class="num">People</th><th class="num">' +
+        (to2026 ? "Share of the 2024 district" : "Share of this district") + "</th></tr></thead><tbody>";
+      big.forEach(function (x) {
+        var inc = !to2026 && state.incumbents ? state.incumbents[x[0]] : null;
+        var who = "";
+        if (!to2026) {
+          if (inc && inc.vacant) who = '<span class="muted">vacant</span>';
+          else if (inc && inc.name) {
+            var pc = inc.party === "Democrat" ? "d" : inc.party === "Republican" ? "r" : "";
+            who = inc.name + (inc.party ? ' <span class="' + pc + '">(' + inc.party.charAt(0) + ")</span>" : "");
+          } else who = '<span class="muted">\u2014</span>';
+        }
+        html += "<tr><td>" + x[0].replace("-", " ") + "</td>" + (to2026 ? "" : "<td>" + who + "</td>") +
+          '<td class="num">' + fmtN(x[1]) + '</td><td class="num">' + fmtP(x[2]) +
+          '<span class="bar" style="width:' + Math.max(1, Math.round(x[2] * 120)) + 'px"></span></td></tr>';
+      });
+      if (small.length) {
+        var sp = small.reduce(function (a, x) { return a + x[1]; }, 0);
+        var ss = small.reduce(function (a, x) { return a + x[2]; }, 0);
+        html += '<tr><td class="muted" colspan="' + (to2026 ? 1 : 2) + '">' + small.length +
+          " other district" + (small.length === 1 ? "" : "s") + '</td><td class="num muted">' +
+          fmtN(sp) + '</td><td class="num muted">' + fmtP(ss) + "</td></tr>";
+      }
+      html += "</tbody>";
+      document.getElementById("overlapTable").innerHTML = html;
+      document.getElementById("overlapNote").textContent = to2026
+        ? "2020 census population: " + fmtN(total) + " people, split across the 2026 districts that took them."
+        : "2020 census population: " + fmtN(total) + " people. \u201cRepresented by\u201d is the member elected in 2024.";
+      box.hidden = false;
+    });
+  }
+
   function updateHint() {
+    updateOverlap();
     var h = document.getElementById("hint");
     var cw = document.getElementById("cmpWrap");
     var otherYr = state.year === "2024" ? "2026" : "2024";
