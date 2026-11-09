@@ -4840,26 +4840,46 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (split) split.highlight(f.properties.id);
     if (again && pinned) {
       zoomedCd = pinnedCd();
-      if (narrow()) zoomClear(pinned);
-      else view.zoomToFeatures([pinned], { margin: 0.6, maxScale: 60 });
+      // The pieces (and the Circles row with them) come in now, not at the
+      // end of the zoom. Settle the menus first and, at the state's own
+      // frame, the fit they leave: otherwise fitWatch refits the projection
+      // on the zoom's first frame, under a target worked from the old fit,
+      // and the district lands off to one side (the user, November 9: "it
+      // seems to be shrinking the map towards the left").
+      view.setLayers(layers());
+      syncButtons();
+      const t = view.transform;
+      if (t.k === 1 && t.x === 0 && t.y === 0 && !morphing() && boxesSig() !== fitSig) refit();
+      zoomClear(pinned);
     }
   }
 
-  /** On a phone, a shape zoomed to fills the room the menus (above) and the
-   *  legend and control bar (below) leave, rather than the whole pane with
-   *  its top under the menus and its foot under the legend. */
+  /** A shape zoomed to fills the room the menus (above) and the legend and
+   *  control bar (below) leave, rather than the whole pane with its top
+   *  under the menus and its foot under the legend. On a phone the legend
+   *  sits over the bar; on a desktop they share the bottom edge, and the
+   *  docked card at the top left is kept clear too. */
   function zoomClear(f, settle = true) {
     const W = pane.clientWidth, H = pane.clientHeight;
+    const phone = narrow();
     // The Circles row, and the legend's line for the pieces, come in with the
     // pieces this zoom brings: their room too.
     const coming = !piecesShown && piecesWanted();
     const y0 = topInset() + 4 + (coming && circlesBtn.hidden ? shapesBtn.offsetHeight + 6 : 0);
-    const y1 = (legendBox ? legendBox.y - (coming ? 16 * (theme().scale || 1) : 0)
-      : stripBox.hidden ? H : stripBox.offsetTop) - 4;
+    const legTop = legendBox ? legendBox.y - (coming ? 16 * (theme().scale || 1) : 0) : H;
+    const barTop = stripBox.hidden || !stripBox.offsetHeight ? H : stripBox.offsetTop;
+    const y1 = (phone ? (legendBox ? legTop : barTop) : Math.min(legTop, barTop)) - 4;
+    let lx = 8;
+    if (!phone && tip.style.display !== "none" && tip.dataset.mode === "dock" && tip.offsetWidth) {
+      const r = tip.offsetLeft + tip.offsetWidth + 8;
+      if (W - r - 8 >= 0.55 * W) lx = r;
+    }
+    const rx = W - 8;
     const [[x0, by0], [x1, by1]] = d3.geoPath(view.projection).bounds(f);
     if (!(x1 > x0 && by1 > by0 && y1 > y0)) return;
-    const k = Math.min(60, 0.92 * Math.min((W - 16) / (x1 - x0), (y1 - y0) / (by1 - by0)));
-    const t = d3.zoomIdentity.translate(W / 2, (y0 + y1) / 2).scale(k).translate(-(x0 + x1) / 2, -(by0 + by1) / 2);
+    const fill = phone ? 0.92 : 0.85;
+    const k = Math.min(60, fill * Math.min((rx - lx) / (x1 - x0), (y1 - y0) / (by1 - by0)));
+    const t = d3.zoomIdentity.translate((lx + rx) / 2, (y0 + y1) / 2).scale(k).translate(-(x0 + x1) / 2, -(by0 + by1) / 2);
     const cur = view.transform;
     if (!settle && Math.abs(cur.k - t.k) < 0.01 * t.k && Math.abs(cur.x - t.x) < 2 && Math.abs(cur.y - t.y) < 2) return;
     view.animateTo(t, settle ? 650 : 250);
