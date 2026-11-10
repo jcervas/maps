@@ -1,16 +1,27 @@
 # Builds and deploys the site to GitHub Pages, in place of the built-in
 # "pages build and deployment" workflow that a branch source runs.
 #
-# Why this exists: the built-in workflow gives the deploy step one try.
-# deploy-pages then polls GitHub while the Pages backend copies the artifact
-# ("syncing_files"), and gives up after 10 minutes. That limit is hard-coded in
-# the action (MAX_TIMEOUT = 600000) and a larger `timeout:` input is clamped to
-# it. A normal deploy of this site takes 10-20 seconds. When the Pages backend
-# is slow, though, syncing_files can run past 10 minutes, the action cancels
-# the deployment, and the run fails. The artifact is the same ~55 MB every time,
-# so the content is not the cause. A second try usually goes through, so this
-# workflow tries the deploy up to three times in the same job, re-using the
-# artifact the build job already uploaded.
+# Why this exists: the deploy is the fragile part. After the artifact is
+# uploaded, the Pages backend copies it into place ("syncing_files"), and for
+# this site that normally takes 10-20 seconds. Every so often it stalls for far
+# longer. The artifact is the same ~52 MB every time, so the content is not the
+# cause.
+#
+# actions/deploy-pages handles that badly. It polls for at most 10 minutes
+# (MAX_TIMEOUT = 600000 in the action; a larger `timeout:` input is clamped to
+# it), and when that runs out it does not just stop waiting - it POSTs to
+# .../pages/deployments/{id}/cancel and throws the sync away. Retrying the
+# action afterwards re-creates a deployment under the same id (the commit SHA),
+# so the backend starts the 52 MB copy over from the beginning instead of
+# finishing the one that was nearly done. Three tries in a row meant three
+# restarts, ~24-34 minutes burned, and a failed run (seen on 11/9/2026 and
+# 11/10/2026; one of those attempts reached finished_file_sync before the clock
+# ran out and was canceled anyway).
+#
+# So this workflow does the deploy itself, with the same three API calls the
+# action makes - create the deployment, poll its status, cancel only as a last
+# resort - but waits out a single sync for 30 minutes instead of restarting it
+# every 10. A stalled sync that is still making progress now gets to finish.
 #
 # The build steps match the built-in workflow's: the same jekyll-build-pages
 # action and the same inputs, so the site it produces is the same.
@@ -28,6 +39,7 @@ on:
 
 permissions:
   contents: read
+  actions: read # to look up the uploaded artifact's id
   pages: write
   id-token: write
 
@@ -35,7 +47,7 @@ permissions:
 # canceling it. Canceling it would leave the site on an older version, and when
 # two deploys overlap the second fails with "in progress deployment" (seen on
 # 11/5/2026). GitHub keeps only the newest waiting run, so pushes that arrive
-# while a deploy is retrying cannot build up a backlog.
+# while a deploy is slow cannot build up a backlog.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -69,39 +81,120 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # Three tries of at most 10 minutes each, plus the waits between them.
-    timeout-minutes: 40
+    # The wait below is 30 minutes; the rest is headroom for the API calls.
+    timeout-minutes: 35
     environment:
       name: github-pages
-      url: ${{ steps.result.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
-        id: try1
-        continue-on-error: true
-        uses: actions/deploy-pages@v5
-
-      - name: Wait before retrying
-        if: steps.try1.outcome == 'failure'
-        run: sleep 60
-
-      - name: Deploy to GitHub Pages (retry 1)
-        id: try2
-        if: steps.try1.outcome == 'failure'
-        continue-on-error: true
-        uses: actions/deploy-pages@v5
-
-      - name: Wait before retrying again
-        if: steps.try2.outcome == 'failure'
-        run: sleep 120
-
-      - name: Deploy to GitHub Pages (retry 2)
-        id: try3
-        if: steps.try2.outcome == 'failure'
-        uses: actions/deploy-pages@v5
-
-      - name: Record the page URL
-        id: result
-        if: always()
+        id: deploy
         env:
-          URL: ${{ steps.try3.outputs.page_url || steps.try2.outputs.page_url || steps.try1.outputs.page_url }}
-        run: echo "page_url=$URL" >> "$GITHUB_OUTPUT"
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          SHA: ${{ github.sha }}
+          ARTIFACT_NAME: github-pages
+          # How long to wait on one sync before giving up, in seconds.
+          WAIT_SECONDS: "1800"
+        run: |
+          set -euo pipefail
+
+          cancel_deployment() {
+            echo "Canceling Pages deployment ${DEPLOYMENT_ID}..."
+            gh api --method POST \
+              "repos/${REPO}/pages/deployments/${DEPLOYMENT_ID}/cancel" \
+              >/dev/null 2>&1 || true
+          }
+
+          # 1. Find the artifact the build job uploaded.
+          artifact_id=$(gh api \
+            "repos/${REPO}/actions/runs/${RUN_ID}/artifacts?name=${ARTIFACT_NAME}" \
+            --jq '.artifacts[0].id // empty')
+          if [ -z "${artifact_id}" ]; then
+            echo "::error::No \"${ARTIFACT_NAME}\" artifact in run ${RUN_ID}."
+            exit 1
+          fi
+          echo "Artifact ${artifact_id}"
+
+          # 2. Mint the OIDC token Pages wants, with the default audience -
+          #    core.getIDToken() in actions/deploy-pages passes none either.
+          oidc_token=$(curl -sS --fail-with-body \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}" | jq -r '.value')
+          if [ -z "${oidc_token}" ] || [ "${oidc_token}" = "null" ]; then
+            echo '::error::Could not get an OIDC token (needs id-token: write).'
+            exit 1
+          fi
+
+          # 3. Create the deployment.
+          response=$(jq -n \
+            --argjson artifact_id "${artifact_id}" \
+            --arg pages_build_version "${SHA}" \
+            --arg oidc_token "${oidc_token}" \
+            '{$artifact_id, $pages_build_version, $oidc_token}' |
+            gh api --method POST "repos/${REPO}/pages/deployments" --input -)
+
+          DEPLOYMENT_ID=$(printf '%s' "${response}" |
+            jq -r '.id // (.status_url | split("/") | last) // empty')
+          if [ -z "${DEPLOYMENT_ID}" ]; then
+            DEPLOYMENT_ID="${SHA}"
+          fi
+          echo "Created deployment ${DEPLOYMENT_ID} for ${SHA}"
+
+          page_url=$(printf '%s' "${response}" | jq -r '.page_url // ""')
+          echo "page_url=${page_url}" >> "${GITHUB_OUTPUT}"
+
+          # 4. Wait for it. Unlike actions/deploy-pages, a slow sync is left
+          #    alone to finish rather than canceled and started over.
+          deadline=$((SECONDS + WAIT_SECONDS))
+          interval=5
+          errors=0
+          status=""
+
+          while true; do
+            if [ "${SECONDS}" -ge "${deadline}" ]; then
+              echo "::error::Pages stuck at \"${status}\" after $((WAIT_SECONDS / 60)) minutes."
+              cancel_deployment
+              exit 1
+            fi
+
+            sleep "${interval}"
+            if [ "${interval}" -lt 30 ]; then
+              interval=$((interval * 2))
+            fi
+
+            if ! status=$(gh api \
+              "repos/${REPO}/pages/deployments/${DEPLOYMENT_ID}" \
+              --jq '.status // ""' 2>/dev/null); then
+              errors=$((errors + 1))
+              echo "Could not read deployment status (${errors}/10)"
+              if [ "${errors}" -ge 10 ]; then
+                echo '::error::Too many errors reading the deployment status.'
+                cancel_deployment
+                exit 1
+              fi
+              continue
+            fi
+            errors=0
+
+            case "${status}" in
+              succeed)
+                echo "Deployed in ${SECONDS}s."
+                exit 0
+                ;;
+              deployment_failed | deployment_content_failed | deployment_cancelled | deployment_lost)
+                echo "::error::Pages reported \"${status}\"."
+                exit 1
+                ;;
+              deployment_attempt_error)
+                echo "${SECONDS}s: temporary failure, Pages will retry"
+                ;;
+              "" | null)
+                echo "${SECONDS}s: no status reported yet"
+                ;;
+              *)
+                echo "${SECONDS}s: ${status}"
+                ;;
+            esac
+          done
