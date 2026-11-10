@@ -8,9 +8,25 @@
 # it. A normal deploy of this site takes 10-20 seconds. When the Pages backend
 # is slow, though, syncing_files can run past 10 minutes, the action cancels
 # the deployment, and the run fails. The artifact is the same ~55 MB every time,
-# so the content is not the cause. A second try usually goes through, so this
+# so the content is not the cause. A later try usually goes through, so this
 # workflow tries the deploy up to three times in the same job, re-using the
 # artifact the build job already uploaded.
+#
+# The waits between tries are 3 minutes because a cancel takes a while to
+# settle. Re-creating a deployment uses the same id (the commit SHA), and one
+# made too soon after a cancel just gets the old "Deployment cancelled." state
+# back instead of a fresh deployment. Across the runs on 11/9-11/10/2026 every
+# try that came ~120s after a cancel was wasted that way, while the one that
+# came ~180s after went deployment_queued -> deployment_in_progress -> success.
+# Three data points, so treat this as a guess that needs real stalls to
+# confirm, not a settled fix.
+#
+# Waiting longer instead of retrying does not work: a 30-minute wait on one
+# sync was tried on 11/10/2026 and failed twice (runs 42754016482 and
+# 42802598468), both times sitting at a blank status for 20 minutes after
+# syncing_files stopped reporting. It also made things worse, because deploys
+# are serialized on the `pages` concurrency group below, so each stall held
+# the next content push back for the full 30 minutes.
 #
 # The build steps match the built-in workflow's: the same jekyll-build-pages
 # action and the same inputs, so the site it produces is the same.
@@ -69,8 +85,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # Three tries of at most 10 minutes each, plus the waits between them.
-    timeout-minutes: 40
+    # Three tries of at most 10 minutes each, plus two 3-minute waits.
+    timeout-minutes: 45
     environment:
       name: github-pages
       url: ${{ steps.result.outputs.page_url }}
@@ -82,7 +98,7 @@ jobs:
 
       - name: Wait before retrying
         if: steps.try1.outcome == 'failure'
-        run: sleep 60
+        run: sleep 180
 
       - name: Deploy to GitHub Pages (retry 1)
         id: try2
@@ -92,7 +108,7 @@ jobs:
 
       - name: Wait before retrying again
         if: steps.try2.outcome == 'failure'
-        run: sleep 120
+        run: sleep 180
 
       - name: Deploy to GitHub Pages (retry 2)
         id: try3
