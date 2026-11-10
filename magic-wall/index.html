@@ -189,6 +189,12 @@ permalink: /magic-wall/
   </dl>
   <p class="hint">Presets come from <code>presets.json</code>; views saved here stay in this browser.</p>
   <button id="presetExport">Copy presets as JSON</button>
+  <!-- The credits were a footer under the map; the user moved them here,
+       out of sight, November 10, 2026. -->
+  <h2 class="about">About</h2>
+  <p class="hint">Geography: Census 1:500,000 cartographic boundaries &mdash; counties 2023, congressional districts 2024, New England towns 2020.</p>
+  <p class="hint">Results: each state's own election site; where a state has no feed, or its count is partial or far behind, The New York Times or the Associated Press. Each race names its source.</p>
+  <p class="hint">Build <code id="build">&mdash;</code></p>
 </aside>
 
 <aside id="readout">
@@ -198,11 +204,6 @@ permalink: /magic-wall/
   <div id="readoutBody"><div class="hint">Loading geography&hellip;</div></div>
 </aside>
 
-<footer>
-  <span>Geography: Census 1:500,000 cartographic boundaries — counties 2023, congressional districts 2024, New England towns 2020.</span>
-  <span>Results: each state's own election site; where a state has no feed, or its count is partial or far behind, The New York Times or the Associated Press. Each race names its source.</span>
-  <span>Build <code id="build">&mdash;</code></span>
-</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
@@ -217,7 +218,7 @@ permalink: /magic-wall/
      with BUILD in shell.js. -->
 <script>
 (function () {
-  var BUILD = "2026-11-10g";
+  var BUILD = "2026-11-10i";
   var MODULES = [
     "apps/battle.js", "apps/boards.js", "apps/calls.js", "apps/map.js",
     "apps/seatbar.js", "apps/sources.js", "apps/table.js",

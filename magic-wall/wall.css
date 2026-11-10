@@ -309,6 +309,7 @@ body.drawing #drawBtn { background: #ffd21f; color: #000; border-color: #ffd21f;
 #keys dt { font-weight: 700; white-space: nowrap; }
 #keys dd { margin: 0; color: var(--ink-soft); }
 #keys .hint { font-size: 0.857rem; color: var(--ink-soft); }
+#keys h2.about { margin: 1.1rem 0 0.2rem; font-size: 1rem; }
 
 footer {
   grid-area: foot;

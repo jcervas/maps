@@ -664,6 +664,23 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     changed();
   });
   const circlesOn = () => leadCircles && piecesShown;
+  /* Swing arrows, the user's ask (November 10): with Color on Swing, an
+   * arrow on each district or state (or county, where the map draws
+   * counties) leaning right in Democratic blue for a shift toward the
+   * Democrats and left in Republican red for one toward the Republicans,
+   * as long as the swing (capped at 20 points). The shapes go plain under
+   * them so the arrows carry the swing. A county piece of a House district
+   * has no 2024 House count of its own, so zoomed in it is the district's
+   * arrow. Remembered per machine. */
+  let swingArrows = false;
+  try { swingArrows = localStorage.getItem("mw.swingArrows") === "on"; } catch (_) { /* private window */ }
+  const arrowsBtn = radioMenu("Arrows", "An arrow on each place, leaning toward the party it swung to, as long as the swing", (v) => {
+    swingArrows = v === "on";
+    try { localStorage.setItem("mw.swingArrows", swingArrows ? "on" : "off"); } catch (_) { /* private window */ }
+    changed();
+  });
+  const arrowsOn = () => swingArrows && variable === "swing" && variableAvailable("swing") && !chiclets() && !bins.on;
+  const SWING_ARROW_CAP = 20;
   /* Rating as fill, or as chiclets: in chiclets the map stays plain and only
    * the races in play -- Lean and Toss-up, and under vs. Rating any upset --
    * carry a small marker in their rating color, so a national House map is
@@ -1024,6 +1041,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   function syncCirclesButton() {
     syncRadioMenu(circlesBtn, piecesShown ? [["off", "Off"], ["lead", "Vote lead"]] : [], leadCircles ? "lead" : "off");
+    syncRadioMenu(arrowsBtn, variable === "swing" && variableAvailable("swing") ? [["off", "Off"], ["on", "Swing"]] : [],
+      swingArrows ? "on" : "off");
   }
 
   const SHAPE_LABEL = { cartogram: "Cartogram", lines2024: "2024 lines" };
@@ -1591,7 +1610,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         const won = call && call.party === t.leader.party && (!t.same || !call.winner || sn(call.winner) === sn(name))
           ? ` <span class="mw-won" title="Called by ${esc(call.by)}" style="color:${sw};font-weight:800">✓</span>` : "";
         who = t ? `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${sw}"></span> ${esc(name)}${won}` : "";
-        by = `${m === 0 ? "Tied" : marginLabel(m, t)}${c.reporting != null ? ` · ${d3.format(".0f")(c.reporting)}%` : ""}` +
+        // Color on Swing: the swing in the margin's place.
+        const swg = swingText(c);
+        by = `${swg ? (swg.value === "n/a" ? "swing n/a" : `${swg.value} swing`) : m === 0 ? "Tied" : marginLabel(m, t)}${c.reporting != null ? ` · ${d3.format(".0f")(c.reporting)}%` : ""}` +
           (c.partial ? ` · <span style="color:var(--warn)">partial</span>` : "");
       } else {
         by = c.data || c.awaiting ? "awaiting votes" : c.waiting ? "feed waiting" : c.certOnly ? "override only" : "no live feed";
@@ -2142,6 +2163,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // Circles over the county pieces: a piece with a lead is plain land, so
     // its circle carries the result.
     if (c.kind === "piece" && circlesOn() && cellValue(c, "lead") != null) return d3.interpolateRgb(T.paper, T.ink)(0.14);
+    if (arrowsOn() && cellValue(c, "swing") != null) return d3.interpolateRgb(T.paper, T.ink)(0.1);
     if (variable === "rating") return ratingFill(c);
     if (variable === "vsrating") {
       const v = versus(c);
@@ -3001,9 +3023,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     const m = total > 0 ? cellValue(c, "margin") : null;
     const mText = m == null ? "" : m === 0 ? "tied" : marginLabel(m, topOf(c));
+    // Color on Swing: the swing itself, against what it compares to, or why
+    // there is none (the user, November 10: "it should show what the swing
+    // is, ie D+12").
+    const sw = swingText(c);
     // A district, or a county piece of one, has its PVI where the margin
     // was (the user, November 9); anything else keeps its margin.
-    const right = pvi ? `<span title="${esc(PVI_NOTE)}">PVI <span style="font-weight:700">${esc(pvi)}</span></span>`
+    const right = sw ? `Swing <span style="font-weight:700">${esc(sw.value)}</span> ${esc(sw.vs)}`
+      : pvi ? `<span title="${esc(PVI_NOTE)}">PVI <span style="font-weight:700">${esc(pvi)}</span></span>`
       : m != null ? `Margin <span style="font-weight:700">${mText}</span>` : "";
     const lv = total > 0 ? cellValue(c, "lead") : null;
     const lead = lv == null ? "" : lv === 0 ? "tied" : `${sideLabel(lv, topOf(c))} +${fmt(Math.abs(lv))}`;
@@ -3012,9 +3039,22 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!left && !right) return "";
     const inShort = awaiting(c) ? "Awaiting votes" : c.reporting != null && c.basis !== "certified"
       ? `${d3.format(".0f")(c.reporting)}% in` : c.basis === "certified" ? "Certified" : "";
-    const data = ` data-in="${esc(inShort)}" data-lead="${esc(lead)}" data-margin="${esc(mText)}"${pvi ? ` data-pvi="${esc(pvi)}"` : ""}`;
+    const data = ` data-in="${esc(inShort)}" data-lead="${esc(lead)}" data-margin="${esc(mText)}"${pvi ? ` data-pvi="${esc(pvi)}"` : ""}` +
+      (sw ? ` data-swing="${esc(sw.value)}" data-swingvs="${esc(sw.vs)}"` : "");
     return `<div class="mw-chead"${data} style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;` +
       `margin:0 0 2px;font-size:0.857rem;color:var(--ink-soft);font-variant-numeric:tabular-nums"><span>${left}</span><span>${right}</span></div>`;
+  }
+
+  /** With Color on Swing: { value: "D+12.3" or "n/a", vs: "vs 2024 House"
+   *  or why not }, else null. */
+  function swingText(c) {
+    if (variable !== "swing") return null;
+    const label = store.baselineLabel(baselineKey);
+    const v = cellValue(c, "swing");
+    if (v != null) return { value: v === 0 ? "even" : marginLabel(v), vs: `vs ${label}` };
+    const why = (c.redrawn || (c.kind === "piece" && redrawn.has(c.st))) ? "new lines" : c.kind === "piece" ? `no ${label} by county piece`
+      : !c.baseTotals ? `no ${label} here` : !(c.totals && store.totalVotes(c.totals) > 0) ? "no votes yet" : "not comparable";
+    return { value: "n/a", vs: `(${why})` };
   }
 
   const srcLine = (c) => {
@@ -3396,10 +3436,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         // it is only the PVI's title, so the card carries no footnote.
         const d = head.dataset;
         const tally = [d.in, d.lead && `${d.lead} votes`].filter(Boolean).join(" · ");
-        const key = d.pvi ? `<span title="${esc(PVI_SHORT)}">PVI <span style="font-weight:700;color:var(--ink)">${esc(d.pvi)}</span></span>`
+        const key = d.swing ? `Swing <span style="font-weight:700;color:var(--ink)">${esc(d.swing)}</span> ${esc(d.swingvs || "")}`
+          : d.pvi ? `<span title="${esc(PVI_SHORT)}">PVI <span style="font-weight:700;color:var(--ink)">${esc(d.pvi)}</span></span>`
           : d.margin ? `Margin <span style="font-weight:700;color:var(--ink)">${esc(d.margin)}</span>` : "";
-        out += `<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink-soft);` +
-          `margin:4px 0 0;font-variant-numeric:tabular-nums"><span>${key}</span><span style="text-align:right">${esc(tally)}</span></div>`;
+        out += `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 8px;font-size:11.5px;color:var(--ink-soft);` +
+          `margin:4px 0 0;font-variant-numeric:tabular-nums"><span>${key}</span><span style="text-align:right;margin-left:auto">${esc(tally)}</span></div>`;
       }
       out += table.outerHTML;
       if (rows.length > 4) out += `<div style="color:var(--ink-soft);font-size:11px">+${rows.length - 4} more</div>`;
@@ -3947,6 +3988,12 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (circlesOn() && circleMax) keys.push([`Circle area: vote lead (largest ${d3.format(",")(circleMax)})`, "text"]);
     const classes = P
       ? { colors: [...P.rep].reverse().concat([P.tie], P.dem), labels: breaks.map(fmt) } : null;
+    if (!note && arrowsOn()) {
+      // The arrows carry the swing; the shapes under them are plain.
+      return { title: `${title} · arrows`, stops: null, classes: null, ends: null,
+               keys: [["10 pts toward D", "arrow-dem"], ["10 pts toward R", "arrow-rep"],
+                      [`Capped at ${SWING_ARROW_CAP} pts`, "text"], ...keys] };
+    }
     return { title, stops: note ? null : stops, classes, ends, keys };
   }
 
@@ -4062,8 +4109,18 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     let kx = x;
     for (const [label, fill] of L.keys) {
       // Keys wrap to a second row rather than running off under the readout.
-      const kw = (fill === "text" ? 0 : sw + 4 * k) + ctx.measureText(label).width + 10 * k;
+      const aw = fill === "arrow-dem" || fill === "arrow-rep" ? arrowLen(10) * Math.SQRT1_2 + 4 * k : 0;
+      const kw = (fill === "text" ? 0 : aw || sw + 4 * k) + ctx.measureText(label).width + 10 * k;
       if (kx > x && kx + kw > x + w * 1.6) { kx = x; cy += 16 * k; }
+      if (aw) {                              // a sample swing arrow, 10 points long
+        const dem = fill === "arrow-dem";
+        const ax = dem ? kx + 1 * k : kx + aw - 4 * k;
+        arrow(ctx, ax, cy + sw + 1, arrowLen(10), dem ? "dem" : "rep", dem ? T.dem : T.rep, k);
+        ctx.fillStyle = T.inkSoft;
+        ctx.fillText(label, kx + aw, cy);
+        kx += kw;
+        continue;
+      }
       if (fill === "text") {                 // a credit line, no swatch
         ctx.fillStyle = T.inkSoft;
         ctx.fillText(label, kx, cy);
@@ -4757,6 +4814,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     sizeStage();
     circleMax = 0;
     if (focus && circlesOn() && binsCover() < 0.5) drawLeadCircles(ctx, dpr, W, H, transform);
+    if (arrowsOn() && binsCover() < 0.5) drawSwingArrows(ctx, dpr, W, H, transform);
     if (!focus) {
       const items = [];
       // On the cartogram the cells are the data, so a state's label sits
@@ -4906,6 +4964,52 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    *  the lead, scaled to the biggest lead on the map; biggest first so a
    *  small one sits on top of a big neighbor. */
   let circleMax = 0;                // the biggest lead drawn, for the legend
+  /** An arrow's length in pixels for a swing of `pts`, capped. */
+  const arrowLen = (pts) => (34 * (theme().scale || 1)) * Math.min(Math.abs(pts), SWING_ARROW_CAP) / SWING_ARROW_CAP;
+  /** One arrow, its tail at (x, y): up and to the right toward the
+   *  Democrats, up and to the left toward the Republicans. */
+  function arrow(ctx, x, y, len, toward, color, k) {
+    const dx = (toward === "dem" ? 1 : -1) * Math.SQRT1_2 * len, dy = -Math.SQRT1_2 * len;
+    const ux = dx / len, uy = dy / len, hx = x + dx, hy = y + dy, h = Math.min(7 * k, len * 0.6);
+    const path = () => {
+      ctx.beginPath();
+      ctx.moveTo(x, y); ctx.lineTo(hx, hy);
+      ctx.moveTo(hx - h * (ux - uy * 0.55), hy - h * (uy + ux * 0.55));
+      ctx.lineTo(hx, hy);
+      ctx.lineTo(hx - h * (ux + uy * 0.55), hy - h * (uy - ux * 0.55));
+    };
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    path(); ctx.strokeStyle = theme().paper; ctx.lineWidth = 4.2 * k; ctx.stroke();
+    path(); ctx.strokeStyle = color; ctx.lineWidth = 2 * k; ctx.stroke();
+  }
+  function drawSwingArrows(ctx, dpr, W, H, transform) {
+    const T = theme();
+    const k = T.scale || 1;
+    const L = view.getLayers().find((x) => x.id === "data");
+    const atState = stateLevel();
+    const items = [];
+    for (const f of (L && L.features) || []) {
+      if (f.properties.tier === "cdpiece") continue;
+      const c = cellFor(f, atState);
+      const v = cellValue(c, "swing");
+      if (v == null || Math.abs(v) < 0.05) continue;
+      const ll = anchorOf(f);
+      const pt = ll && view.projection(ll);
+      if (!pt) continue;
+      items.push({ x: transform.applyX(pt[0]), y: transform.applyY(pt[1]), v });
+    }
+    ctx.save();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Smallest last, so a short arrow is not lost under a long neighbor's.
+    items.sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+    for (const d of items) {
+      const len = Math.max(3 * k, arrowLen(d.v));
+      if (d.x < -len || d.y < -len || d.x > W + len || d.y > H + len) continue;
+      arrow(ctx, d.x, d.y, len, d.v > 0 ? "dem" : "rep", d.v > 0 ? T.dem : T.rep, k);
+    }
+    ctx.restore();
+  }
+
   function drawLeadCircles(ctx, dpr, W, H, transform) {
     const T = theme();
     const k = T.scale || 1;
