@@ -3368,13 +3368,20 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   function updateTip() {
-    const follow = hovered && pointer && hovered !== pinned &&
-      !(pinned && String(hovered.properties.id) === String(pinned.properties.id));
+    // With an aside, even the clicked shape gets a card under the pointer:
+    // there is no docked one for it any more.
+    const follow = hovered && pointer && (readout || (hovered !== pinned &&
+      !(pinned && String(hovered.properties.id) === String(pinned.properties.id))));
     // Never on a phone, the user's call (November 8): the card covered the
     // map and said what the readout under it says. A touch screen that is
     // not narrow (the wall itself) keeps it.
     const phone = narrow() && !!(window.matchMedia && window.matchMedia("(hover: none)").matches);
-    const f = bins.on || !tipOn || phone ? null : follow ? hovered : pinned;
+    // What was clicked is the aside's (the click-only aside), so no second
+    // card stays docked over the map for it (the user, November 10: a clicked
+    // Ashe County "gets locked in the top left" while the rest follow the
+    // pointer). The card follows the pointer only. A panel with no aside
+    // (a split screen's right) still docks its pick.
+    const f = bins.on || !tipOn || phone ? null : follow ? hovered : readout ? null : pinned;
     const was = tip.dataset.mode;
     // The city names make room for the docked card, so its coming and
     // going redraws them (next frame: this runs from the view's own events).
