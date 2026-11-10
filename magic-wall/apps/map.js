@@ -3240,12 +3240,16 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // margin in points (the user, November 9).
       const head = root.querySelector(".mw-chead");
       if (head) {
+        // The PVI (or margin) at the left, how much is in and the lead in
+        // votes at the right (the user, November 10: "switch the pvi and %
+        // in/vote margin"). The PVI's source note stays in the aside; here
+        // it is only the PVI's title, so the card carries no footnote.
         const d = head.dataset;
-        const left = [d.in, d.lead && `${d.lead} votes`].filter(Boolean).join(" · ");
-        const right = d.pvi ? `PVI <span style="font-weight:700;color:var(--ink)">${esc(d.pvi)}</span>`
+        const tally = [d.in, d.lead && `${d.lead} votes`].filter(Boolean).join(" · ");
+        const key = d.pvi ? `<span title="${esc(PVI_SHORT)}">PVI <span style="font-weight:700;color:var(--ink)">${esc(d.pvi)}</span></span>`
           : d.margin ? `Margin <span style="font-weight:700;color:var(--ink)">${esc(d.margin)}</span>` : "";
         out += `<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink-soft);` +
-          `margin:4px 0 0;font-variant-numeric:tabular-nums"><span>${esc(left)}</span><span>${right}</span></div>`;
+          `margin:4px 0 0;font-variant-numeric:tabular-nums"><span>${key}</span><span style="text-align:right">${esc(tally)}</span></div>`;
       }
       out += table.outerHTML;
       if (rows.length > 4) out += `<div style="color:var(--ink-soft);font-size:11px">+${rows.length - 4} more</div>`;
@@ -3253,10 +3257,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const facts = root.querySelector(".mw-facts");
     if (facts && !table) out += `<div style="color:var(--ink-soft);font-size:12px;margin:4px 0 2px">${facts.innerHTML}</div>`;
     // The Times is credited wherever its data shows.
-    const credit = [...root.querySelectorAll(".mw-src, .mw-pvi")].filter((x) => /New York Times/.test(x.textContent));
-    for (const x of credit) {
-      out += `<div style="color:var(--ink-soft);font-size:11px;margin:2px 0 0">${x.classList.contains("mw-pvi") ? esc(PVI_SHORT) : x.innerHTML}</div>`;
-    }
+    // (Results the Times supplied as a fallback source; the PVI's note is
+    // the aside's.)
+    const credit = [...root.querySelectorAll(".mw-src")].filter((x) => /New York Times/.test(x.textContent));
+    for (const x of credit) out += `<div style="color:var(--ink-soft);font-size:11px;margin:2px 0 0">${x.innerHTML}</div>`;
     if (!table && !facts) {
       const hint = root.querySelector(".hint:not(:first-of-type)") || null;
       if (hint && !out.includes(hint.innerHTML)) out += `<div style="color:var(--ink-soft);font-size:12px">${hint.innerHTML}</div>`;

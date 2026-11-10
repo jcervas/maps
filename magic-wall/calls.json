@@ -732,11 +732,23 @@
    "by": "AP",
    "at": "2026-11-04T01:00:47.762Z"
   },
+  "2026-house-fl-07": {
+   "party": "rep",
+   "winner": "Ryan Elijah",
+   "by": "AP",
+   "at": "2026-11-10T19:09:20.705Z"
+  },
   "2026-house-fl-08": {
    "party": "rep",
    "winner": "Mike Haridopolos",
    "by": "AP",
    "at": "2026-11-04T01:01:58.406Z"
+  },
+  "2026-house-fl-09": {
+   "party": "dem",
+   "winner": "Darren Soto",
+   "by": "AP",
+   "at": "2026-11-10T19:09:32.793Z"
   },
   "2026-house-fl-10": {
    "party": "dem",
