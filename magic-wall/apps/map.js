@@ -350,13 +350,77 @@ function loadCarto(base) {
 function loadDetail(b) {
   if (!b.detail) {
     b.detail = Promise.all([
-      loadTopo(`${b.base}/geo/detail/counties.topojson`),
-      loadTopo(`${b.base}/geo/detail/congress.topojson`).catch(() => null),
-      loadTopo(`${b.base}/geo/detail/congress-2026.topojson`).catch(() => null),
-    ]).then(([counties, congress, congress26]) => ({ counties, congress, congress26 }))
-      .catch(() => null);                     // a missing file costs detail, not the wall
+      getJSON(`${b.base}/geo/detail/counties.topojson`),
+      getJSON(`${b.base}/geo/detail/congress.topojson`).catch(() => null),
+      getJSON(`${b.base}/geo/detail/congress-2026.topojson`).catch(() => null),
+    ]).then(([counties, congress, congress26]) => ({
+      counties: packTopo(counties), congress: congress && packTopo(congress), congress26: congress26 && packTopo(congress26),
+    })).catch(() => null);                    // a missing file costs detail, not the wall
   }
   return b.detail;
+}
+
+/* The full-detail geometry, held compact (the user's Chrome reloaded the
+ * wall for its memory, November 10). The three files are 1.5 million
+ * points; kept as GeoJSON for every state at once, beside their parsed
+ * topologies, they were about 170 MB of heap for as long as the page was
+ * open. Now each file's arcs are packed into typed arrays (about 12 MB),
+ * a state's features are built from them when that state is drawn, and
+ * only the last few states' are kept, so the view's Path2D cache (a
+ * WeakMap on the features) lets the rest go with them. */
+const DETAIL_KEEP = 3;
+function packTopo(topo) {
+  const arcs = topo.arcs.map((a) => {
+    const t = new Int32Array(a.length * 2);
+    for (let i = 0; i < a.length; i++) { t[2 * i] = a[i][0]; t[2 * i + 1] = a[i][1]; }
+    return t;
+  });
+  const name = Object.keys(topo.objects)[0];
+  // Only these outlive the call: the parsed file is let go.
+  const transform = topo.transform;
+  const byState = new Map();
+  for (const g of topo.objects[name].geometries) {
+    const st = g.properties && g.properties.state;
+    if (!byState.has(st)) byState.set(st, []);
+    byState.get(st).push(g);
+  }
+  const cache = new Map();            // state -> { feats, outline }, least recent first
+  /** A topology with only these geometries' arcs unpacked. */
+  function mini(geoms) {
+    const used = new Set();
+    const walk = (a) => { if (typeof a === "number") used.add(a < 0 ? ~a : a); else for (const x of a) walk(x); };
+    for (const g of geoms) if (g.arcs) walk(g.arcs);
+    const out = new Array(arcs.length);
+    for (const i of used) {
+      const t = arcs[i], pts = new Array(t.length / 2);
+      for (let j = 0; j < pts.length; j++) pts[j] = [t[2 * j], t[2 * j + 1]];
+      out[i] = pts;
+    }
+    return { type: "Topology", transform, arcs: out, objects: {} };
+  }
+  function entry(st) {
+    let e = cache.get(st);
+    if (e) { cache.delete(st); cache.set(st, e); return e; }
+    const geoms = byState.get(st);
+    if (!geoms) return null;
+    const t = mini(geoms);
+    e = { feats: topojson.feature(t, { type: "GeometryCollection", geometries: geoms }).features, t, geoms, outline: null };
+    cache.set(st, e);
+    while (cache.size > DETAIL_KEEP) cache.delete(cache.keys().next().value);
+    return e;
+  }
+  return {
+    get size() { return byState.size; },
+    has: (st) => byState.has(st),
+    get: (st) => { const e = entry(st); return e ? e.feats : undefined; },
+    /** The state dissolved from these units, landing on their edges. */
+    outline(st) {
+      const e = entry(st);
+      if (!e) return null;
+      if (!e.outline) e.outline = topojson.merge(e.t, e.geoms);
+      return e.outline;
+    },
+  };
 }
 
 export function createMapApp({ stage, canvas, readout, store, onState, link = null, seats: seatsIn = null }) {
@@ -584,7 +648,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       shapes = v;
       try { localStorage.setItem("mw.shapes", shapes); } catch (_) { /* private window */ }
       hovered = null;
-      pinned = null; pinnedAt = null;
+      pinned = null; pinnedAt = null; zoomedCd = null;
       changed();
     });
   /* Circles, the user's ask (November 6): over a district's county pieces,
@@ -2330,18 +2394,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // keeps one promise per bundle); each panel indexes it for itself.
     loadDetail(b).then((d) => {
       if (!d || bundle !== b) return;
-      const group = (feats) => {
-        const m = new Map();
-        for (const f of feats) {
-          if (!m.has(f.properties.state)) m.set(f.properties.state, []);
-          m.get(f.properties.state).push(f);
-        }
-        return m;
-      };
-      const name = Object.keys(d.counties).find((k) => k !== "__topo");
-      fine = { topo: d.counties, name, counties: group(d.counties[name]),
-               cds: group((d.congress && d.congress.districts) || []),
-               cds26: group((d.congress26 && d.congress26.districts) || []), outlines: new Map() };
+      // Built a state at a time from the packed files (packTopo), shared
+      // by a split screen's panels.
+      const none = { size: 0, has: () => false, get: () => undefined };
+      fine = { counties: d.counties, cds: d.congress || none, cds26: d.congress26 || none, outlines: new Map() };
       // A state already open swaps to its detailed units in place.
       if (focus) refresh();
     });
@@ -2453,6 +2509,18 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * November 8). Until another shape is picked or the view goes back to the
    * whole state. */
   let zoomedCd = null;              // the district a tap zoomed to
+  /* The district a shareable link names (#nc-05, wall-shell's hash): the one
+   * a tap zoomed to, while the map is still in its state. onState fires
+   * when it changes, so the shell can rewrite the hash. */
+  let lastDistrict = null;
+  let pendingPin = null;            // a district asked for before its state was in focus
+  const districtNow = () => (focus && zoomedCd && zoomedCd.startsWith(`${focus}-`) ? zoomedCd : null);
+  function noteDistrict() {
+    const d = districtNow();
+    if (d === lastDistrict) return;
+    lastDistrict = d;
+    if (onState) onState(api.status());
+  }
   const pinnedCd = () => pinned && (pinned.properties.tier === "cd" ? pinned.properties.id
     : pinned.properties.tier === "cdpiece" ? pinned.properties.cd : null);
   function piecesHere() {
@@ -2481,12 +2549,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * national counties and would wander across the detailed ones. */
   function focusOutline(st) {
     if (!fine) return stateFeatures.filter((f) => f.properties.id === st);
-    if (!fine.outlines.has(st)) {
-      const topo = fine.topo.__topo;
-      const geoms = topo.objects[fine.name].geometries.filter((g) => g.properties.state === st);
-      fine.outlines.set(st, [{ type: "Feature", geometry: topojson.merge(topo, geoms),
-                               properties: { state: st, id: st, name: st, tier: "state" } }]);
-    }
+    // One state's outline at a time: the same feature while it stays
+    // the focus (the view keeps its path), a new one for the next.
+    const hit = fine.outlines.get(st);
+    if (hit) return hit;
+    const g = fine.counties.outline(st);
+    if (!g) return stateFeatures.filter((f) => f.properties.id === st);
+    fine.outlines.clear();
+    fine.outlines.set(st, [{ type: "Feature", geometry: g, properties: { state: st, id: st, name: st, tier: "state" } }]);
     return fine.outlines.get(st);
   }
 
@@ -3655,7 +3725,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       apply: () => {
         focus = st;
         hovered = null;
-        pinned = null; pinnedAt = null;
+        pinned = null; pinnedAt = null; zoomedCd = null;
         pressed = null;
         // Nothing else changes the variable: a reader who was looking at
         // swing stays on swing.
@@ -3668,6 +3738,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         showReadout(null);
         if (onState) onState(api.status());
         settled();
+        // A link's district asked for before the map got here (#nc-05 on a
+        // fresh load): pinned once the drill's crossfade is done.
+        const want = pendingPin;
+        pendingPin = null;
+        if (want && want.startsWith(`${st}-`)) setTimeout(() => { if (focus === st && !zoomedCd) api.pinDistrict(want); }, 250);
       },
     });
     // Same geography in both panels, always: the right one follows.
@@ -3695,7 +3770,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         focus = null;
         raceId = null;
         hovered = null;
-        pinned = null; pinnedAt = null;
+        pinned = null; pinnedAt = null; zoomedCd = null;
         pressed = null;
         refit();
         autoBaseline();
@@ -5030,6 +5105,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   for (const t of ["pointerup", "pointercancel", "pointerleave"]) canvas.addEventListener(t, unpress);
 
   function clickOn(f) {
+    pendingPin = null;
     if (!focus) {
       if (f && f.properties.state) focusState(f.properties.state);
       return;
@@ -5041,6 +5117,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // at the whole state; zoomed in, it first returns to the whole state.
     if (!f) {
       zoomedCd = null;
+      noteDistrict();
       if (view.transform.k > 1.05) view.animateTo(d3.zoomIdentity);
       else unfocus();
       return;
@@ -5071,6 +5148,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (t.k === 1 && t.x === 0 && t.y === 0 && !morphing() && boxesSig() !== fitSig) refit();
       zoomClear(pinned);
     }
+    noteDistrict();
   }
 
   /** A shape zoomed to fills the room the menus (above) and the legend and
@@ -5303,7 +5381,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (!raceModes().some((m) => m.key === key)) return;
       modeKey = key;
       hovered = null;
-      pinned = null; pinnedAt = null;
+      pinned = null; pinnedAt = null; zoomedCd = null;
       if (focus) raceId = raceFor(focus);
       changed();
     },
@@ -5313,7 +5391,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     nationalRace() { return modeKey; },
     setRace(id) {
       raceId = id || null;
-      pinned = null; pinnedAt = null;
+      pinned = null; pinnedAt = null; zoomedCd = null;
       // The tier can change with the race -- a Massachusetts presidential
       // file draws towns where the baseline drew counties -- so the layer
       // list is rebuilt, not just recolored.
@@ -5421,6 +5499,43 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     followZoom,
     paneTitle,
     /** This panel's readout for a unit id, for the other panel's readout. */
+    /** Pin and zoom to a district of the state in focus, exactly as a tap
+     *  on it does (wall-shell's #nc-05 links). False if it is not a
+     *  district drawn here. */
+    pinDistrict(id) {
+      // null: no district (the hash back from #nc-05 to #nc). Unpinned and
+      // zoomed back to the whole state, as a background tap does, but the
+      // state stays in focus. True if there was one to clear.
+      if (!id) {
+        pendingPin = null;
+        if (!focus) return false;
+        const had = !!(pinned || zoomedCd);
+        pinned = null; pinnedAt = null; zoomedCd = null;
+        if (split) split.highlight(null);
+        view.setLayers(layers());
+        syncButtons();
+        showReadout(null);
+        const t = view.transform;
+        if (t.k !== 1 || t.x !== 0 || t.y !== 0) view.animateTo(d3.zoomIdentity);
+        else view.render();
+        noteDistrict();
+        return had;
+      }
+      const want = String(id).toUpperCase();
+      // Not in its state yet (a link opened on a fresh load, where the drill
+      // lands after the caller's wait): held, and pinned when focus gets
+      // there. False now; onState reports the district once it is pinned.
+      if (!focus || !want.startsWith(`${focus}-`)) {
+        pendingPin = /^[A-Z]{2}-(\d{2}|AL)$/.test(want) ? want : null;
+        return false;
+      }
+      pendingPin = null;
+      const f = view.getLayers().flatMap((x) => x.features || [])
+        .find((x) => x.properties && x.properties.tier === "cd" && x.properties.id === want);
+      if (!f || inert(f)) return false;
+      clickOn(f);
+      return true;
+    },
     readoutFor(id) {
       return readoutHTML(featureById(id))
         .replace(/<h2>/g, '<h3 style="margin:0 0 8px;font-size:16px">')
@@ -5430,6 +5545,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const m = mode();
       return {
         focus, raceId, variable, baselineKey,
+        // The district pinned and zoomed to ("NC-05"), or null (shareable links).
+        district: districtNow(),
         raceMode: m.key,
         raceModeLabel: m.label,
         raceModes: raceModes().map((x) => ({

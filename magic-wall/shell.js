@@ -19,8 +19,9 @@ import { createTelestrator } from "./apps/telestrate.js";
 import { createUpdates } from "./apps/updates.js";
 import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
+import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-10d";
+const BUILD = "2026-11-10g";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -362,6 +363,7 @@ async function main() {
   let lastFocus = null;
   let side = "left";               // the split panel the rail controls, see fillRail
   let mapReady = false;
+  let hashApplying = true;         // until the link the page opened on is applied
   // The badge from the manifest as soon as it is in, rather than "starting"
   // until the poller's first pass has read every results file (about six
   // seconds on the public copy). The poller's own status replaces this one
@@ -405,6 +407,7 @@ async function main() {
       if (table) table.render();
       while (focusWaiters.length) focusWaiters.shift()();
       setStatus();
+      writeHash(status);
     },
   });
   await app.load({ base: "." });
@@ -429,6 +432,101 @@ async function main() {
   }
   apps.map = { el: el("stage"), render: () => app.refresh() };
   startPollClock();
+
+  /* Links to a view, for sharing (the user, November 10): #nc opens North
+   * Carolina, #nc-05 (or #nc-5, #nc-al) that district as if it had been
+   * tapped. The address bar follows the wall (replaceState, so moving about
+   * adds no history), so it is always a link to what is on screen; a pasted
+   * or edited hash, or Back to one, moves the wall. Anything else after the
+   * # is dropped and the wall goes to the nation. The district half needs
+   * the map's pinDistrict and status().district. */
+  function parseHash(h) {
+    let raw = String(h || "").replace(/^#/, "");
+    try { raw = decodeURIComponent(raw); } catch (_) { return null; }
+    const m = /^([a-z]{2})(?:-(\d{1,2}|al))?$/i.exec(raw.trim());
+    if (!m || !STATE_NAMES[m[1].toUpperCase()]) return null;
+    const st = m[1].toUpperCase();
+    const d = m[2] && (/^al$/i.test(m[2]) ? "AL" : m[2].padStart(2, "0"));
+    return { st, cd: d ? `${st}-${d}` : null };
+  }
+  function hashFor(st) {
+    if (!st.focus) return "";
+    const pre = `${st.focus}-`;
+    const d = st.district && String(st.district).startsWith(pre) ? String(st.district).slice(pre.length) : null;
+    return `#${st.focus.toLowerCase()}${d ? `-${d.toLowerCase()}` : ""}`;
+  }
+  function setHash(h) {
+    if (h === location.hash || (!h && !location.hash)) return;
+    history.replaceState(history.state, "", `${location.pathname}${location.search}${h}`);
+  }
+  function writeHash(st) {
+    if (!mapReady || hashApplying) return;
+    setHash(hashFor(st));
+  }
+  /** Until the map's status passes the test or ms go by: onState fires for
+   *  data and menus too, so one report is not the move arriving. */
+  async function waitUntil(test, ms = 6000) {
+    const end = Date.now() + ms;
+    while (!test(app.status()) && Date.now() < end) {
+      await Promise.race([waitForFocus(), new Promise((r) => setTimeout(r, 200))]);
+    }
+    return test(app.status());
+  }
+  let hashRun = 0;
+  async function applyHash() {
+    const run = ++hashRun;
+    const want = parseHash(location.hash);
+    hashApplying = true;
+    // Someone has taken the wall elsewhere meanwhile: their view wins.
+    const elsewhere = (st) => !!(want && st.focus && st.focus !== want.st);
+    try {
+      if (!want) {
+        if (app.status().focus) { app.unfocus(); await waitUntil((st) => !st.focus); }
+        return;
+      }
+      setView("map");
+      // A district is a House seat: its link opens on the House whatever the
+      // wall was showing. A state's keeps the election on screen.
+      if (want.cd && app.status().raceMode !== "house-2026") app.setRaceMode("house-2026");
+      if (app.status().focus !== want.st) {
+        // State to state goes by way of the nation, as a reader's taps do:
+        // the map does not morph from one state straight to another.
+        if (app.status().focus) {
+          app.unfocus();
+          await waitUntil((st) => !st.focus);
+          if (run !== hashRun) return;
+        }
+        app.focusState(want.st);
+        // Asked before the state is on screen, the map holds the district
+        // and pins it when it lands there (apps/map.js pinDistrict).
+        if (want.cd && app.pinDistrict) app.pinDistrict(want.cd);
+        // On a fresh load the map lands only once the first results are in
+        // (ten seconds and more on a slow line), so a long wait.
+        await waitUntil((st) => st.focus === want.st || elsewhere(st), 30000);
+        if (run !== hashRun || app.status().focus !== want.st) return;
+        if (want.cd) await waitUntil((st) => st.district === want.cd || elsewhere(st), 1500);
+      }
+      if (run !== hashRun || !app.pinDistrict) return;
+      // In the state already: pin the district asked for (false, and the
+      // state alone, for a seat that is not there), or go back to the whole
+      // state from one.
+      if ((app.status().district || null) !== want.cd) {
+        if (app.pinDistrict(want.cd) && want.cd) await waitUntil((st) => st.district === want.cd, 3000);
+      }
+    } finally {
+      if (run === hashRun) {
+        hashApplying = false;
+        writeHash(app.status());      // a bad district, or a state with no map, says so
+      }
+    }
+  }
+  // Back and Forward across entries the wall has rewritten with
+  // replaceState can fire popstate without hashchange, so both; a second
+  // call for the same move supersedes the first (hashRun).
+  window.addEventListener("hashchange", () => applyHash());
+  window.addEventListener("popstate", () => applyHash());
+  if (location.hash) applyHash();
+  else hashApplying = false;
 
   // The district list reads the seat list, which loads below with the boards;
   // until then (or if it fails) the table says so.
