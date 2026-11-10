@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-10k";
+const BUILD = "2026-11-10l";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -522,6 +522,10 @@ async function main() {
   // call for the same move supersedes the first (hashRun).
   window.addEventListener("hashchange", () => applyHash());
   window.addEventListener("popstate", () => applyHash());
+  // A backstop: whatever moved the wall, the address bar catches up within a
+  // second. A click into a district left Safari's at #nc (November 10) where
+  // Chrome's followed; one comparison a second costs nothing.
+  setInterval(() => { if (mapReady && !hashApplying) writeHash(app.status()); }, 1000);
   if (location.hash) applyHash();
   else hashApplying = false;
 
@@ -741,8 +745,13 @@ async function main() {
 
   // One level at a time, as a tap on the background: zoomed into a district,
   // back to the whole state; at the whole state, out to the nation.
+  // From a pinned district, Esc is a tap on the background: the whole state,
+  // every district drawn, its list in the aside (the user, November 10: it
+  // used to zoom out with that one district still alone on the map).
   function home() {
-    if (app.status().focus && app.view.transform.k <= 1.05) app.unfocus();
+    const st = app.status();
+    if (st.district && app.pinDistrict) app.pinDistrict(null);
+    else if (st.focus && app.view.transform.k <= 1.05) app.unfocus();
     else app.view.animateTo(d3.zoomIdentity);
   }
   function setVariable(v) {

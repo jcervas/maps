@@ -5321,7 +5321,32 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (settle) setTimeout(() => { if (pinned === f && focus) zoomClear(f, false); }, 720);
   }
 
+  /* Back at the whole state from a zoom, by any road -- the shell's Esc
+   * (home(): an animateTo the map is not told about), a wheel or pinch out,
+   * a background tap -- the pick goes with it: every district drawn again,
+   * the aside on the state, the link back to #nc (the user, November 10:
+   * Esc from NC-03 left that district alone on the map and in the aside).
+   * Only on arriving there from a zoom, so a zoom in, which starts at the
+   * full frame, keeps the district it is going to. */
+  let zoomedAway = false;           // zoomed in since the view was last at the full frame
+  function unpinAtHome(t) {
+    if (t.k > 1.05) zoomedAway = true;
+    const home = t.k <= 1.001 && Math.abs(t.x) < 1 && Math.abs(t.y) < 1;
+    if (!home) return;
+    const was = zoomedAway;
+    zoomedAway = false;
+    if (!was || !focus || link) return;
+    if (!zoomedCd && !(pinned && DISTRICT_TIERS.has(pinned.properties.tier))) return;
+    pinned = null; pinnedAt = null; zoomedCd = null;
+    if (split) split.highlight(null);
+    view.setLayers(layers());
+    syncButtons();
+    showReadout(null);
+    noteDistrict();
+  }
+
   view.on("zoom", (t) => {
+    unpinAtHome(t);
     // The county hairlines appear only once zoomed enough to tell them apart,
     // so the layer list changes with the transform.
     const wasPieces = piecesShown;
