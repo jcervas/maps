@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-10i";
+const BUILD = "2026-11-10j";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -244,13 +244,12 @@ function fillVariables(status) {
   }
 }
 
-/* National race modes, as a menu bar: an office (President, Senate, House,
- * Governor), and under it that office's years, newest first. A year says
- * how far along its count is ("0 of 35 reporting · 19 staged, 16 waiting"),
- * because "Senate 2026" on a map that is mostly grey needs to say why. Hover
- * opens an office where there is a mouse; a tap or Enter opens it anywhere.
- * An office no mode belongs to (state legislatures, until they are loaded)
- * is simply not in the bar. */
+/* National race modes: this year's elections as buttons, every earlier
+ * one in a single Past results menu, newest year first (the user's call,
+ * November 10, 2026; it was an office-then-year menu bar). A button's
+ * tooltip says how far along its count is ("0 of 35 reporting · 19 staged,
+ * 16 waiting"), because "Senate 2026" on a map that is mostly grey needs to
+ * say why. An office no mode belongs to is simply not there. */
 const OFFICES = [["president", "President"], ["senate", "U.S. Senate"], ["house", "House"],
                  ["governor", "Governor"], ["secretary-of-state", "Sec. of State"], ["state-senate", "State Senate"],
                  ["state-house", "State House"]];
@@ -267,45 +266,43 @@ function fillNational(status) {
   el("nationalField").hidden = !modes.length;
   el("nationalPick").hidden = !modes.length;
   if (!modes.length) return;
-  const bar = el("national");
+  const seg = el("national");
+  const past = el("pastSel");
   const pick = el("nationalSel");
   const sig = modes.map((m) => `${m.key}:${m.office}:${modeSummary(m)}`).join(",");
-  if (bar.dataset.sig !== sig) {
-    bar.dataset.sig = sig;
+  if (seg.dataset.sig !== sig) {
+    seg.dataset.sig = sig;
     const known = OFFICES.map(([k]) => k);
     const offices = [...OFFICES, ...[...new Set(modes.map((m) => m.office))]
       .filter((o) => o && !known.includes(o)).map((o) => [o, o[0].toUpperCase() + o.slice(1)])];
-    pick.innerHTML = offices.map(([office, label]) => {
-      const mine = modes.filter((m) => m.office === office)
-        .sort((a, b) => String(b.cycle).localeCompare(String(a.cycle)));
-      return mine.length ? `<optgroup label="${label}">${mine.map((m) =>
-        `<option value="${m.key}">${label} ${m.cycle || m.label}</option>`).join("")}</optgroup>` : "";
+    const label = (m) => (offices.find(([o]) => o === m.office) || [null, m.label])[1];
+    const order = (m) => offices.findIndex(([o]) => o === m.office);
+    const now = String(Math.max(...modes.map((m) => Number(m.cycle) || 0)));
+    const live = modes.filter((m) => String(m.cycle) === now).sort((x, y) => order(x) - order(y));
+    const years = [...new Set(modes.map((m) => String(m.cycle)).filter((y) => y !== now))]
+      .sort((x, y) => y.localeCompare(x));
+    seg.innerHTML = live.map((m) => {
+      const sum = modeSummary(m);
+      return `<button data-mode="${m.key}" aria-pressed="false"${sum ? ` title="${label(m)} ${now}: ${sum}"` : ""}>${label(m)}</button>`;
     }).join("");
-    bar.innerHTML = offices.map(([office, label]) => {
-      const mine = modes.filter((m) => m.office === office)
-        .sort((a, b) => String(b.cycle).localeCompare(String(a.cycle)));
-      if (!mine.length) return "";
-      return `<li class="office" data-office="${office}" role="none">
-        <button class="officebtn" role="menuitem" aria-haspopup="true" aria-expanded="false">
-          ${label} <span class="yr"></span></button>
-        <ul class="years" role="menu" aria-label="${label}">${mine.map((m) => {
-          const sum = modeSummary(m);
-          return `<li role="none"><button role="menuitemradio" data-mode="${m.key}" aria-checked="false">
-            <b>${m.cycle || m.label}</b>${sum ? `<small>${sum}</small>` : ""}</button></li>`;
-        }).join("")}</ul></li>`;
-    }).join("");
+    el("nationalYear").textContent = now;
+    past.innerHTML = `<option value="">Past results</option>` + years.map((y) =>
+      `<optgroup label="${y}">${modes.filter((m) => String(m.cycle) === y)
+        .sort((x, z) => order(x) - order(z))
+        .map((m) => `<option value="${m.key}">${label(m)} ${y}</option>`).join("")}</optgroup>`).join("");
+    pick.innerHTML = [now, ...years].map((y) =>
+      `<optgroup label="${y}">${modes.filter((m) => String(m.cycle) === y)
+        .sort((x, z) => order(x) - order(z))
+        .map((m) => `<option value="${m.key}">${label(m)} ${y}</option>`).join("")}</optgroup>`).join("");
   }
-  // The office on screen is pressed and names its year, so the bar reads
-  // as where the wall is: "U.S. Senate 2026".
-  for (const li of bar.querySelectorAll(".office")) {
-    const on = li.querySelector(`[data-mode="${status.raceMode}"]`);
-    li.classList.toggle("current", !!on);
-    const m = on ? modes.find((x) => x.key === status.raceMode) : null;
-    li.querySelector(".yr").textContent = m ? (m.cycle || "") : "";
+  for (const b of seg.querySelectorAll("[data-mode]")) {
+    b.setAttribute("aria-pressed", String(b.dataset.mode === status.raceMode));
   }
-  for (const b of bar.querySelectorAll("[data-mode]")) {
-    b.setAttribute("aria-checked", String(b.dataset.mode === status.raceMode));
-  }
+  // An earlier election on screen shows in the menu, marked as the choice;
+  // this year's leaves it reading "Past results".
+  const isPast = [...past.options].some((o) => o.value && o.value === status.raceMode);
+  past.value = isPast ? status.raceMode : "";
+  past.classList.toggle("current", isPast);
   pick.value = status.raceMode || "";
 }
 
@@ -796,63 +793,19 @@ async function main() {
     // Consumed, so the rail's own Escape does not also go back to the nation.
     if (ev.key === "Escape" && varsSeg.classList.contains("open")) { foldVars(false); ev.preventDefault(); }
   });
-  // The office menu bar (fillNational). One office open at a time; a year
-  // picks that race mode for the panel the rail controls.
-  const bar = el("national");
-  function openOffice(li, focusFirst) {
-    for (const o of bar.querySelectorAll(".office.open")) {
-      if (o !== li) { o.classList.remove("open"); o.querySelector(".officebtn").setAttribute("aria-expanded", "false"); }
-    }
-    if (!li) return;
-    li.classList.add("open");
-    li.querySelector(".officebtn").setAttribute("aria-expanded", "true");
-    // Keep the list on screen at the right edge of a narrow window.
-    const ul = li.querySelector(".years");
-    ul.classList.remove("flip");
-    if (ul.getBoundingClientRect().right > window.innerWidth - 8) ul.classList.add("flip");
-    if (focusFirst) (ul.querySelector('[aria-checked="true"]') || ul.querySelector("button")).focus();
+  // This year's buttons and the Past results menu (fillNational) pick a
+  // race mode for the panel the rail controls.
+  function pickMode(key, from) {
+    const pane = ctl();
+    if (key && pane.setRaceMode) pane.setRaceMode(key);
+    if (table) table.render();
+    if (from) from.blur();          // so the keyboard map reaches the wall again
   }
-  bar.addEventListener("click", (ev) => {
-    const pick = ev.target.closest("[data-mode]");
-    if (pick) {
-      const pane = ctl();
-      if (pane.setRaceMode) pane.setRaceMode(pick.dataset.mode);
-      if (table) table.render();
-      openOffice(null);
-      pick.blur();                  // so the keyboard map reaches the wall again
-      return;
-    }
-    const li = ev.target.closest(".office");
-    if (li) {
-      if (li.classList.contains("open") && !li.matches(":hover")) openOffice(null);
-      else openOffice(li, ev.detail === 0);      // keyboard "click": into the list
-    }
+  el("national").addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-mode]");
+    if (b) pickMode(b.dataset.mode, b);
   });
-  bar.addEventListener("keydown", (ev) => {
-    const li = ev.target.closest(".office");
-    if (!li) return;
-    const tops = [...bar.querySelectorAll(".officebtn")];
-    const items = [...li.querySelectorAll("[data-mode]")];
-    const i = items.indexOf(ev.target);
-    if (ev.key === "Escape") {
-      openOffice(null); li.querySelector(".officebtn").focus();
-    } else if (ev.key === "ArrowDown") {
-      if (i < 0) openOffice(li, true); else items[Math.min(items.length - 1, i + 1)].focus();
-    } else if (ev.key === "ArrowUp" && i >= 0) {
-      if (i === 0) li.querySelector(".officebtn").focus(); else items[i - 1].focus();
-    } else if (ev.key === "ArrowRight" || ev.key === "ArrowLeft") {
-      const j = tops.indexOf(li.querySelector(".officebtn"));
-      const next = tops[(j + (ev.key === "ArrowRight" ? 1 : tops.length - 1)) % tops.length];
-      const wasOpen = li.classList.contains("open");
-      openOffice(wasOpen ? next.closest(".office") : null, wasOpen);
-      if (!wasOpen) next.focus();
-    } else return;
-    ev.preventDefault();             // and the wall's own keys stay out of it
-    ev.stopPropagation();
-  });
-  document.addEventListener("pointerdown", (ev) => {
-    if (!ev.target.closest("#national")) openOffice(null);
-  });
+  el("pastSel").addEventListener("change", (ev) => pickMode(ev.target.value, ev.target));
   el("baseline").addEventListener("change", (ev) => {
     ctl().setBaseline(ev.target.value);
     // Picking a comparison is asking to see it: under Margin or Lead the

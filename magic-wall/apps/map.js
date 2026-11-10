@@ -2345,11 +2345,27 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   function pendingColor(color) {
     let c = pendingMemo.get(color);
     if (!c) {
-      c = d3.interpolateLab(color, theme().paper)(0.45);
+      c = muteColor(color, 0.45);
       if (pendingMemo.size > 2000) pendingMemo.clear();
       pendingMemo.set(color, c);
     }
     return c;
+  }
+
+  /* A party color made weaker but still the party's. On a light paper,
+   * toward the paper: a paler tint. On a dark one (Dark, Studio) the paper
+   * is near black, and the same blend turned a Democratic blue slate grey
+   * and a Republican red brown, neither party (the user, November 10: "on
+   * dark mode the light blue leading districts are changed to gray"). There
+   * it goes toward a pale tint of its own hue instead: lighter, less
+   * saturated, still blue or red. A color with no hue (a tie, no data)
+   * just fades a little. */
+  function muteColor(color, t) {
+    const T = theme();
+    if (d3.hcl(T.paper).l >= 50) return d3.interpolateLab(color, T.paper)(t);
+    const c = d3.hcl(color);
+    if (!Number.isFinite(c.h) || c.c < 4) return d3.interpolateLab(color, T.paper)(t * 0.6);
+    return d3.interpolateLab(color, d3.hcl(c.h, Math.min(c.c, 30) * 0.4, 88))(t);
   }
 
   /* Before a race has a vote, the Swing map -- the one about the election
@@ -3977,8 +3993,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const tonight = (raceId ? raceId.slice(0, 4) : mode().cycle) === live;
     if ((variable === "margin" || variable === "lead") && tonight && seatsSrc() &&
         (stateLevel() || districtMode() || (lr && LEGISLATURE.has(lr.office)))) {
-      keys.push([raceFilter === "called" ? "Called races only" : raceFilter === "flips" ? "Called flips only"
-        : "Full color: called · muted: not yet called", "text"]);
+      if (raceFilter === "all") {
+        // Swatches, not words: the muted color is the map's own (muteColor),
+        // so the key shows what a not-yet-called race looks like on this palette.
+        const full = colorFor(15, "margin", atState, "dem");
+        if (typeof full === "string") keys.push(["Called", full], ["Not yet called", pendingColor(full)]);
+        else keys.push(["Full color: called · muted: not yet called", "text"]);
+      } else keys.push([raceFilter === "called" ? "Called races only" : "Called flips only", "text"]);
       if (flipShapes(legendData()).some((f) => flipOf(cellFor(f)))) {
         keys.push(["Flip (called)", "flip"]);
       }
@@ -4583,7 +4604,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // A seat not up is its party's color mixed halfway to a mid grey: at
       // 38% opacity it went to navy and maroon on a dark screen.
       ctx.globalAlpha = fade;
-      ctx.fillStyle = it.muted ? d3.interpolateLab(it.fill, d3.interpolateRgb(T.paper, T.ink)(0.62))(0.5) : it.fill;
+      // Not up this year: muted, the same way as a race not yet called on a
+      // dark paper (muteColor); toward a mid grey on a light one, as before.
+      ctx.fillStyle = it.muted ? (d3.hcl(T.paper).l >= 50 ? d3.interpolateLab(it.fill, d3.interpolateRgb(T.paper, T.ink)(0.62))(0.5)
+        : muteColor(it.fill, 0.5)) : it.fill;
       ctx.fillRect(it.x + pad / 2, it.y + pad / 2, it.s - pad, it.s - pad);
     }
     ctx.globalAlpha = cover;

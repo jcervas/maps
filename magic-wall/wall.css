@@ -438,39 +438,12 @@ tr.editor td { background: var(--accent-soft); text-align: left; }
   .callslist td.act button + button { margin-left: 0; }
 }
 
-/* The election menu bar: offices across, years down. An office's years open
-   on hover where there is a mouse, and on a tap, click or Enter anywhere. */
-.offices { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
-.office { position: relative; }
-.officebtn { font-weight: 600; white-space: nowrap; }
-.officebtn::after { content: "\25BE"; margin-left: 0.35rem; font-size: 0.75em; color: var(--ink-soft); }
-.officebtn .yr:empty { display: none; }
-.office.current > .officebtn { background: var(--accent); color: var(--paper); border-color: var(--accent); }
-.office.current > .officebtn::after { color: inherit; }
-.years {
-  display: none; position: absolute; top: 100%; left: 0; z-index: 30;
-  margin: 0; padding: 0.3rem; list-style: none; min-width: 100%;
-  width: max-content; max-width: min(26rem, calc(100vw - 1.5rem));
-  background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-}
-.years.flip { left: auto; right: 0; }
-/* No gap between the button and its list, or the pointer drops the hover
-   crossing it. */
-.office.open > .years { display: block; }
-@media (hover: hover) and (pointer: fine) {
-  .office:hover > .years { display: block; }
-}
-.years button {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem;
-  width: 100%; text-align: left; border-color: transparent; background: transparent;
-}
-.years button:hover, .years button:focus-visible { background: var(--accent-soft); }
-.years button b { font-size: 1.07rem; }
-.years button small { font-size: 0.786rem; color: var(--ink-soft); font-weight: 400; }
-.years button[aria-checked="true"] { border-color: var(--accent); }
-.years li + li { margin-top: 0.15rem; }
-:root[data-theme="studio"] .years { border-color: #fff; }
+/* The election row: this year's elections as segmented buttons, then the
+   Past results menu, which takes the accent when an earlier election is
+   the one on screen (shell.js fillNational). */
+#national button { font-weight: 600; white-space: nowrap; }
+#pastSel { font-weight: 600; }
+#pastSel.current { background: var(--accent); color: var(--paper); border-color: var(--accent); }
 
 /* Display: type size and palette in one menu (index.html). */
 .display-menu { position: relative; }

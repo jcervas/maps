@@ -40,23 +40,20 @@ permalink: /magic-wall/
     <button data-side="right" aria-pressed="false" title="Right panel (])">Right</button>
   </div>
 
-  <!-- Office, then year: hover (or tap) an office for its years. Built from
-       the map's race modes in shell.js, fillNational. Until then it, the
-       Election menu, Race and Compare to hold the opening view (House 2026,
-       shell.js), so the header has its full height and its real values from
-       the first paint: built empty, it grew a row about two seconds into the
-       load and pushed the map down (November 10, 2026). -->
-  <nav class="field" id="nationalField" aria-label="Election">
-    <ul class="offices" id="national" role="menubar">
-      <li class="office" role="none"><button class="officebtn" role="menuitem">President <span class="yr"></span></button></li>
-      <li class="office" role="none"><button class="officebtn" role="menuitem">U.S. Senate <span class="yr"></span></button></li>
-      <li class="office current" role="none"><button class="officebtn" role="menuitem">House <span class="yr">2026</span></button></li>
-      <li class="office" role="none"><button class="officebtn" role="menuitem">Governor <span class="yr"></span></button></li>
-      <li class="office" role="none"><button class="officebtn" role="menuitem">Sec. of State <span class="yr"></span></button></li>
-      <li class="office" role="none"><button class="officebtn" role="menuitem">State Senate <span class="yr"></span></button></li>
-      <li class="office" role="none"><button class="officebtn" role="menuitem">State House <span class="yr"></span></button></li>
-    </ul>
-  </nav>
+  <!-- This year's elections as buttons, every earlier one in the Past
+       results menu. Built from the map's race modes in shell.js,
+       fillNational. Until then it, the Election menu, Race and Compare to
+       hold the opening view (House 2026, shell.js), so the header has its
+       full height and its real values from the first paint: built empty, it
+       grew a row about two seconds into the load and pushed the map down
+       (November 10, 2026). -->
+  <div class="field" id="nationalField" role="group" aria-label="Election">
+    <span id="nationalYear">2026</span>
+    <div class="seg" id="national">
+      <button aria-pressed="false">U.S. Senate</button><button aria-pressed="true">House</button><button aria-pressed="false">Governor</button><button aria-pressed="false">Sec. of State</button><button aria-pressed="false">State Senate</button><button aria-pressed="false">State House</button>
+    </div>
+    <select id="pastSel" aria-label="Past results"><option value="">Past results</option></select>
+  </div>
   <!-- The same elections as one menu, for phones, where seven office buttons
        were three rows of the header (wall.css shows one or the other). -->
   <label class="field" id="nationalPick">
@@ -218,7 +215,7 @@ permalink: /magic-wall/
      with BUILD in shell.js. -->
 <script>
 (function () {
-  var BUILD = "2026-11-10i";
+  var BUILD = "2026-11-10j";
   var MODULES = [
     "apps/battle.js", "apps/boards.js", "apps/calls.js", "apps/map.js",
     "apps/seatbar.js", "apps/sources.js", "apps/table.js",
