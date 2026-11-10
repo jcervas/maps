@@ -20,7 +20,7 @@ import { createUpdates } from "./apps/updates.js";
 import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 
-const BUILD = "2026-11-10c";
+const BUILD = "2026-11-10d";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];

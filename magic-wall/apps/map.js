@@ -510,15 +510,15 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const st = document.createElement("style");
     st.id = "mw-map-narrow";
     st.textContent = `
-.map-pane.narrow [role=radiogroup] { flex-wrap: nowrap !important; flex: none; padding: 3px !important;
+:is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] { flex-wrap: nowrap !important; flex: none; padding: 3px !important;
   gap: 2px !important; font-size: 13px !important; max-width: none !important; }
-.map-pane.narrow [role=radiogroup] > span { padding: 0 5px; font-size: 11px; font-weight: 600 !important;
+:is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] > span { padding: 0 5px; font-size: 11px; font-weight: 600 !important;
   text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); }
-.map-pane.narrow [role=radiogroup] label { position: relative; padding: 6px 9px; border-radius: 4px; min-height: 18px; }
-.map-pane.narrow [role=radiogroup] input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
-.map-pane.narrow [role=radiogroup] label:has(input:checked) { background: var(--ink); color: var(--paper); }
-.map-pane.narrow [role=radiogroup] label:has(input:focus-visible) { outline: 2px solid var(--accent, var(--ink)); }
-.map-pane.narrow .mw-ctlstrip [role=radiogroup] { justify-content: center; }`;
+:is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] label { position: relative; padding: 6px 9px; border-radius: 4px; min-height: 18px; }
+:is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+:is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] label:has(input:checked) { background: var(--ink); color: var(--paper); }
+:is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] label:has(input:focus-visible) { outline: 2px solid var(--accent, var(--ink)); }
+:is(.map-pane.narrow .mw-ctlstrip, .mw-ctlstrip.narrow) [role=radiogroup] { justify-content: center; }`;
     document.head.append(st);
   }
   const corner = document.createElement("div");
@@ -656,7 +656,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   for (const t of ["click", "pointerdown", "mousedown", "wheel"]) {
     stripBox.addEventListener(t, (ev) => ev.stopPropagation());
   }
-  pane.appendChild(stripBox);
+  /* In the aside, at its top above the race summary, so the map has the
+   * whole stage (the user, November 10: "move class="mw-ctlstrip" to the
+   * aside to make good use of space"). On a phone the aside runs under the
+   * map, so the bar sits right below it, full width. A split screen's right
+   * panel has no aside and keeps its bar over its own corner. */
+  const stripHost = readout && readout.parentNode;
+  const stripInPane = !stripHost;
+  if (stripHost) stripHost.insertBefore(stripBox, readout);
+  else pane.appendChild(stripBox);
+  /** The bar sits over the map (a split screen's right panel only). */
+  const stripOver = () => stripInPane && !stripBox.hidden;
   // Seats: the map, or every seat of the chamber in three bins (see bins).
   const binsBtn = radioMenu("Seats",
     "Fly every seat into Democrat, Toss-up and Republican bins, with counts and the majority marked", (v) => {
@@ -751,10 +761,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // The count drawn plain: the box is stripBox's.
     stripEl.style.cssText = "border:0;border-radius:0;background:none;padding:0;min-width:0;";
     const W = pane.clientWidth;
-    stripBox.hidden = stripEl.hidden && binsBtn.hidden;
-    stripBox.style.cssText = "position:absolute;right:10px;bottom:10px;z-index:2;" + (stripEl.hidden ? "min-width:0;"
-      : narrow() ? "left:8px;right:8px;bottom:8px;min-width:0;"
-      : `width:${Math.round(Math.max(260, Math.min(380, W - 270)))}px;`);
+    // Not before the first poll: a bar of zeros is not news (the load fix).
+    stripBox.hidden = !dataReady() || (stripEl.hidden && binsBtn.hidden);
+    // Out of the map pane, the phone's segmented Seats buttons come along.
+    stripBox.classList.toggle("narrow", !stripInPane && narrow());
+    stripBox.style.cssText = !stripInPane ? "position:relative;min-width:0;width:auto;margin:0 0 14px;"
+      : "position:absolute;right:10px;bottom:10px;z-index:2;" + (stripEl.hidden ? "min-width:0;"
+        : narrow() ? "left:8px;right:8px;bottom:8px;min-width:0;"
+        : `width:${Math.round(Math.max(260, Math.min(380, W - 270)))}px;`);
     binsBtn.style.borderTop = stripEl.hidden ? "0" : "1px solid var(--rule)";
     binsBtn.style.marginTop = stripEl.hidden ? "0" : "5px";
     binsBtn.style.paddingTop = stripEl.hidden ? "0" : "4px";
@@ -898,8 +912,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
     const W = pane.clientWidth;
     // On a phone the bar sits above the full-width control bar.
-    const over = narrow() && !stripBox.hidden;
-    const room = stripBox.hidden || over ? 0 : stripBox.offsetWidth + 20;
+    const over = narrow() && stripOver();
+    const room = !stripOver() || over ? 0 : stripBox.offsetWidth + 20;
     ratingBar.style.cssText = `position:absolute;left:10px;bottom:${over ? stripBox.offsetHeight + 16 : 10}px;z-index:2;box-sizing:border-box;` +
       `width:${Math.round(over ? W - 20 : Math.max(220, Math.min(340, W - room - 30)))}px;padding:7px 9px 6px;border-radius:4px;` +
       "background:color-mix(in srgb,var(--paper) 92%,transparent);color:var(--ink);font-size:11px;line-height:1.35;";
@@ -2558,7 +2572,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (splitNational() && !bins.on) {
       const pad = 22;
       const mapH = (pane.clientWidth - 2 * pad) * halvesProj().aspect;
-      const below = (legendBox ? legendBox.h + 10 : 90) + (stripBox.hidden ? 0 : stripBox.offsetHeight + 10);
+      const below = (legendBox ? legendBox.h + 10 : 90) + (stripOver() ? stripBox.offsetHeight + 10 : 0);
       want = `${Math.ceil(topInset() + mapH + pad + below + 8)}px`;
     }
     if (want === stageH) return;
@@ -3520,7 +3534,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   const fitSamples = new WeakMap();   // feature list -> up to 4,000 of its vertices
   function overlayBoxes() {
     const out = legendBox ? [legendBox] : [];
-    for (const el of [ratingBar, stripBox]) {
+    for (const el of stripInPane ? [ratingBar, stripBox] : [ratingBar]) {
       if (!el.hidden && el.offsetWidth) out.push({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
     }
     return out.map((b) => ({ x0: b.x - 6, y0: b.y - 6, x1: b.x + b.w + 6, y1: b.y + b.h + 6 }));
@@ -3913,7 +3927,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     const h = (20 + (L.stops ? 26 : 0) + 16 * rows) * k;
     // On a phone, above the full-width control bar.
-    const y = (narrow() && !stripBox.hidden ? stripBox.offsetTop - 8 : H - 10 * k) - h;
+    const y = (narrow() && stripOver() ? stripBox.offsetTop - 8 : H - 10 * k) - h;
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = T.paper;
     ctx.fillRect(x - 6 * k, y - 4 * k, widest + 12 * k, h + 4 * k);
@@ -4211,7 +4225,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    *  (the control bar's box, Seats) edges, so the bins stay clear of them. */
   function binsInsets() {
     const top = [corner, calledBtn].reduce((m, el) => (el.offsetHeight ? Math.max(m, el.offsetTop + el.offsetHeight) : m), 0);
-    return { top, bottom: stripBox.hidden ? 0 : pane.clientHeight - stripBox.offsetTop };
+    return { top, bottom: stripOver() ? pane.clientHeight - stripBox.offsetTop : 0 };
   }
 
   /** Square size and columns for three stacks in the pane, from the biggest stack. */
@@ -5072,7 +5086,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const coming = !piecesShown && piecesWanted();
     const y0 = topInset() + 4 + (coming && circlesBtn.hidden ? shapesBtn.offsetHeight + 6 : 0);
     const legTop = legendBox ? legendBox.y - (coming ? 16 * (theme().scale || 1) : 0) : H;
-    const barTop = stripBox.hidden || !stripBox.offsetHeight ? H : stripBox.offsetTop;
+    const barTop = !stripOver() || !stripBox.offsetHeight ? H : stripBox.offsetTop;
     const y1 = (phone ? (legendBox ? legTop : barTop) : Math.min(legTop, barTop)) - 4;
     let lx = 8;
     if (!phone && tip.style.display !== "none" && tip.dataset.mode === "dock" && tip.offsetWidth) {
