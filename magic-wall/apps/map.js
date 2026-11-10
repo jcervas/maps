@@ -427,6 +427,65 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   canvas.parentNode.insertBefore(pane, canvas);
   pane.appendChild(canvas);
 
+  /* The first draw waits for the first results (the user, November 10: on
+   * load the map drew grey across the whole stage, then recolored and
+   * refitted smaller once the seat bar and the Races chip arrived, which
+   * read as the map resizing). Until the first poll is in, the pane is laid
+   * out but invisible and the aside and the office bar say Loading; then
+   * the map is fitted to the overlays it keeps and shown once they have
+   * held still for a few frames: one fit, seen once. A split screen's second
+   * panel never waits. No grey map at all while loading (the user: "we
+   * dont need 'large gray map'"): the stage says Loading, quietly, until the
+   * poll is in. A poll that fails counts as in, so a dead feed still ends
+   * the wait (and the badge says why). */
+  let readyAt = Infinity;
+  let loaded = !!link;
+  function dataReady() {
+    if (loaded) return true;
+    const w = typeof window !== "undefined" && window.wall;
+    const src = w && w.source;
+    const st = src && src.status ? src.status() : null;
+    const man = src && src.manifest;
+    const ids = man && man.races ? Object.keys(man.races) : [];
+    loaded = !!(st && (st.ageMs != null || st.failures > 0)) ||
+      (ids.length > 0 && ids.every((id) => store.hasResults(id)));
+    if (loaded) {
+      readyAt = performance.now();
+      requestAnimationFrame(() => { syncButtons(); showReadout(hovered || pinned); view.render(); });
+    }
+    return loaded;
+  }
+  let revealed = !!link;
+  if (!revealed) {
+    pane.style.visibility = "hidden";
+    pane.style.opacity = "0";
+    const wait = document.createElement("div");
+    wait.className = "mw-loading";
+    wait.setAttribute("role", "status");
+    wait.textContent = "Loading…";
+    wait.style.cssText = "position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;" +
+      "justify-content:center;color:var(--ink-soft);font-size:15px;letter-spacing:.02em;pointer-events:none;";
+    pane.parentNode.insertBefore(wait, pane);
+    let still = 0;
+    const hold = () => {
+      if (revealed) return;
+      if (!dataReady() || !geo) { still = 0; requestAnimationFrame(hold); return; }
+      const t = view.transform;
+      fitWatch(t);
+      const settledNow = !fitQueued && !morphing() && (t.k !== 1 || t.x !== 0 || t.y !== 0 || boxesSig() === fitSig);
+      still = settledNow ? still + 1 : 0;
+      // Four still frames; a fit that keeps moving gets two seconds, then shows.
+      if (still < 4 && performance.now() - readyAt < 2000) { requestAnimationFrame(hold); return; }
+      revealed = true;
+      wait.remove();
+      pane.style.transition = "opacity 180ms ease-out";
+      pane.style.visibility = "";
+      pane.style.opacity = "1";
+      setTimeout(() => { pane.style.transition = ""; pane.style.opacity = ""; }, 260);
+    };
+    requestAnimationFrame(hold);
+  }
+
   // The look of the map's own buttons and menus.
   const PILL_CSS = "position:absolute;top:10px;right:10px;z-index:2;font:inherit;font-size:13px;" +
     "padding:6px 10px;border-radius:6px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);cursor:pointer;";
@@ -1051,6 +1110,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         m.summary = `${n.reporting} of ${ids.size} reporting${parts.length ? ` · ${parts.join(", ")}` : ""}`;
       }
       if (LEGISLATURE.has(m.office)) Object.assign(m, legislatureCounts(m));
+    }
+    // The office bar's counts likewise wait for the first poll.
+    if (!dataReady()) {
+      for (const m of out) if (m.summary || m.statewide || m.districts) { m.summary = "Loading…"; m.total = m.total || m.states || 1; }
     }
     return out;
   }
@@ -3097,7 +3160,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     updateTip();
     if (!readout) return;
     const g = pinned;
-    let html = bins.on && !bins.out ? binsHTML() : withPlaces(readoutHTML(g), g);
+    // Zeros before the first poll ("0 of 435 reporting · 311 staged") are
+    // not news: the aside says it is loading instead.
+    let html = !dataReady() ? `<h2>${esc(mode().label)}</h2><p class="hint">Loading results…</p>`
+      : bins.on && !bins.out ? binsHTML() : withPlaces(readoutHTML(g), g);
     const at = g ? g.properties.id : pinnedAt;
     // In split screen the other panel's reading of the same place goes
     // underneath, headed by what that panel is showing.

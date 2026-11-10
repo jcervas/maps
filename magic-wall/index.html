@@ -41,20 +41,34 @@ permalink: /magic-wall/
   </div>
 
   <!-- Office, then year: hover (or tap) an office for its years. Built from
-       the map's race modes in shell.js, fillNational. -->
-  <nav class="field" id="nationalField" aria-label="Election" hidden>
-    <ul class="offices" id="national" role="menubar"></ul>
+       the map's race modes in shell.js, fillNational. Until then it, the
+       Election menu, Race and Compare to hold the opening view (House 2026,
+       shell.js), so the header has its full height and its real values from
+       the first paint: built empty, it grew a row about two seconds into the
+       load and pushed the map down (November 10, 2026). -->
+  <nav class="field" id="nationalField" aria-label="Election">
+    <ul class="offices" id="national" role="menubar">
+      <li class="office" role="none"><button class="officebtn" role="menuitem">President <span class="yr"></span></button></li>
+      <li class="office" role="none"><button class="officebtn" role="menuitem">U.S. Senate <span class="yr"></span></button></li>
+      <li class="office current" role="none"><button class="officebtn" role="menuitem">House <span class="yr">2026</span></button></li>
+      <li class="office" role="none"><button class="officebtn" role="menuitem">Governor <span class="yr"></span></button></li>
+      <li class="office" role="none"><button class="officebtn" role="menuitem">Sec. of State <span class="yr"></span></button></li>
+      <li class="office" role="none"><button class="officebtn" role="menuitem">State Senate <span class="yr"></span></button></li>
+      <li class="office" role="none"><button class="officebtn" role="menuitem">State House <span class="yr"></span></button></li>
+    </ul>
   </nav>
   <!-- The same elections as one menu, for phones, where seven office buttons
        were three rows of the header (wall.css shows one or the other). -->
-  <label class="field" id="nationalPick" hidden>
+  <label class="field" id="nationalPick">
     <span>Election</span>
-    <select id="nationalSel"></select>
+    <select id="nationalSel"><option value="house-2026">House 2026</option></select>
   </label>
 
-  <label class="field">
+  <!-- Hidden on the national view, where there is no race to pick
+       (shell.js fillRaceSelect); the opening view is national. -->
+  <label class="field" hidden>
     <span>Race</span>
-    <select id="race"><option value="">baseline</option></select>
+    <select id="race"><option value="">House 2026 &middot; by district</option></select>
   </label>
 
 </header>
@@ -73,7 +87,7 @@ permalink: /magic-wall/
 
   <label class="field secondary">
     <span>Compare to</span>
-    <select id="baseline"></select>
+    <select id="baseline"><option value="house-2024">2024 House</option></select>
   </label>
 
   <!-- On a phone the rows marked secondary fold away behind this. -->
@@ -203,7 +217,7 @@ permalink: /magic-wall/
      with BUILD in shell.js. -->
 <script>
 (function () {
-  var BUILD = "2026-11-10a";
+  var BUILD = "2026-11-10c";
   var MODULES = [
     "apps/battle.js", "apps/boards.js", "apps/calls.js", "apps/map.js",
     "apps/seatbar.js", "apps/sources.js", "apps/table.js",

@@ -499,7 +499,9 @@ tr.editor td { background: var(--accent-soft); text-align: left; }
      next: a 40% basis is too wide to share the first row, narrow enough to
      sit beside "\2190 United States". */
   .rail .brand { flex: none; }
-  .rail .badge { margin-left: auto; }
+  /* Wide enough even while it says "starting" that the place cannot climb
+     onto the first row and drop again when the count arrives. */
+  .rail .badge { margin-left: auto; min-width: 8rem; text-align: center; }
   .rail .where { flex: 1 1 40%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* The apps as one segmented row the width of the screen. */
   #apps { flex-basis: 100%; }

@@ -20,7 +20,7 @@ import { createUpdates } from "./apps/updates.js";
 import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 
-const BUILD = "2026-11-10a";
+const BUILD = "2026-11-10c";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -362,6 +362,20 @@ async function main() {
   let lastFocus = null;
   let side = "left";               // the split panel the rail controls, see fillRail
   let mapReady = false;
+  // The badge from the manifest as soon as it is in, rather than "starting"
+  // until the poller's first pass has read every results file (about six
+  // seconds on the public copy). The poller's own status replaces this one
+  // at the end of that pass.
+  badgeContext = () => ({ store, raceId: mapReady ? app.status().raceId : null });
+  if (!params.get("replay")) {
+    getJSON(`${DATA}/manifest.json?t=${Date.now()}`, { cache: "no-store" })
+      .then((manifest) => {
+        if (manifest && !lastStatus) {
+          setStatus({ level: "ok", ageMs: 0, failures: 0, running: true, source: "live", manifest });
+        }
+      })
+      .catch(() => {});
+  }
   const focusWaiters = [];
 
   const app = createMapApp({
@@ -546,7 +560,6 @@ async function main() {
     renderAll(seats ? ["boards", "battle"] : []);
     fillRail(app.status());
   }
-  badgeContext = () => ({ store, raceId: app.status().raceId });
 
   // Latest updates (N): a log of new numbers. Clicking an entry opens its
   // state on the map, in that race's mode.
