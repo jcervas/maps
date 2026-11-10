@@ -728,7 +728,7 @@ breadcrumb_width: none
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-09d";
+  var BUILD = "2026-11-09e";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -1627,7 +1627,9 @@ breadcrumb_width: none
       // Inside a state, only that state's: the others project somewhere
       // arbitrary under its CRS and would be squares pointing at nothing.
       if (state.focus && ds[i].properties.state !== state.focus) continue;
-      if (wantsSquare(ds[i]) && !(countyActive() && singledOut(ds[i]))) want.push(ds[i]);
+      // With a district's counties on, no squares at all: the counties are
+      // the subject and the seats around them are only where they sit.
+      if (wantsSquare(ds[i]) && !countyActive()) want.push(ds[i]);
     }
     // The lines control changes which seats are wanted, and two different
     // sets can be the same size, so it is part of the key rather than left
@@ -2392,7 +2394,9 @@ breadcrumb_width: none
       for (var i = 0; i < current.length; i++) {
         var f = current[i];
         if (!inPanel(pn, f)) continue;
-        var col = fillFor(f.properties, f);
+        // With a district's counties on, the districts around it are a
+        // plain backdrop: no result color, stripe, or square of their own.
+        var col = countyActive() && !singledOut(f) ? null : fillFor(f.properties, f);
         ctx.beginPath();
         path(f);
         if (col) {
@@ -2453,7 +2457,8 @@ breadcrumb_width: none
       if (!showingPrecincts && !stateInScope(bd[k].properties.state)) continue;
       // On a rating tab an unrated district is left in the page tone, where
       // a water-colored line would vanish; it takes the grey line too.
-      var blankHere = ratingMode() && !fillFor(bd[k].properties, bd[k]);
+      var blankHere = ratingMode() && (!fillFor(bd[k].properties, bd[k]) ||
+        (countyActive() && !singledOut(bd[k])));
       ctx.strokeStyle = ((bd[k].__same && !state.district) || blankHere)
         ? theme().baseline : theme().water;
       ctx.beginPath(); path(bd[k]); ctx.stroke();
@@ -2477,7 +2482,7 @@ breadcrumb_width: none
     if (chicletMode()) {
       var ratedLw = (showingPrecincts ? 2.2 : 1.8) / transform.k;
       for (var q = 0; q < bd.length; q++) {
-        if (!inPanel(pn, bd[q]) || !wantsSquare(bd[q])) continue;
+        if (!inPanel(pn, bd[q]) || !wantsSquare(bd[q]) || countyActive()) continue;
         var onq = state.hover === bd[q], col = squareFill(bd[q]);
         ctx.save();
         ctx.beginPath(); path(bd[q]);
