@@ -22,6 +22,7 @@ const NOT_A_CONTENDER = /^(write-?ins?(-.*)?|scatter.*|blank.*|void.*|none-of.*|
  * DAVIS, AUSTIN"), "Last, First" turned round, accents, quotes, hyphens and
  * suffixes dropped ('Henry C. "Hank" Johnson, Jr.' -> johnson; henry c hank). */
 const SUFFIX = /^(jr|sr|ii|iii|iv|v)$/;
+const PARTICLE = /^(de|del|della|la|las|los|le|van|von|der|den|da|das|do|dos|du|di|st|ten|ter)$/;
 function personParts(name) {
   let n = String(name || "").split(/\s*\/\s*|\s+(?:and|&)\s+/i)[0].replace(/\((?:i|inc|incumbent)\.?\)/gi, " ");
   const parts = n.split(",");
@@ -32,7 +33,14 @@ function personParts(name) {
   }
   const w = n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/[^a-z\s]/g, " ").split(/\s+/).filter((x) => x && !SUFFIX.test(x));
-  return w.length ? { last: w[w.length - 1], given: w.slice(0, -1) } : null;
+  if (!w.length) return null;
+  // A surname's particles belong to it: "Carlos De La Cruz" is De La Cruz,
+  // given Carlos. Split on the last word alone, "de" and "la" were given
+  // names, and he matched Monica De La Cruz (TX-15) as an incumbent through
+  // them (TX-35, November 10).
+  let i = w.length - 1;
+  while (i > 1 && PARTICLE.test(w[i - 1])) i -= 1;
+  return { last: w.slice(i).join(" "), given: w.slice(0, i) };
 }
 
 export function createStore() {

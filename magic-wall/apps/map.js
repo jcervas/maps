@@ -3677,6 +3677,43 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return [pane.clientWidth, pane.clientHeight, Math.round(topInset()),
             ...overlayBoxes().map((b) => [b.x0, b.y0, b.x1, b.y1].map(Math.round).join(","))].join("|");
   }
+  /* What a fit measures: the vertices themselves, not the polygons.
+   * Fitting to the polygons sent every vertex through d3's resampling and
+   * polygon clipping, which buffers each ring, two or three times per drill
+   * (the morph's target, the settle, the overlays): about half a gigabyte
+   * allocated each time a viewer left a state, enough for Safari to reload
+   * the page. A MultiPoint of up to 20,000 of the vertices, plus each
+   * shape's own extremes so the edges land where they did, projects without
+   * clipping, and is made once per feature list. */
+  const fitProxies = new WeakMap();
+  function fitProxy(feats) {
+    let hit = fitProxies.get(feats);
+    if (hit) return hit;
+    const pts = [];
+    let n = 0;
+    const count = (c) => (typeof c[0] === "number" ? n++ : c.forEach(count));
+    for (const f of feats) if (f.geometry) count(f.geometry.coordinates);
+    const step = Math.max(1, Math.ceil(n / 20000));
+    let i = 0;
+    for (const f of feats) {
+      if (!f.geometry) continue;
+      let w = null, e = null, so = null, no = null;
+      const walk = (c) => {
+        if (typeof c[0] !== "number") { c.forEach(walk); return; }
+        if (i++ % step === 0) pts.push(c);
+        if (!w || c[0] < w[0]) w = c;
+        if (!e || c[0] > e[0]) e = c;
+        if (!so || c[1] < so[1]) so = c;
+        if (!no || c[1] > no[1]) no = c;
+      };
+      walk(f.geometry.coordinates);
+      if (w) pts.push(w, e, so, no);
+    }
+    hit = { type: "MultiPoint", coordinates: pts };
+    fitProxies.set(feats, hit);
+    return hit;
+  }
+
   function samplesOf(feats) {
     if (fitSamples.has(feats)) return fitSamples.get(feats);
     const all = [];
@@ -3704,7 +3741,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     fitClearAt(proj, feats);
     if (!narrow()) return proj;
     const top = Math.max(view.extentBox()[0][1], topInset());
-    const by0 = d3.geoPath(proj).bounds({ type: "FeatureCollection", features: feats })[0][1];
+    const by0 = d3.geoPath(proj).bounds(fitProxy(feats))[0][1];
     if (by0 > top + 1) {
       const [tx, ty] = proj.translate();
       proj.translate([tx, ty - (by0 - top)]);
@@ -3714,11 +3751,12 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   function fitClearAt(proj, feats) {
     const E0 = view.extentBox();
     const E = [[E0[0][0], Math.max(E0[0][1], topInset())], E0[1]];
-    fitProjection(proj, feats, E);
+    const proxy = fitProxy(feats);
+    proj.fitExtent(E, proxy);
     fitSig = boxesSig();
     const boxes = overlayBoxes();
     if (!boxes.length) return proj;
-    const [[bx0, by0], [bx1, by1]] = d3.geoPath(proj).bounds({ type: "FeatureCollection", features: feats });
+    const [[bx0, by0], [bx1, by1]] = d3.geoPath(proj).bounds(proxy);
     if (!(bx1 > bx0 && by1 > by0)) return proj;
     const pts = samplesOf(feats).map((ll) => proj(ll)).filter(Boolean);
     const [[ex0, ey0], [ex1, ey1]] = E;
@@ -5208,6 +5246,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   function startMorph() {
     moving = performance.now();
     pendingTap = null;
+    /* The morph draws from its own plan, not the layers. And when it
+     * settles, the view installs the new projection and resets its zoom
+     * before the map's apply swaps the layers in, so the old layers would
+     * be drawn once under the new projection: every national district and
+     * state outline projected through Texas's conic on the way in, Texas's
+     * detailed counties through the national one on the way out (about
+     * 266,000 points clipped and thrown away per drill, and the good
+     * cached paths overwritten so they had to be built again: most of the
+     * memory spike leaving a state). So the layers are put away for the
+     * morph; apply brings the new ones. */
+    view.setLayers([]);
   }
 
   function settled() {
@@ -5346,6 +5395,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   view.on("zoom", (t) => {
+    // The zoom reset that lands while a drill settles is not a zoom: the
+    // layers stay put away until apply (see startMorph).
+    if (morphing()) return;
     unpinAtHome(t);
     // The county hairlines appear only once zoomed enough to tell them apart,
     // so the layer list changes with the transform.
