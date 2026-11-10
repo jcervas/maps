@@ -191,11 +191,35 @@ breadcrumb_width: none
     text-transform: uppercase; color: var(--ink-soft);
   }
   .cmp .seg button { font-size: 0.78rem; padding: 0.18rem 0.55rem; }
-  .cmp > span.ctykey {
-    text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 11.5px;
-    display: inline-flex; align-items: center; gap: 4px; color: var(--ink-soft);
+  /* The county key, on the map's lower left as on the magic wall. */
+  .ctylegend {
+    position: absolute; left: 12px; bottom: 12px; z-index: 2; max-width: 22rem;
+    background: var(--paper); padding: 6px 9px 7px; border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    font-size: 11px; font-weight: 600; color: var(--ink-soft); line-height: 1.3;
   }
-  .ctykey i { display: inline-block; width: 11px; height: 9px; border: 1px solid var(--rule); }
+  .ctylegend[hidden] { display: none; }
+  .ctylegend .ct { color: var(--ink); font-weight: 700; margin-bottom: 5px; }
+  .ctylegend .bar { position: relative; height: 8px; }
+  .ctylegend .bar::after {
+    content: ""; position: absolute; inset: 0; border: 1px solid var(--baseedge, #b2b2ad);
+  }
+  .ctylegend .bar i { position: absolute; top: 0; height: 8px; }
+  .ctylegend .labs { position: relative; height: 12px; margin-top: 3px; font-size: 10px; font-variant-numeric: tabular-nums; }
+  .ctylegend .labs b { position: absolute; top: 0; transform: translateX(-50%); font-weight: 600; }
+  .ctylegend .labs b.l { transform: none; }
+  .ctylegend .labs b.r { transform: translateX(-100%); }
+  .ctylegend .keys { display: flex; flex-wrap: wrap; gap: 3px 10px; margin-top: 5px; }
+  .ctylegend .k { display: inline-flex; align-items: center; gap: 4px; }
+  .ctylegend .k i {
+    display: inline-block; width: 10px; height: 10px; flex: none;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
+  }
+  .ctylegend .k i.dot { border-radius: 50%; box-shadow: none; }
+  .ctylegend .k i.hatch {
+    background: repeating-linear-gradient(-45deg, var(--nodata, #dcdcdc) 0 3.4px, var(--paper) 3.4px 4.6px);
+  }
+  .ctylegend .k.txt { font-weight: 400; }
   select.var {
     font: inherit; font-size: 0.86rem; color: var(--ink); background: var(--paper);
     border: 1px solid var(--rule); border-radius: 3px; padding: 0.3rem 0.4rem; max-width: 17rem;
@@ -631,7 +655,6 @@ breadcrumb_width: none
       <button id="tMargin" aria-pressed="true">Margin</button>
       <button id="tCircles" aria-pressed="false">Circles</button>
     </div>
-    <span class="ctykey" id="ctyKey"></span>
   </div>
 </div>
 
@@ -666,6 +689,7 @@ breadcrumb_width: none
     <dl id="rList"></dl>
     <div class="flag" id="rFlag" hidden></div>
   </div>
+  <div class="ctylegend" id="ctyLegend" hidden></div>
   <div class="status" id="status">Loading districts&hellip;</div>
 </div>
   <div class="legend gutter" id="legend" hidden>
@@ -704,7 +728,7 @@ breadcrumb_width: none
   // defences: every data file is requested with the build tag, so code and
   // data can never come from different builds, and the build date is printed
   // in the footer so "is this current?" is answerable at a glance.
-  var BUILD = "2026-11-09c";
+  var BUILD = "2026-11-09d";
   function dataUrl(name) { return "data/" + name + "?v=" + BUILD; }
   "use strict";
 
@@ -787,6 +811,7 @@ breadcrumb_width: none
     focus: null,         // state abbreviation when zoomed in
     district: null,      // district number when one is singled out
     compare: true,       // outline the singled-out district's counterpart
+    hoverPiece: null,    // the county piece under the cursor
     county: "margin",    // a selected 2026 district's county pieces: off | margin | circles
     rating: null,        // Cook rating picked out of the legend, or null
     demoVar: "largest_race",
@@ -2997,6 +3022,9 @@ breadcrumb_width: none
       hit = { f: null, chiclet: false };
     }
     var f = hoverable(hit);
+    // Over a county piece of the district in view, the piece answers.
+    var pc = pieceAt(ev);
+    if (pc) f = null;
     // The state a click would open follows the raw hit, not the hoverable
     // one. Up here most districts answer a hover with nothing -- all of them
     // in the rating modes -- and every one of them is still a way into its
@@ -3005,8 +3033,8 @@ breadcrumb_width: none
     // The contents only change when the thing under the cursor does, but the
     // panel has to keep up with the cursor either way, so placement sits
     // outside that test rather than behind an early return.
-    if (f !== state.hover || st !== state.hoverState) {
-      state.hover = f; state.hoverState = st;
+    if (f !== state.hover || st !== state.hoverState || pc !== state.hoverPiece) {
+      state.hover = f; state.hoverState = st; state.hoverPiece = pc;
       // The cursor says the same thing as the outline, in the one place a
       // reader is already looking: there is somewhere to go from here. Inside
       // a state the district already in focus is the exception -- clicking it
@@ -3015,7 +3043,7 @@ breadcrumb_width: none
         : !!(f && districtOf(f.properties) !== state.district))
         ? "pointer" : "";
       render();
-      showReadout(f);
+      if (pc) showPieceReadout(pc); else showReadout(f);
     }
     placeReadout(ev);
   });
@@ -3024,7 +3052,7 @@ breadcrumb_width: none
   // district the tap had just singled out; on a desktop it threw away the
   // selection's figures the moment the pointer moved to the controls.
   cv.addEventListener("mouseleave", function () {
-    state.hover = null; state.hoverState = null;
+    state.hover = null; state.hoverState = null; state.hoverPiece = null;
     cv.style.cursor = "";
     render();
     var sel = state.district ? districtFeature(state.district) : null;
@@ -3119,12 +3147,49 @@ breadcrumb_width: none
   // build_cd_pieces.py and published beside this map); the votes are AP's,
   // fetched for the one race when it is selected and again after five
   // minutes. AP's feed allows cross-origin reads.
-  var CTY_STEPS = ["#be2c25", "#d35f4f", "#eb9f92", "#f9dddb", "#ffffff",
-                   "#d3e7fa", "#98b4e0", "#5784c5", "#1366b3"];
-  var CTY_CLAMP = 40, CTY_R = 30, CTY_TTL = 5 * 60 * 1000;
+  /* County results for a singled-out 2026 district, drawn the magic wall's
+   * way (magic-wall/apps/map.js) so the two read alike: the margin between
+   * the top two -- Democrats' votes together, Republicans' together, anyone
+   * else as themselves -- in classes broken at 10 and 20 points, white only
+   * for an exact tie. A race whose top two over the whole district are of
+   * one party (California's top two: D against D, R against R) is colored
+   * by candidate: the race's leader keeps the party's ramp, the runner-up
+   * has their own, teal against a Democrat and orange against a Republican. */
+  var CTY_BREAKS = [10, 20], CTY_R = 30, CTY_TTL = 5 * 60 * 1000;
+  var CTY_STEPS = {                       // lightest to strongest, as wall.css
+    R: ["#f9dddb", "#eb9f92", "#d35f4f", "#be2c25"],
+    D: ["#d3e7fa", "#98b4e0", "#5784c5", "#1366b3"],
+    I: ["#efdff5", "#c7a7d3", "#9f70b2", "#844d9c"],
+    "alt-D": ["#d5efec", "#8fd0c8", "#3ea69c", "#0e7c74"],
+    "alt-R": ["#fde3c6", "#f7b56d", "#ec8b2b", "#c76800"]
+  };
+  var CTY_TIE = "#ffffff";
   var AP_RACES = "https://interactives.apelections.org/election-results/data-live/2026-11-03/results/races/";
   var ctyPieces = {}, ctyRaces = {};
-  var ctyScale = d3.scaleQuantize().domain([-CTY_CLAMP, CTY_CLAMP]).range(CTY_STEPS);
+
+  // The theme's four steps respread to one class per break and one past the
+  // last, in Lab, the lightest a third of the way to the next step (as the
+  // magic wall's partisanClasses does, so a close county is not read as white).
+  var ctyClassCache = {};
+  function ctyClasses(side) {
+    if (ctyClassCache[side]) return ctyClassCache[side];
+    var c = CTY_STEPS[side] || CTY_STEPS.I, n = CTY_BREAKS.length + 1;
+    var f = d3.piecewise(d3.interpolateLab, c), t0 = 1 / (3 * (c.length - 1));
+    return (ctyClassCache[side] = d3.range(n).map(function (i) {
+      return d3.color(f(t0 + (1 - t0) * i / (n - 1))).formatHex();
+    }));
+  }
+  function ctyFill(top) {
+    if (!top.pts) return CTY_TIE;
+    var i = 0;
+    while (i < CTY_BREAKS.length && top.pts >= CTY_BREAKS[i]) i++;
+    return ctyClasses(top.side)[i];
+  }
+  // A circle, or a key's swatch, in the side's strongest color.
+  function ctyInk(side) {
+    var T = theme();
+    return side === "D" ? T.dem : side === "R" ? T.rep : (CTY_STEPS[side] || CTY_STEPS.I)[3];
+  }
 
   function countyActive() {
     return state.county !== "off" && !!state.district && !!state.focus && state.year === "2026";
@@ -3166,24 +3231,40 @@ breadcrumb_width: none
       var meta = res[0], det = res[1];
       entry.loading = null;
       if (!meta || !det) return entry;
-      var party = {}, names = {};
+      var cands = {};
       Object.keys(meta.candidates || {}).forEach(function (id) {
         var c = meta.candidates[id];
-        party[id] = AP_PARTY[c.party] || "I";
-        names[id] = [c.first, c.last].filter(Boolean).join(" ");
+        cands[id] = { id: id, party: AP_PARTY[c.party] || "I", abbr: c.party,
+                      name: [c.first, c.last].filter(Boolean).join(" "), last: c.last || "" };
       });
-      // New England reports by town; a town's FIPS starts with its county's.
-      var by = {};
+      // A House race's county unit is the county's part of the district. New
+      // England reports by town; a town's FIPS starts with its county's.
+      var by = {}, tot = {};
       Object.keys(det).forEach(function (k) {
         var u = det[k];
         if (!u || u.reportingunitLevel !== 2 || !u.fipsCode) return;
         var f5 = String(u.fipsCode).slice(0, 5);
-        var row = by[f5] = by[f5] || { votes: {}, name: u.reportingunitName };
+        var row = by[f5] = by[f5] || { votes: {}, name: u.reportingunitName, n: 0, exp: 0 };
+        var uv = 0;
         (u.candidates || []).forEach(function (c) {
-          row.votes[c.candidateID] = (row.votes[c.candidateID] || 0) + (c.voteCount || 0);
+          var v = c.voteCount || 0;
+          row.votes[c.candidateID] = (row.votes[c.candidateID] || 0) + v;
+          tot[c.candidateID] = (tot[c.candidateID] || 0) + v;
+          uv += v;
         });
+        // Expected vote in, weighted by votes across a county's towns.
+        if (u.eevp != null) { row.n += uv; row.exp += u.eevp > 0 ? uv * 100 / u.eevp : 0; row.eevp1 = u.eevp; }
       });
-      entry.byFips = by; entry.party = party; entry.names = names; entry.t = Date.now();
+      // The race's top two over the whole district; one party's pair is
+      // colored by candidate.
+      var top = Object.keys(tot).filter(function (id) { return cands[id]; })
+        .sort(function (a, b) { return tot[b] - tot[a]; });
+      var pair = null;
+      if (top.length >= 2 && tot[top[0]] > 0) {
+        var p = cands[top[0]].party;
+        if ((p === "D" || p === "R") && cands[top[1]].party === p) pair = { party: p, lead: top[0], trail: top[1] };
+      }
+      entry.byFips = by; entry.cands = cands; entry.pair = pair; entry.t = Date.now();
       return entry;
     }).catch(function () { entry.loading = null; return entry; });
     return entry.loading;
@@ -3196,20 +3277,44 @@ breadcrumb_width: none
       if (countyActive()) { render(); updateCountyKey(); }
     });
   }
-  // One piece's count: the D-minus-R margin in points, and the leader's lead
-  // in votes, with the leader's party.
-  function pieceCount(f, race) {
+  /* One piece's count, as the magic wall's topTwo: { side, pts, lead,
+   * leader, second, rows, total, eevp }, where side is the class ramp ("D",
+   * "R", "I", "alt-D", "alt-R") and pts the top two's margin. Null with no
+   * votes yet. */
+  function pieceTop(f, race) {
     var row = race && race.byFips && race.byFips[f.properties.fips];
     if (!row) return null;
-    var tot = 0, by = { D: 0, R: 0 }, cands = [];
+    var pair = race.pair, rows = [], total = 0, groups = {};
     Object.keys(row.votes).forEach(function (id) {
-      var v = row.votes[id], p = race.party[id] || "I";
-      tot += v; by[p] = (by[p] || 0) + v; cands.push({ id: id, v: v, p: p });
+      var c = race.cands[id] || { id: id, party: "I", name: "Other", last: "Other" };
+      var v = row.votes[id];
+      total += v;
+      rows.push({ c: c, v: v });
+      // By party for D and R, unless this is a one-party pair; anyone else
+      // as themselves.
+      var key = !pair && (c.party === "D" || c.party === "R") ? c.party : id;
+      var g = groups[key] = groups[key] || { key: key, party: c.party, c: c, v: 0 };
+      g.v += v;
     });
-    if (!tot) return null;
-    cands.sort(function (a, b) { return b.v - a.v; });
-    return { margin: 100 * (by.D - by.R) / tot, total: tot,
-             lead: cands[0].v - (cands[1] ? cands[1].v : 0), leader: cands[0].p };
+    if (!total) return null;
+    rows.sort(function (a, b) { return b.v - a.v; });
+    var gs = Object.keys(groups).map(function (k) { return groups[k]; })
+      .sort(function (a, b) { return b.v - a.v; });
+    var a = gs[0], b = gs[1], bv = b ? b.v : 0;
+    var side = a.party;
+    if (pair && a.party === pair.party && a.key === pair.trail) side = "alt-" + pair.party;
+    return {
+      side: side, pts: 100 * (a.v - bv) / (a.v + bv), lead: a.v - bv,
+      leader: a, second: b || null, rows: rows, total: total,
+      eevp: row.exp > 0 ? Math.min(100, 100 * row.n / row.exp) : row.eevp1
+    };
+  }
+  // "D+5" says nothing between two Democrats, nor "I+5" about which
+  // independent: those are labeled with the leader's surname.
+  function ctyMarginLabel(top, race) {
+    var g = top.leader;
+    var who = (race.pair || g.party === "I") ? (g.c.last || g.c.name) : g.party;
+    return who + (who.length > 1 ? " +" : "+") + d3.format(".1f")(top.pts);
   }
   function countyPiecesNow() {
     var st = state.focus, pc = ctyPieces[st] && ctyPieces[st].value;
@@ -3217,27 +3322,28 @@ breadcrumb_width: none
     if (!pc || !race || !race.byFips) return null;
     return { pieces: pc[ctyCd()] || [], race: race };
   }
-  var ctyLeadMax = 0;
+  var ctyLeadMax = 0, ctyShown = { sides: {}, waiting: false };
   function drawCountyPieces(pn) {
     if (!countyActive()) return;
     var now = countyPiecesNow();
     if (!now || !now.pieces.length) return;
     var T = theme(), circles = state.county === "circles";
-    var items = [];
+    var items = [], shown = { sides: {}, waiting: false };
     ctx.save();
     ctx.lineJoin = "round";
     now.pieces.forEach(function (f) {
       if (!inPanel(pn, f)) return;
-      var c = pieceCount(f, now.race);
+      var top = pieceTop(f, now.race);
+      if (top) shown.sides[top.side] = true; else shown.waiting = true;
       ctx.beginPath(); path(f);
-      ctx.fillStyle = circles ? T.chicfill : c ? ctyScale(Math.max(-CTY_CLAMP, Math.min(CTY_CLAMP, c.margin))) : T.nodata;
+      ctx.fillStyle = circles ? T.chicfill : top ? ctyFill(top) : mapHatch(T.nodata, 1);
       ctx.fill();
       ctx.lineWidth = 0.8 / transform.k;
       ctx.strokeStyle = circles ? T.baseline : T.paper;
       ctx.stroke();
-      if (circles && c && c.lead > 0) {
+      if (circles && top && top.lead > 0) {
         var ll = innerPoint(f), pt = ll && pn.proj(ll);
-        if (pt && isFinite(pt[0])) items.push({ x: pt[0], y: pt[1], lead: c.lead, p: c.leader });
+        if (pt && isFinite(pt[0])) items.push({ x: pt[0], y: pt[1], lead: top.lead, side: top.side });
       }
     });
     ctyLeadMax = items.length ? d3.max(items, function (d) { return d.lead; }) : 0;
@@ -3246,15 +3352,89 @@ breadcrumb_width: none
       var r = Math.max(2, CTY_R * Math.sqrt(d.lead / ctyLeadMax)) / transform.k;
       ctx.beginPath(); ctx.arc(d.x, d.y, r, 0, 2 * Math.PI);
       ctx.globalAlpha = 0.85;
-      ctx.fillStyle = d.p === "D" ? T.dem : d.p === "R" ? T.rep : T.cook["Toss Up"];
+      ctx.fillStyle = ctyInk(d.side);
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.lineWidth = 1.2 / transform.k;
       ctx.strokeStyle = T.paper;
       ctx.stroke();
     });
+    // The piece under the cursor, over everything.
+    if (state.hoverPiece && now.pieces.indexOf(state.hoverPiece) >= 0) {
+      ctx.beginPath(); path(state.hoverPiece);
+      ctx.lineWidth = 2 / transform.k;
+      ctx.strokeStyle = T.ink;
+      ctx.stroke();
+    }
     ctx.restore();
+    var key = JSON.stringify(shown) + "|" + ctyLeadMax;
+    if (key !== ctyShown.key) { shown.key = key; ctyShown = shown; setTimeout(updateCountyKey, 0); }
   }
+
+  // The piece under the cursor: the point taken back through the panel's
+  // zoom and projection to longitude and latitude, and tested against the
+  // district's pieces (a few dozen at most).
+  function pieceAt(ev) {
+    if (!countyActive()) return null;
+    var now = countyPiecesNow();
+    if (!now || !now.pieces.length) return null;
+    var r = cv.getBoundingClientRect();
+    var mx = ev.clientX - r.left, my = ev.clientY - r.top;
+    var ps = panelsFor();
+    for (var i = 0; i < ps.length; i++) {
+      var pn = ps[i];
+      if (mx < pn.x || my < pn.y || mx > pn.x + pn.w || my > pn.y + pn.h) continue;
+      var ll = pn.proj.invert && pn.proj.invert([(mx - pn.t.x) / pn.t.k, (my - pn.t.y) / pn.t.k]);
+      if (!ll) continue;
+      for (var j = 0; j < now.pieces.length; j++) {
+        if (inPanel(pn, now.pieces[j]) && d3.geoContains(now.pieces[j], ll)) return now.pieces[j];
+      }
+    }
+    return null;
+  }
+
+  function showPieceReadout(f) {
+    var now = countyPiecesNow();
+    var rt = document.getElementById("rTitle");
+    var list = document.getElementById("rList");
+    var flag = document.getElementById("rFlag");
+    document.getElementById("readout").removeAttribute("data-idle");
+    document.getElementById("rIdle").hidden = true;
+    var p = f.properties, top = now && pieceTop(f, now.race);
+    var nm = p.name || (top && now.race.byFips[p.fips].name) || p.fips;
+    rt.textContent = (/ (County|Parish|Borough|city|Municipality|Census Area)$/i.test(nm) ? nm
+      : nm + (p.state === "LA" ? " Parish" : p.state === "AK" ? "" : " County")) +
+      " · " + p.state + "-" + state.district;
+    var cls = function (pt) { return pt === "D" ? "d" : pt === "R" ? "r" : ""; };
+    var html;
+    if (!top) {
+      html = '<dd class="wide verdict"><span class="muted">Awaiting votes</span></dd>';
+    } else {
+      var lc = top.side.indexOf("alt-") === 0 ? CTY_STEPS[top.side][3] : null;
+      html = '<dd class="wide verdict"><span class="' + cls(top.leader.party) + '"' +
+        (lc ? ' style="color:' + lc + '"' : "") + ">" + ctyMarginLabel(top, now.race) + "</span>" +
+        ' <span class="muted">· lead ' + fmt(top.lead) + "</span></dd>";
+      top.rows.slice(0, 4).forEach(function (r) {
+        var alt = now.race.pair && r.c.id === now.race.pair.trail;
+        html += "<dt>" + r.c.name + ' <span class="' + cls(r.c.party) + '"' +
+          (alt ? ' style="color:' + CTY_STEPS["alt-" + r.c.party][3] + '"' : "") + ">(" +
+          r.c.party + ")</span></dt><dd>" + (100 * r.v / top.total).toFixed(1) +
+          '%</dd><dd class="muted">' + fmt(r.v) + "</dd>";
+      });
+      html += '<dd class="wide base">' + fmt(top.total) + " votes" +
+        (top.eevp != null ? " · about " + Math.round(top.eevp) + "% of expected vote in" : "") +
+        " · AP</dd>";
+    }
+    list.className = "res";
+    list.innerHTML = html;
+    flag.hidden = true; flag.textContent = "";
+  }
+
+  /* The key, on the map's lower left as on the magic wall: the margin
+   * classes broken at 10 and 20 with a sliver for a tie, then swatches for
+   * what is on screen -- a same-party race's leader and runner-up, an
+   * independent ahead, counties awaiting votes -- and, for circles, which
+   * color is whose and what the area means. */
   function updateCountyKey() {
     var w = document.getElementById("ctyWrap");
     w.hidden = !(state.district && state.focus && state.year === "2026" && ctyRaceId());
@@ -3262,19 +3442,60 @@ breadcrumb_width: none
       document.getElementById(id).setAttribute("aria-pressed",
         String(state.county === ["off", "margin", "circles"][i]));
     });
-    var key = document.getElementById("ctyKey");
-    if (state.county === "margin") {
-      key.innerHTML = "R+40 " + CTY_STEPS.map(function (c) {
-        return '<i style="background:' + c + '"></i>';
-      }).join("") + " D+40 &middot; AP";
-    } else if (state.county === "circles") {
-      key.textContent = "Circle area: vote lead" +
-        (ctyLeadMax ? " (largest " + d3.format(",")(ctyLeadMax) + ")" : "") + " \u00b7 AP";
-    } else key.textContent = "";
+    var box = document.getElementById("ctyLegend");
+    var now = countyActive() ? countyPiecesNow() : null;
+    if (!now || !now.pieces.length) { box.hidden = true; return; }
+    box.hidden = false;
+    var race = now.race, pair = race.pair, sides = ctyShown.sides || {};
+    var circles = state.county === "circles";
+    var sw = function (col, label, round) {
+      return '<span class="k"><i' + (round ? ' class="dot"' : "") +
+        ' style="background:' + col + '"></i>' + label + "</span>";
+    };
+    var name = function (id) { var c = race.cands[id]; return c ? (c.last || c.name) : ""; };
+    var html = '<div class="ct">' + (circles ? "Vote lead by county" : "Margin by county") + "</div>";
+    var keys = [];
+    if (!circles) {
+      // R strongest on the left, the tie a sliver, D strongest on the right.
+      var R = ctyClasses("R").slice().reverse(), D = ctyClasses("D");
+      var cw = 26, tw = 8, n = CTY_BREAKS.length;
+      var cells = R.map(function (c) { return [c, cw]; }).concat([[CTY_TIE, tw]], D.map(function (c) { return [c, cw]; }));
+      var x = 0, bar = "", labs = "";
+      cells.forEach(function (c, i) {
+        bar += '<i style="left:' + x + "px;width:" + c[1] + "px;background:" + c[0] + '"></i>';
+        // Each break on the edge between two swatches, strongest outside.
+        if (i >= 1 && i <= n) labs += '<b style="left:' + x + 'px">' + CTY_BREAKS[n - i] + "</b>";
+        if (i === n + 1) labs += '<b style="left:' + (x + tw / 2) + 'px">0</b>';
+        x += c[1];
+        var d = i - (n + 2);
+        if (d >= 0 && d < n) labs += '<b style="left:' + x + 'px">' + CTY_BREAKS[d] + "</b>";
+      });
+      labs += '<b class="l" style="left:0">R</b><b class="r" style="left:' + x + 'px">D</b>';
+      html += '<div class="bar" style="width:' + x + 'px">' + bar + '</div><div class="labs" style="width:' + x + 'px">' + labs + "</div>";
+      if (pair) {
+        var L = pair.party;
+        keys.push(sw(ctyClasses(L)[1], L + " vs. " + L + ": race leader (" + name(pair.lead) + ")"));
+        keys.push(sw(ctyClasses("alt-" + L)[1], L + " vs. " + L + ": runner-up (" + name(pair.trail) + ")"));
+      }
+      if (sides.I) keys.push(sw(ctyClasses("I")[1], "Independent ahead"));
+      if (ctyShown.waiting) keys.push('<span class="k"><i class="hatch"></i>Awaiting votes</span>');
+    } else {
+      ["D", "alt-D", "R", "alt-R", "I"].forEach(function (s) {
+        if (!sides[s]) return;
+        var label = s === "I" ? "Independent ahead"
+          : pair && s.slice(-1) === pair.party ? name(s.indexOf("alt-") === 0 ? pair.trail : pair.lead) + " ahead"
+          : (s === "D" ? "Democrat" : "Republican") + " ahead";
+        keys.push(sw(ctyInk(s), label, true));
+      });
+      if (ctyLeadMax) keys.push('<span class="k txt">Circle area: vote lead (largest ' + d3.format(",")(ctyLeadMax) + ")</span>");
+    }
+    keys.push('<span class="k txt">AP count for each county’s part of the district</span>');
+    box.innerHTML = html + '<div class="keys">' + keys.join("") + "</div>";
   }
   function setCounty(m) {
     if (state.county === m) return;
     state.county = m;
+    state.hoverPiece = null;
     ensureCounty(); render(); updateCountyKey();
   }
   document.getElementById("tOff").addEventListener("click", function () { setCounty("off"); });
