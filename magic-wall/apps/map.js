@@ -3206,7 +3206,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       : pvi ? `<span title="${esc(PVI_NOTE)}">PVI <span style="font-weight:700">${esc(pvi)}</span></span>`
       : m != null ? `Margin <span style="font-weight:700">${mText}</span>` : "";
     const lv = total > 0 ? cellValue(c, "lead") : null;
-    const lead = lv == null ? "" : lv === 0 ? "tied" : `${sideLabel(lv, topOf(c))} +${fmt(Math.abs(lv))}`;
+    // Under a ranked-choice count the first-round lead is only that.
+    const rcv = rcvPending(c);
+    const lead = lv == null ? "" : lv === 0 ? "tied" : `${sideLabel(lv, topOf(c))} +${fmt(Math.abs(lv))}${rcv ? " first-choice" : ""}`;
     // With the PVI there, the margin goes; the lead in votes says who is ahead.
     if (pvi && lead) left = left ? `${left} · ${lead} votes` : `${lead} votes`;
     if (!left && !right) return "";
@@ -3215,7 +3217,27 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const data = ` data-in="${esc(inShort)}" data-lead="${esc(lead)}" data-margin="${esc(mText)}"${pvi ? ` data-pvi="${esc(pvi)}"` : ""}` +
       (sw ? ` data-swing="${esc(sw.value)}" data-swingvs="${esc(sw.vs)}"` : "");
     return `<div class="mw-chead"${data} style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;` +
-      `margin:0 0 2px;font-size:0.857rem;color:var(--ink-soft);font-variant-numeric:tabular-nums"><span>${left}</span><span>${right}</span></div>`;
+      `margin:0 0 2px;font-size:0.857rem;color:var(--ink-soft);font-variant-numeric:tabular-nums"><span>${left}</span><span>${right}</span></div>` +
+      (rcv ? `<p class="hint mw-rcv" style="margin:2px 0 4px;font-size:0.857rem;color:var(--ink)">No candidate has a majority; ` +
+        `${esc(rcv)} will tabulate ranked-choice rounds if that holds when counting ends.</p>` : "");
+  }
+
+  /* Alaska (every general election race here) and Maine (Congress) count
+   * by ranked choice: under 50% of the first-choice vote, the leader is
+   * only the first round's (the user, November 10). Null, or the state's
+   * name while that holds and the race is uncalled. */
+  const RCV = { AK: new Set(["house", "senate", "governor"]), ME: new Set(["house", "senate"]) };
+  function rcvPending(c) {
+    if (!c || !(c.kind === "district" || c.kind === "state") || !c.votes || !liveRaceKey(c)) return null;
+    const race = c.race || store.race(c.subj);
+    const st = c.st || (race && race.state);
+    if (!race || !RCV[st] || !RCV[st].has(race.office) || callFor(c)) return null;
+    const t = topOf(c);
+    // A majority of the ballots cast for someone: Maine's blank ballots
+    // (and any over- or undervote line) are not in it; write-ins are.
+    const total = d3.sum(Object.entries(c.votes), ([k, v]) => (/^(blank|void|over|under)/i.test(k) ? 0 : Number(v) || 0));
+    if (!t || !t.leader || !total || t.leader.votes / total > 0.5) return null;
+    return stateName(st);
   }
 
   /** With Color on Swing: { value: "D+12.3" or "n/a", vs: "vs 2024 House"
@@ -3443,6 +3465,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (f && f.properties.tier === "cd") return districtReadout(f.properties.id);
     if (f && f.properties.tier === "cdpiece") return pieceReadout(f);
     if (!st) return "";
+    // An at-large state is its one race: the race itself, not a one-row
+    // list of districts (the user, November 10: "look at the <aside>").
+    const only = cdsByState.get(st) || [];
+    if (only.length === 1 && !redrawn.has(st)) {
+      return districtReadout(only[0].properties.id) +
+        // New England counts by town, which the pieces (counties) do not match.
+        (focus ? `<p class="hint">${townsByState.has(st) ? "" : `Tap the district for ${st === "AK" ? "its state house districts" : "its counties"}, each with its own count. `}Tap outside the state to go back.</p>` : "");
+    }
     return `<h2>${esc(stateName(st))}</h2><p class="hint" style="margin:-6px 0 10px">${esc(m.label)} — by district</p>` +
       (redrawn.has(st) ? (newLines(st)
         ? `<p class="hint">${presCdOn() ? "New district lines for 2026, drawn from the Census 120th Congress districts. Swing here compares with the 2024 presidential vote on the new lines (Dave's Redistricting App)." : NEW_LINES_NOTE}</p>`
@@ -3624,6 +3654,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         out += `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 8px;font-size:11.5px;color:var(--ink-soft);` +
           `margin:4px 0 0;font-variant-numeric:tabular-nums"><span>${key}</span><span style="text-align:right;margin-left:auto">${esc(tally)}</span></div>`;
       }
+      const rcv = root.querySelector(".mw-rcv");
+      if (rcv) out += `<div style="font-size:11.5px;margin:4px 0 0">${rcv.innerHTML}</div>`;
       out += table.outerHTML;
       if (rows.length > 4) out += `<div style="color:var(--ink-soft);font-size:11px">+${rows.length - 4} more</div>`;
     }
@@ -4001,6 +4033,16 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     });
   }
 
+  /* An at-large state on a House map is its one district: going in lands
+   * on it pinned, pieces and all, and the way out is to the nation (the
+   * user, November 10: "at large states should automatically show the
+   * district after clicking the state"). Its id, or null. */
+  function atLargeCd(st) {
+    if (!st || !districtMode() || redrawn.has(st)) return null;
+    const cds = cdsByState.get(st) || [];
+    return cds.length === 1 ? cds[0].properties.id : null;
+  }
+
   function focusState(st) {
     binsReset();
     // The frame is fitted to the state's counties, which bound the same
@@ -4035,7 +4077,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         settled();
         // A link's district asked for before the map got here (#nc-05 on a
         // fresh load): pinned once the drill's crossfade is done.
-        const want = pendingPin;
+        const want = pendingPin || atLargeCd(st);
         pendingPin = null;
         if (want && want.startsWith(`${st}-`)) setTimeout(() => { if (focus === st && !zoomedCd) api.pinDistrict(want); }, 250);
       },
@@ -5505,9 +5547,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // Inside a state, the background is the way out -- once the view is back
     // at the whole state; zoomed in, it first returns to the whole state.
     if (!f) {
+      const al = atLargeCd(focus);
       zoomedCd = null;
       noteDistrict();
-      if (view.transform.k > 1.05) view.animateTo(d3.zoomIdentity);
+      if (view.transform.k > 1.05 && !al) view.animateTo(d3.zoomIdentity);
       else unfocus();
       return;
     }
@@ -5589,7 +5632,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!home) return;
     const was = zoomedAway;
     zoomedAway = false;
-    if (!was || !focus || link) return;
+    if (!was || !focus || link || atLargeCd(focus)) return;
     if (!zoomedCd && !(pinned && DISTRICT_TIERS.has(pinned.properties.tier))) return;
     pinned = null; pinnedAt = null; zoomedCd = null;
     if (split) split.highlight(null);
@@ -5801,6 +5844,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       pinned = null; pinnedAt = null; zoomedCd = null;
       if (focus) raceId = raceFor(focus);
       changed();
+      // Onto the House inside an at-large state: its district, as going in does.
+      const al = atLargeCd(focus);
+      if (al) setTimeout(() => { if (atLargeCd(focus) === al && !zoomedCd) api.pinDistrict(al); }, 250);
     },
     // The shell's name for it.
     setNationalRace(key) { api.setRaceMode(key); },
@@ -5927,6 +5973,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (!id) {
         pendingPin = null;
         if (!focus) return false;
+        // An at-large state has no view of its own to go back to.
+        if (atLargeCd(focus)) { unfocus(); return true; }
         const had = !!(pinned || zoomedCd);
         pinned = null; pinnedAt = null; zoomedCd = null;
         if (split) split.highlight(null);

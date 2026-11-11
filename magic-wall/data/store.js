@@ -16,6 +16,11 @@ const PARTY_NAMES = { dem: "Democratic", rep: "Republican", other: "Other" };
 // lumped write-ins, scattering, blank and void ballots, "all others". A named
 // write-in candidate ("adam-paul-write-in") is a person and stays a contender.
 const NOT_A_CONTENDER = /^(write-?ins?(-.*)?|scatter.*|blank.*|void.*|none-of.*|(all-)?others?)$/i;
+// States whose candidates are never pooled by party: Alaska's top-four
+// primary sends two or three of one party to a ranked-choice general, so
+// Sullivan and Heikes are two contenders, not one Republican line (the
+// Senate race read R+1.1 with Peltola ahead; November 10).
+const EACH_ALONE = new Set(["AK"]);
 
 /* A person's name as surname and given names, for matching a ballot's
  * spelling against a seat holder's: the first of a ticket ("JOSH SHAPIRO /
@@ -273,7 +278,8 @@ export function createStore() {
      * is a contender of their own. So Maine's 2024 Senate race is King
      * against Kouzounas, not Kouzounas against Costello, and Nebraska's
      * 2026 Senate race -- no Democrat on the ballot -- is Ricketts against
-     * Osborn. In a race where the top two are a Democrat and a Republican,
+     * Osborn. In Alaska (EACH_ALONE) every named candidate is a contender of
+     * their own, party or not. In a race where the top two are a Democrat and a Republican,
      * which is nearly every race, this is exactly the old two-party margin.
      * A baseline file's party-keyed "other" is a remainder of many
      * candidates, never a contender, and neither is a write-in line.
@@ -286,6 +292,7 @@ export function createStore() {
     topTwo(votes, race) {
       if (!votes) return null;
       const byId = new Map(((race && race.candidates) || []).map((c) => [c.id, c]));
+      const alone = !!race && EACH_ALONE.has(race.state);
       const sums = new Map();
       const add = (key, party, name, v) => {
         const e = sums.get(key) || { key, party, name, votes: 0 };
@@ -296,7 +303,8 @@ export function createStore() {
         const v = Number(raw) || 0;
         const c = byId.get(cid);
         const p = cid === "dem" || cid === "rep" || cid === "other" ? cid : (c ? c.party : "other");
-        if (p === "dem" || p === "rep") add(p, p, null, v);
+        if ((p === "dem" || p === "rep") && alone && c && !NOT_A_CONTENDER.test(cid)) add(cid, p, c.name, v);
+        else if (p === "dem" || p === "rep") add(p, p, null, v);
         else if (c && !NOT_A_CONTENDER.test(cid)) add(cid, p || "other", c.name, v);
         // A baseline file has party keys only, everyone else summed as
         // "other". Where no Democrat ran (NV-02 in 2024: Amodei against Greg
