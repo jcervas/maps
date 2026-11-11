@@ -44,6 +44,7 @@ function personParts(name) {
 }
 
 export function createStore() {
+  const totalsMemo = new WeakMap();   // votes object -> Map(race -> { dem, rep, other })
   const results = new Map();     // race_id -> { data, units: Map(unit_id -> unit) }
   const feed = new Map();        // race_id -> results file as harvested
   let overrides = {};            // race_id -> active override entry
@@ -56,6 +57,8 @@ export function createStore() {
   let byId = new Map();
   // "house GA" -> seat holders' names as parts (data/reference/incumbents_2026.json).
   let holders = new Map();
+  // race_id -> AP's incumbents on that ballot, as parts (an empty list: none).
+  let apFlags = new Map();
   const incMemo = new Map();
 
   function indexUnits(data) {
@@ -81,17 +84,30 @@ export function createStore() {
     else results.delete(id);
   }
 
-  /** Whether a candidate is the seat's holder: same office and state, same
-   *  surname, and a given name or first initial in common. */
+  /** Same person: same surname, and a given name in common, or a bare
+   *  initial ("S. Guthrie") agreeing with the other's first name. Two full
+   *  first names that merely share a letter do not match: Trever Nehls is
+   *  not his twin Troy, and Daniel Sullivan Jr. is not Dan S. Sullivan. */
+  function samePerson(c, h) {
+    if (!c || !h || h.last !== c.last) return false;
+    if (!c.given.length || !h.given.length) return true;
+    if (c.given.some((g) => g.length > 1 && h.given.includes(g))) return true;
+    return (c.given[0].length === 1 || h.given[0].length === 1) && c.given[0][0] === h.given[0][0];
+  }
+
+  /** Whether a candidate is the seat's holder. AP's own flag where AP
+   *  reports the race (incumbents_2026.json `candidates`, from
+   *  scripts/ap_incumbents.py); elsewhere -- the legislatures -- a name match
+   *  against the seat holders of the same office and state. */
   function isIncumbent(race, name) {
-    if (!race || !holders.size || !name) return false;
+    if (!race || !name) return false;
     const key = `${race.race_id}|${name}`;
     let v = incMemo.get(key);
     if (v == null) {
       const c = personParts(name);
-      const list = holders.get(`${race.office} ${race.state}`) || [];
-      v = !!c && list.some((h) => h.last === c.last && (!c.given.length || !h.given.length ||
-        c.given.some((g) => g.length > 1 && h.given.includes(g)) || c.given[0][0] === h.given[0][0]));
+      const flagged = apFlags.get(race.race_id);
+      const list = flagged || holders.get(`${race.office} ${race.state}`) || [];
+      v = !!c && list.some((h) => samePerson(c, h));
       incMemo.set(key, v);
     }
     return v;
@@ -101,6 +117,8 @@ export function createStore() {
     /** Seat holders before the election, { races: { "house GA": [names] } }. */
     setIncumbents(json) {
       holders = new Map(Object.entries((json && json.races) || {})
+        .map(([k, names]) => [k, names.map(personParts).filter(Boolean)]));
+      apFlags = new Map(Object.entries((json && json.candidates) || {})
         .map(([k, names]) => [k, names.map(personParts).filter(Boolean)]));
       incMemo.clear();
     },
@@ -212,8 +230,18 @@ export function createStore() {
 
     /** Candidate-keyed votes folded to party totals via the registry. */
     partyTotals(votes, race) {
+      if (!votes) return { dem: 0, rep: 0, other: 0 };
+      // The map asks for every shape on every frame; a results file's vote
+      // objects are replaced, not edited, when new numbers arrive, so the
+      // sums are kept per votes object and race (about 80 MB of garbage per
+      // drill out of a state, November 10). Read-only to callers.
+      let byRace = totalsMemo.get(votes);
+      if (!byRace) totalsMemo.set(votes, byRace = new Map());
+      const hit = byRace.get(race || null);
+      if (hit) return hit;
       const out = { dem: 0, rep: 0, other: 0 };
-      if (!votes) return out;
+      if (byRace.size > 8) byRace.clear();       // a caller making new race objects each time
+      byRace.set(race || null, out);
       const party = new Map();
       for (const c of (race && race.candidates) || []) party.set(c.id, c.party);
       for (const [cid, v] of Object.entries(votes)) {

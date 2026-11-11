@@ -3758,36 +3758,63 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!boxes.length) return proj;
     const [[bx0, by0], [bx1, by1]] = d3.geoPath(proj).bounds(proxy);
     if (!(bx1 > bx0 && by1 > by0)) return proj;
-    const pts = samplesOf(feats).map((ll) => proj(ll)).filter(Boolean);
     const [[ex0, ey0], [ex1, ey1]] = E;
-    const midX = (ex0 + ex1) / 2;
-    const raise = Math.max(0, ...boxes.map((b) => ey1 - b.y0));
-    const left = Math.max(0, ...boxes.filter((b) => b.x0 < midX).map((b) => b.x1 - ex0));
-    const right = Math.max(0, ...boxes.filter((b) => b.x1 > midX).map((b) => ex1 - b.x0));
-    const cbx = (bx0 + bx1) / 2, cby = (by0 + by1) / 2;
-    let best = null;
-    for (let i = 0; i <= 8; i++) {
-      for (let j = 0; j <= 4; j++) {
-        for (let m = 0; m <= 4; m++) {
-          const x0 = ex0 + left * j / 4, x1 = ex1 - right * m / 4, y1 = ey1 - raise * i / 8;
-          if (x1 - x0 < 50 || y1 - ey0 < 50) continue;
-          const sc = Math.min((x1 - x0) / (bx1 - bx0), (y1 - ey0) / (by1 - by0));
-          const cx = (x0 + x1) / 2, cy = (ey0 + y1) / 2;
-          let hits = 0;
-          for (const [px, py] of pts) {
-            const x = sc * (px - cbx) + cx, y = sc * (py - cby) + cy;
-            for (const b of boxes) if (x > b.x0 && x < b.x1 && y > b.y0 && y < b.y1) { hits += 1; break; }
+    // The same search for the same shapes, box and overlays gives the same
+    // answer: a drill out ran it three times over (the morph's target, the
+    // settle, the overlays settling).
+    const memoKey = `${proj.scale().toFixed(4)},${proj.translate().map((v) => v.toFixed(3)).join(",")}|${E.flat().join(",")}|${boxes.map((b) => [b.x0, b.y0, b.x1, b.y1].map(Math.round).join(",")).join("|")}`;
+    let memo = fitSearchMemo.get(feats);
+    if (!memo) fitSearchMemo.set(feats, memo = new Map());
+    let best = memo.get(memoKey);
+    if (best === undefined) {
+      // A flat array and indexed loops: destructuring each point allocated an
+      // iterator per vertex per try (most of a fit's garbage).
+      const raw = samplesOf(feats);
+      const P = new Float64Array(raw.length * 2);
+      let np = 0;
+      for (let q = 0; q < raw.length; q++) {
+        const xy = proj(raw[q]);
+        if (xy) { P[2 * np] = xy[0]; P[2 * np + 1] = xy[1]; np++; }
+      }
+      const B = boxes.map((b) => [b.x0, b.y0, b.x1, b.y1]);
+      const midX = (ex0 + ex1) / 2;
+      const raise = Math.max(0, ...boxes.map((b) => ey1 - b.y0));
+      const left = Math.max(0, ...boxes.filter((b) => b.x0 < midX).map((b) => b.x1 - ex0));
+      const right = Math.max(0, ...boxes.filter((b) => b.x1 > midX).map((b) => ex1 - b.x0));
+      const cbx = (bx0 + bx1) / 2, cby = (by0 + by1) / 2;
+      best = null;
+      for (let i = 0; i <= 8; i++) {
+        for (let j = 0; j <= 4; j++) {
+          for (let m = 0; m <= 4; m++) {
+            const x0 = ex0 + left * j / 4, x1 = ex1 - right * m / 4, y1 = ey1 - raise * i / 8;
+            if (x1 - x0 < 50 || y1 - ey0 < 50) continue;
+            const sc = Math.min((x1 - x0) / (bx1 - bx0), (y1 - ey0) / (by1 - by0));
+            // No better than the best already: not worth counting.
+            if (best && best.hits === 0 && sc <= best.sc + 1e-9) continue;
+            const cx = (x0 + x1) / 2, cy = (ey0 + y1) / 2;
+            let hits = 0;
+            const cap = best ? best.hits : Infinity;
+            for (let q = 0; q < np && hits <= cap; q++) {
+              const x = sc * (P[2 * q] - cbx) + cx, y = sc * (P[2 * q + 1] - cby) + cy;
+              for (let r = 0; r < B.length; r++) {
+                const b = B[r];
+                if (x > b[0] && x < b[2] && y > b[1] && y < b[3]) { hits += 1; break; }
+              }
+            }
+            if (!best || hits < best.hits || (hits === best.hits && sc > best.sc + 1e-9)) best = { hits, sc, cx, cy, cbx, cby };
           }
-          if (!best || hits < best.hits || (hits === best.hits && sc > best.sc + 1e-9)) best = { hits, sc, cx, cy };
         }
       }
+      memo.set(memoKey, best);
+      if (memo.size > 24) memo.delete(memo.keys().next().value);
     }
     if (!best || best.sc === 1 && best.cx === (ex0 + ex1) / 2 && best.cy === (ey0 + ey1) / 2) return proj;
     const k0 = proj.scale(), [tx, ty] = proj.translate();
     proj.scale(k0 * best.sc);
-    proj.translate([best.sc * (tx - cbx) + best.cx, best.sc * (ty - cby) + best.cy]);
+    proj.translate([best.sc * (tx - best.cbx) + best.cx, best.sc * (ty - best.cby) + best.cy]);
     return proj;
   }
+  const fitSearchMemo = new WeakMap();   // feature list -> overlay-clear search results
 
   /* After a frame: if the overlays or the pane changed since the last fit
    * (the bar appeared, the strip came or went, a resize the view fitted on
