@@ -1827,7 +1827,21 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     html += flipHint(c);
     html += candHead(c, pvi) + candidateTable(c.votes, c.race, null, callFor(c));
     if (awaiting(c)) html += compareDl(c);
-    return html + srcLine(c) + pviNote;
+    return html + unmappedNote(c.data) + srcLine(c) + pviNote;
+  }
+
+  /* Votes in a race file's units with no shape: AP's "Overseas Absentee"
+   * (Alaska, Rhode Island, Maine), a town AP names that the map has no
+   * id for. They are in the total above; the note says they are not drawn
+   * (Alaska, November 10). */
+  function unmappedNote(data) {
+    const left = ((data && data.units) || []).filter((u) => u.id == null)
+      .map((u) => ({ name: u.name || "unnamed", n: d3.sum(Object.values(u.votes || {})) }))
+      .filter((u) => u.n > 0).sort((a, b) => b.n - a.n);
+    if (!left.length) return "";
+    const names = left.slice(0, 2).map((u) => u.name).join(", ") + (left.length > 2 ? ` and ${left.length - 2} more` : "");
+    return `<p class="hint mw-unmapped" style="margin:4px 0 0;font-size:0.786rem">Not on the map: ${esc(names)}, ` +
+      `${d3.format(",")(d3.sum(left, (u) => u.n))} votes, counted in the total.</p>`;
   }
 
   /** A district's county piece: its own count, and the district's beside it. */
@@ -3332,7 +3346,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         const noUnits = c && c.data && Array.isArray(c.data.units) && !c.data.units.length;
         return `<h2>${esc(stateName(focus))}</h2>` +
           `<p class="hint" style="margin:-6px 0 10px">${esc(raceLabel(subject()))} — statewide</p>` +
-          (c ? stateBlock(c) : "") +
+          (c ? stateBlock(c) + unmappedNote(c.data) : "") +
           (noUnits
             ? `<p class="hint">Statewide total only: no ${tierWord(tierOf(focus))} results on file for this race. Click the map background to go back.</p>`
             : `<p class="hint">Point at a ${tierWord(tierOf(focus))}. ${zoomHint(tierOf(focus))}; tap outside the state to go back.</p>`);
@@ -4235,7 +4249,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       }
     }
     if (cartoOn()) keys.push(["Cartogram: every district the same size", "text"]);
-    if (piecesShown) keys.push(["Districts split by county: AP's count for each piece", "text"]);
+    // Alaska's pieces are its state house districts, AP's units there.
+    if (piecesShown) keys.push([focus === "AK" ? "Split by state house district: AP's count for each"
+      : "Districts split by county: AP's count for each piece", "text"]);
     if (circlesOn() && circleMax) keys.push([`Circle area: vote lead (largest ${d3.format(",")(circleMax)})`, "text"]);
     const classes = P
       ? { colors: [...P.rep].reverse().concat([P.tie], P.dem), labels: breaks.map(fmt) } : null;

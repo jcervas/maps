@@ -159,7 +159,7 @@ export function createControlStrip({ el, seats, titles = {} }) {
         <div class="cs-mid"><b>${esc(titles[chamber] || chamber)}</b> ${ctl}<span>${need}</span></div>
         ${side("rep")}</div>
       ${seatBar(t)}
-      <div class="cs-foot">${t.undecided} undecided · ${t.reportingAny} of ${t.seats_up} reporting${other ? ` · ${other} other` : ""}</div>`;
+      <div class="cs-foot">${t.reportingAny} of ${t.seats_up} reporting${other ? ` · ${other} other` : ""}</div>`;
   }
   seats.onChange(() => render());
   return {
