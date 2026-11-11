@@ -160,13 +160,14 @@ export function createControlStrip({ el, seats, titles = {} }) {
       : t.leads ? `<span class="cs-ctl ${t.leads.party} leads" title="A majority by current leader; no race has been called">${PARTY_SHORT[t.leads.party]} leads</span>` : "";
     const other = t.notUp.other + t.called.other + t.leading.other;
     const byNote = by ? `<span class="cs-by" title="No AP or state race calls for this chamber: each district counts for the candidate ahead now">By current leader — no race calls</span> · ` : "";
+    const pv = popularParts(seats.popularVote ? seats.popularVote(chamber) : null, chamber);
     el.innerHTML = `
+      ${pv.row}
       <div class="cs-top">${side("dem")}
         <div class="cs-mid"><b>${esc(titles[chamber] || chamber)}</b> ${ctl}<span>${need}</span></div>
         ${side("rep")}</div>
       ${seatBar(t)}
-      ${popularLine(seats.popularVote ? seats.popularVote(chamber) : null, chamber)}
-      <div class="cs-foot">${byNote}${t.reportingAny} of ${t.seats_up} reporting${other ? ` · ${other} other` : ""}</div>`;
+      <div class="cs-foot">${byNote}${t.reportingAny} of ${t.seats_up} reporting${other ? ` · ${other} other` : ""}${pv.foot}</div>`;
   };
   /* The popular-vote line at the widest of its three spellings that fits
    * on one line (full counts, then 65.6M, then without "Popular vote"). */
@@ -200,28 +201,33 @@ function abbrev(n) {
   return n.toLocaleString("en-US");
 }
 
-/* The strip's popular-vote line (data/seats.js popularVote): each party's
- * votes and two-party share in its color, "other" only when it is 2% or
- * more of the total, and how many seats lack one of the two parties. Three
- * spellings, the strip shows the widest that fits (fitPopular). */
-function popularLine(pv, chamber) {
-  if (!pv || pv.dem + pv.rep <= 0) return "";
+/* The strip's popular vote (data/seats.js popularVote), the user,
+ * November 11: "have the popular vote totals above the seat share, left and
+ * right aligned, and do not have the 'Popular vote' text or the 'D' or 'R'".
+ * A row over the seat numbers: the Democratic total at the left, the
+ * Republican at the right, each in its color with its two-party share. Three
+ * spellings, the widest that fits (fitPopular): 65,624,868 · 56.9%, then
+ * 65.6M · 56.9%, then 65.6M. "Other" votes (2% or more of the total) and
+ * the seats without both parties go to the footer. */
+function popularParts(pv, chamber) {
+  if (!pv || pv.dem + pv.rep <= 0) return { row: "", foot: "" };
   const two = pv.dem + pv.rep;
   const total = two + pv.other;
   const pct = (n) => `${(100 * n / two).toFixed(1)}%`;
   const full = (n) => n.toLocaleString("en-US");
   const showOther = pv.other / total >= 0.02;
-  const spell = (fmt, label) => `${label}<span class="dem">D ${fmt(pv.dem)} (${pct(pv.dem)})</span> · ` +
-    `<span class="rep">R ${fmt(pv.rep)} (${pct(pv.rep)})</span>` +
-    (showOther ? ` · Other ${fmt(pv.other)}` : "");
   const unit = chamber === "governor" || chamber === "senate" ? "race" : "seat";
-  const one = pv.oneSided
-    ? `<div class="cs-pvnote" title="Races with votes for only one of the two parties (unopposed by the other, or two candidates of one party) add to one side's total and none to the other's">${pv.oneSided} ${unit}${pv.oneSided > 1 ? "s" : ""} uncontested by one party</div>` : "";
-  const label = `Popular vote: D ${full(pv.dem)} (${pct(pv.dem)}), R ${full(pv.rep)} (${pct(pv.rep)})` +
-    (showOther ? `, other ${full(pv.other)}` : "") + `, ${pv.seats} ${unit}s with votes`;
-  return `<div class="cs-pv" data-fit="0" aria-label="${esc(label)}" title="Two-party share; every candidate of each party summed over the ${pv.seats} ${unit}s with votes this year">` +
-    `<span class="v0">${spell(full, "Popular vote: ")}</span><span class="v1">${spell(abbrev, "Popular vote: ")}</span>` +
-    `<span class="v2">${spell(abbrev, "")}</span></div>${one}`;
+  const side = (p) => `<span class="${p}"><span class="v0">${full(pv[p])}<i> · ${pct(pv[p])}</i></span>` +
+    `<span class="v1">${abbrev(pv[p])}<i> · ${pct(pv[p])}</i></span><span class="v2">${abbrev(pv[p])}</span></span>`;
+  const label = `Popular vote: Democrats ${full(pv.dem)} (${pct(pv.dem)} of the two-party vote), ` +
+    `Republicans ${full(pv.rep)} (${pct(pv.rep)})` + (showOther ? `, other ${full(pv.other)}` : "");
+  const row = `<div class="cs-pv" data-fit="0" role="img" aria-label="${esc(label)}" ` +
+    `title="Popular vote and two-party share: every candidate of each party summed over the ${pv.seats} ${unit}s with votes this year">` +
+    `${side("dem")}${side("rep")}</div>`;
+  const foot = (showOther ? ` · <span title="Votes for candidates of neither party">Other ${abbrev(pv.other)} votes</span>` : "") +
+    (pv.oneSided ? ` · <span title="Races with votes for only one of the two parties (unopposed by the other, or two candidates of one party) add to one side's popular vote and none to the other's">` +
+      `${pv.oneSided} ${unit}${pv.oneSided > 1 ? "s" : ""} uncontested by one party</span>` : "");
+  return { row, foot };
 }
 
 /** The state label in a House tile group, flagged when the state redrew. */
@@ -305,12 +311,12 @@ const CSS = `
 .mw-ctlstrip .cs-ctl.leads.dem, .mw-big .ctl.leads.dem { color: var(--dem); }
 .mw-ctlstrip .cs-ctl.leads.rep, .mw-big .ctl.leads.rep { color: var(--rep); }
 .mw-ctlstrip .cs-by { font-weight: 600; color: var(--ink); }
-.mw-ctlstrip .cs-pv { margin-top: 4px; font-size: 11px; color: var(--ink-soft); text-align: center;
-  white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
-.mw-ctlstrip .cs-pv .dem { color: var(--dem); font-weight: 600; } .mw-ctlstrip .cs-pv .rep { color: var(--rep); font-weight: 600; }
-.mw-ctlstrip .cs-pv > span { display: none; }
+.mw-ctlstrip .cs-pv { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 1px;
+  font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.mw-ctlstrip .cs-pv .dem { color: var(--dem); } .mw-ctlstrip .cs-pv .rep { color: var(--rep); }
+.mw-ctlstrip .cs-pv i { font-style: normal; font-weight: 400; font-size: 10px; color: var(--ink-soft); }
+.mw-ctlstrip .cs-pv .v0, .mw-ctlstrip .cs-pv .v1, .mw-ctlstrip .cs-pv .v2 { display: none; }
 .mw-ctlstrip .cs-pv[data-fit="0"] .v0, .mw-ctlstrip .cs-pv[data-fit="1"] .v1, .mw-ctlstrip .cs-pv[data-fit="2"] .v2 { display: inline; }
-.mw-ctlstrip .cs-pvnote { font-size: 10px; color: var(--ink-soft); text-align: center; }
 .mw-ctlstrip .cs-foot { margin-top: 3px; font-size: 10px; color: var(--ink-soft); text-align: center; }
 
 .mw-rows { display: grid; grid-template-columns: 1fr auto auto; gap: 1px 14px; margin: 10px 0 4px; font-size: 13px; }
