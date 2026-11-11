@@ -23,8 +23,8 @@ import { DISTRICT_PRES_2024 } from "../data/district_pres.js";
  * two-party presidential vote for Harris less the nation's, in points,
  * rounded; "EVEN" under half a point. The nation's is the official count
  * (FEC: Harris 75,017,613, Trump 77,302,580). The district's is the estimate
- * in data/district_pres.js, The New York Times's precinct results laid over
- * the 2026 lines. Not the Cook Political Report's PVI, which weights 2024
+ * in data/district_pres.js, from Dave's Redistricting App on the 2026
+ * lines. Not the Cook Political Report's PVI, which weights 2024
  * and 2020 together; the readout says so. */
 const NATION_D_2024 = 75017613 / (75017613 + 77302580);
 
@@ -1402,8 +1402,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
             : comparable()) {
       const was = store.baselineUnit(baselineKey, id);
       if (was) cell.baseTotals = store.partyTotals(was.votes, store.race(baselineKey));
-      // The House 2024 map by district against 2024 presidential: the
-      // district estimates on the 2024 lines.
+      // The House 2024 map by district against 2024 presidential: DRA's
+      // shares on the 2024 lines.
       else if (presCdOn() && store.baselineTier(subj) === "cd") {
         const pres = presCdVotes(String(id), "2024");
         if (pres) cell.baseTotals = pres;
@@ -1504,10 +1504,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return "none";
   }
 
-  /* The 2024 presidential vote by district and by district county piece,
-   * on the 2026 and the 2024 lines (baselines/pres-2024-cd.json, built by
-   * scripts/build_pres_cd_baseline.py from the Times's precinct results:
-   * estimates). With Compare to on 2024 presidential, a House map's swing
+  /* The 2024 presidential vote by district, on the 2026 and the 2024 lines
+   * (baselines/pres-2024-cd.json, built by scripts/build_pres_cd_baseline.py
+   * from Dave's Redistricting App). Shares, not counts: swing, not turnout
+   * (presCdHere). With Compare to on 2024 presidential, a House map's swing
    * is the House margin less the Harris-Trump margin in the same place --
    * on the same lines, so it holds in the states that redrew too (the
    * user, November 10: "why can't I do swing from 2024 president???").
@@ -1526,7 +1526,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return false;
   }
   const presCdOn = () => baselineKey === "pres-2024";
-  /** 2024 presidential { dem, rep, other } for a district or piece id on these lines. */
+  /** Swing here is against presCd: a House map by district, 2024 presidential on. */
+  const presCdHere = () => presCdOn() && !stateLevel() && (districtMode() || store.baselineTier(subject()) === "cd");
+  /** 2024 presidential { dem, rep, other } (parts per million) for a district id on these lines. */
   function presCdVotes(id, lines) {
     if (!presCdOn() || !presCdReady()) return null;
     const v = presCd[lines] && presCd[lines].get(id);
@@ -1588,11 +1590,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const unit = data && (data.units || []).find((u) => u.id === p.fips);
     if (!unit) return null;
     const race = store.race(rid);
-    // The piece's own 2024 presidential vote (not its whole county's), on
-    // the lines the pieces are cut from.
-    const baseTotals = presCdVotes(p.id, piecesLines(p.state)) || undefined;
     return { kind: "piece", id: p.id, cd: p.cd, st: p.state, rid, race, data, subj: rid, unit,
-             votes: unit.votes, totals: store.partyTotals(unit.votes, race), baseTotals,
+             votes: unit.votes, totals: store.partyTotals(unit.votes, race),
              reporting: store.reportingPct(unit, data), basis: store.reportingBasis(unit, data) };
   }
 
@@ -1874,7 +1873,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   function variableAvailable(key) {
-    if (key === "swing" || key === "turnout") return comparable();
+    // DRA's district numbers are shares: no turnout against them.
+    if (key === "turnout") return comparable() && !presCdHere();
+    if (key === "swing") return comparable();
     if (key === "rating" || key === "vsrating") return ratingsHere();
     // Reporting is a property of a count in progress. A baseline file is a
     // certified result, and calling every county "100% reported" would be a
@@ -1888,6 +1889,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (key === "reporting") return "Only a race file reports progress";
     if (key === "rating" || key === "vsrating") return "Ratings are for 2026 races";
     if (subject() === baselineKey) return "Pick a different baseline to compare against";
+    if (key === "turnout" && presCdHere() && comparable()) return "2024 by district has shares, not vote counts";
     return "No baseline at this tier";
   }
 
@@ -2645,9 +2647,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   const piecesLines = (st) => (newLines(st) ? "2026" : "2024");
   function piecesWanted() {
     return !!focus && districtMode() && mode().cycle === liveCycle() && !cartoOn() &&
-      (variable === "margin" || variable === "lead" || variable === "reporting" ||
-       // Each piece has its own 2024 presidential vote (presCd).
-       ((variable === "swing" || variable === "turnout") && presCdOn())) &&
+      (variable === "margin" || variable === "lead" || variable === "reporting") &&
       !(redrawn.has(focus) && !newLines(focus));
   }
   function loadPieces(st) {
@@ -3211,10 +3211,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const pres = presCdOn() && (c.kind === "district" || c.kind === "piece" || (c.kind === "unit" && store.baselineTier(c.subj) === "cd"));
     const label = pres ? "2024 president" : store.baselineLabel(baselineKey);
     const v = cellValue(c, "swing");
-    // A 2026 district's 2024 vote is DRA's; a county piece's, and a 2024-lines
-    // district's (the House 2024 map), an estimate from the Times's precincts.
-    const presVs = c.kind === "district" ? "vs 2024 president" : "vs 2024 president (est.)";
-    if (v != null) return { value: v === 0 ? "even" : marginLabel(v), vs: pres ? presVs : `vs ${label}` };
+    if (v != null) return { value: v === 0 ? "even" : marginLabel(v), vs: `vs ${label}` };
     const why = (c.redrawn || (c.kind === "piece" && redrawn.has(c.st))) ? "new lines" : c.kind === "piece" ? `no ${label} by county piece`
       : !c.baseTotals ? `no ${label} here` : !(c.totals && store.totalVotes(c.totals) > 0) ? "no votes yet" : "not comparable";
     return { value: "n/a", vs: `(${why})` };
@@ -3424,7 +3421,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         (n.reporting ? ` Leading: D ${n.leading.dem} · R ${n.leading.rep}${n.leading.ind ? ` · other ${n.leading.ind}` : ""}.` : "") +
         ` Point at a state; click to go in.</div>` +
         (drawn.length ? `<p class="hint">New lines for 2026 in ${drawn.join(", ")}, drawn from the Census 120th Congress districts.${
-          presCdOn() ? " Swing against 2024 presidential is on the new lines there (estimated)." : " Swing against 2024 is off there."}</p>` : "") +
+          presCdOn() ? " Swing against 2024 presidential is on the new lines there." : " Swing against 2024 is off there."}</p>` : "") +
         (hatched.length ? `<p class="hint" style="color:var(--warn)">Crosshatched: new lines for 2026 (${hatched.join(", ")}). Their districts are listed, not drawn` +
           `${shapesNow() === "lines2024" ? "; the lines over them are 2024's" : ""}.</p>` : "");
     }
@@ -3434,7 +3431,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!st) return "";
     return `<h2>${esc(stateName(st))}</h2><p class="hint" style="margin:-6px 0 10px">${esc(m.label)} — by district</p>` +
       (redrawn.has(st) ? (newLines(st)
-        ? `<p class="hint">${presCdOn() ? "New district lines for 2026, drawn from the Census 120th Congress districts. Swing and turnout here compare with the 2024 presidential vote on the new lines (estimated from precincts)." : NEW_LINES_NOTE}</p>`
+        ? `<p class="hint">${presCdOn() ? "New district lines for 2026, drawn from the Census 120th Congress districts. Swing here compares with the 2024 presidential vote on the new lines (Dave's Redistricting App)." : NEW_LINES_NOTE}</p>`
         : `<p class="hint" style="color:var(--warn);font-weight:600">${shapesNow() === "lines2024" ? OLD_LINES_NOTE : REDRAWN_NOTE}</p>`) : "") +
       districtTable(st) +
       (focus ? `<p class="hint">${redrawn.has(st) && !newLines(st) ? "" : "Point at a district. Tap it to zoom in. "}Tap outside the state to go back.</p>` : "");
@@ -4140,7 +4137,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const T = theme();
     const v = VARIABLES.find((x) => x.key === variable) || VARIABLES[0];
     const note = variableNote(variable);
-    const presHouse = presCdOn() && (districtMode() || store.baselineTier(subject()) === "cd");
+    const presHouse = presCdHere();
     const title = note ? `${v.label}: ${note.toLowerCase()}` : v.label +
       (variable === "swing" || variable === "turnout" ? ` vs ${presHouse ? "2024 president" : store.baselineLabel(baselineKey)}` : "");
     if (variable === "rating" || variable === "vsrating") return ratingLegend(note);
@@ -4172,11 +4169,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         (raceId ? raceId.slice(0, 4) : mode().cycle) === live) {
       keys.push([`No votes yet: ${store.baselineLabel(baselineKey)} margin shown`, "text"]);
     }
-    if (presHouse && (variable === "swing" || variable === "turnout")) {
+    if (presHouse && variable === "swing") {
       // Two short lines, so a phone's legend does not run off its edge.
-      keys.push([variable === "swing" ? "House margin − Harris–Trump margin" : "Votes vs 2024 presidential, same place", "text"],
+      keys.push(["House margin − Harris–Trump margin", "text"],
                 ["2024 by district: Dave's Redistricting App", "text"]);
-      if (piecesShown || !districtMode()) keys.push([`2024 by ${piecesShown ? "county piece" : "2024 district"}: est. from NYT precincts`, "text"]);
     }
     const lr = focus && raceOf(raceId);
     if (lr && LEGISLATURE.has(lr.office)) {
