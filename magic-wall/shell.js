@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-10z";
+const BUILD = "2026-11-11a";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -594,9 +594,17 @@ async function main() {
         if (seat) await waitUntil((st) => st.district === seat || elsewhere(st), 1500);
       }
       if (run !== hashRun) return;
-      // No such race here (#wy/state-house): the state's House instead.
+      // No such race here (#wy/state-house): the state's House instead. By
+      // the registry, not raceId, which is empty until the first results
+      // are in (a fresh #pa/president-2024 fell back to the House).
       const now = app.status();
-      if (mode !== HOME_MODE && !now.districts && !now.raceId) {
+      const cycle = mode.slice(-4);
+      const held = store.racesIn(want.st).some((r) => r.office === office &&
+        String(r.race_id).startsWith(`${cycle}-`));
+      // The House and the presidency by district are drawn from baselines
+      // every state has (statewide false); only the rest can be missing.
+      const statewide = ((now.raceModes || []).find((m) => m.key === mode) || {}).statewide;
+      if (statewide && !now.raceId && !held) {
         app.setRaceMode(HOME_MODE);
         return;
       }

@@ -4068,6 +4068,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         focus = st;
         hovered = null;
         pinned = null; pinnedAt = null; zoomedCd = null;
+        zoomedAway = false;
         pressed = null;
         // Nothing else changes the variable: a reader who was looking at
         // swing stays on swing.
@@ -4113,6 +4114,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         raceId = null;
         hovered = null;
         pinned = null; pinnedAt = null; zoomedCd = null;
+        zoomedAway = false;
         pressed = null;
         refit();
         autoBaseline();
@@ -5575,6 +5577,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // A legislative district zoomed to is a link's district too
       // (wall-shell's #pa/state-house/105): its own id, "PA-105", "PA-S05".
       zoomedCd = pinnedCd() || (DISTRICT_TIERS.has(pinned.properties.tier) ? String(pinned.properties.id) : null);
+      // A zoom in starts at the full frame: a flag left over from the last
+      // state's zoom (the drill out runs while zoom events are ignored) read
+      // that first frame as a return home and dropped the pin -- WV-012
+      // after PA-S04 zoomed in with no district (November 11).
+      zoomedAway = false;
       // The pieces (and the Circles row with them) come in now, not at the
       // end of the zoom. Settle the menus first and, at the state's own
       // frame, the fit they leave: otherwise fitWatch refits the projection
