@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-11k";
+const BUILD = "2026-11-11l";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -149,12 +149,16 @@ function fillBaselineSelect(status) {
   const opts = status.baselineOptions || [];
   const cur = sel.value;
   sel.innerHTML = "";
+  // Only elections counted on the same units as the map: 2024 PA House beside
+  // 2026 PA House, not every election in the system (the user, November 11:
+  // "We should only be able to compare where the units are the same"). The
+  // one exception is the comparison already on, kept so the menu never
+  // shows a choice it isn't making.
   for (const o of opts) {
+    if (!o.ok && o.key !== status.baselineKey) continue;
     const n = document.createElement("option");
     n.value = o.key;
-    // A tier mismatch is shown rather than hidden: "no county baseline for a
-    // town" is a fact about the data worth seeing.
-    n.textContent = o.ok ? o.label : `${o.label} (different tier)`;
+    n.textContent = o.ok ? o.label : `${o.label} (different units)`;
     sel.append(n);
   }
   sel.value = status.baselineKey || cur || (opts[0] && opts[0].key) || "";
