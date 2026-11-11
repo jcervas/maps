@@ -587,12 +587,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 .mw-shapes > span:nth-child(2), .mw-shapes > span:nth-child(4) { color: var(--ink-soft); }
 .mw-shapes[data-on="map"] > span:nth-child(2), .mw-shapes[data-on="cartogram"] > span:nth-child(4) { color: var(--ink); font-weight: 600; }
 .mw-switch { position: relative; flex: none; width: 40px; height: 22px; padding: 0; margin: 0; border-radius: 999px;
+  min-width: 0; min-height: 0;
   border: 1px solid var(--rule); background: color-mix(in srgb, var(--ink) 14%, var(--paper)); cursor: pointer;
   transition: background 0.15s; }
 .mw-switch[aria-checked="true"] { background: var(--ink); border-color: var(--ink); }
 .mw-switch .mw-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
-  background: var(--paper); box-shadow: 0 1px 2px rgba(0,0,0,0.35); transition: left 0.15s; }
-.mw-switch[aria-checked="true"] .mw-knob { left: 20px; }
+  background: var(--ink-soft); box-shadow: 0 1px 2px rgba(0,0,0,0.35); transition: left 0.15s; }
+.mw-switch[aria-checked="true"] .mw-knob { left: 20px; background: var(--paper); }
 .mw-switch:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 2px; }
 .map-pane.narrow .mw-shapes { padding: 5px 10px !important; gap: 10px !important; font-size: 14px !important; }
 .map-pane.narrow .mw-shapes > span:first-child { font-size: 11px; font-weight: 600; text-transform: uppercase;
