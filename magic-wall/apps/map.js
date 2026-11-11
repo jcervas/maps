@@ -726,6 +726,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * them so the arrows carry the swing. A county piece of a House district
    * has no 2024 House count of its own, so zoomed in it is the district's
    * arrow. Remembered per machine. */
+  /* Labels on the map -- state letters, district numbers, city names --
+   * on or off, the user's ask (November 11: "can there be a button to turn
+   * off labels?"). Remembered per machine; the Display menu sets it. */
+  let labelsOn = true;
+  try { labelsOn = localStorage.getItem("mw.labels") !== "off"; } catch (_) { /* private window */ }
   let swingArrows = false;
   try { swingArrows = localStorage.getItem("mw.swingArrows") === "on"; } catch (_) { /* private window */ }
   const arrowsBtn = radioMenu("Arrows", "An arrow on each place, leaning toward the party it swung to, as long as the swing", (v) => {
@@ -804,10 +809,12 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   const stripOver = () => stripInPane && !stripBox.hidden;
   // Seats: the map, or every seat of the chamber in three bins (see bins).
   const binsBtn = radioMenu("Seats",
-    "Fly every seat into Democrat, Toss-up and Republican bins, with counts and the majority marked", (v) => {
+    "Fly every seat into Democrat, Toss-up and Republican bins, with counts and the majority marked; " +
+    "or into a histogram by vote share", (v) => {
       const on = bins.on && !bins.out;
-      if (v === "bins" && !on) binsOpen();
-      else if (v === "map" && on) binsClose();
+      if (v === "map") { if (on) binsClose(); }
+      else if (!on) binsOpen(v);
+      else if (bins.mode !== v) binsSwitch(v);
     }, stripBox);
   binsBtn.style.cssText += "border:0;border-radius:0;background:none;padding:0;font-size:12px;justify-content:center;";
 
@@ -855,7 +862,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const spec = binsSpec();
     if (!spec && bins.on) binsReset();
     const on = bins.on && !bins.out;
-    syncRadioMenu(binsBtn, spec ? [["map", "Map"], ["bins", "Bins"]] : [], on ? "bins" : "map");
+    syncRadioMenu(binsBtn, spec ? [["map", "Map"], ["bins", "Bins"], ["hist", "Histogram"]] : [], on ? bins.mode : "map");
     // Shown or hidden here, outside syncButtons, so the stack is
     // redone here too.
     stackButtons();
@@ -2424,6 +2431,50 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return d3.interpolateRgb(T.paper, T.nodata)(0.45);
   }
 
+  /* Swing with no D-vs-R race at one end (the user, November 11: "why are
+   * so many showing up as 'No Data' when there clearly is data"): an
+   * uncontested Pennsylvania House seat has votes, just no two-party swing.
+   * Its own fill -- level lines on paper, neither the "no data" grey nor
+   * the awaiting stripes -- and its own key. */
+  let levels = null;
+  onThemeChange(() => { levels = null; });
+  function uncontFill() {
+    const T = theme();
+    if (!levels) {
+      const c = document.createElement("canvas");
+      c.width = c.height = 6;
+      const g = c.getContext("2d");
+      g.fillStyle = T.paper;
+      g.fillRect(0, 0, 6, 6);
+      g.strokeStyle = d3.interpolateRgb(T.paper, T.ink)(0.45);
+      g.lineWidth = 1.2;
+      g.beginPath();
+      g.moveTo(0, 3); g.lineTo(6, 3);
+      g.stroke();
+      levels = view.ctx.createPattern(c, "repeat");
+    }
+    const k = view.transform.k || 1;
+    if (levels.setTransform && window.DOMMatrix) levels.setTransform(new DOMMatrix().scale(1 / k));
+    return levels;
+  }
+  /** Why a counted cell has no D-vs-R swing: "uncontested", "D vs. D",
+   *  "no Republican", "no Democrat", "then" (the compare-to election had no
+   *  D-vs-R race there), or null when it has one or nothing is counted. */
+  function oneSided(c) {
+    if (!c || c.notUp) return null;
+    const counted = c.totals && store.totalVotes(c.totals) > 0;
+    if (!counted) return c.unopposed === "dem" || c.unopposed === "rep" ? "uncontested" : null;
+    if (!bothParties(c.totals)) {
+      const named = c.votes ? Object.entries(c.votes).filter(([k, v]) => Number(v) > 0 && !/^(blank|void|over|under|write)/i.test(k)) : [];
+      if (named.length <= 1) return "uncontested";
+      const t = topOf(c);
+      if (t && t.same) return `${PARTY_LETTER[t.same] || "?"} vs. ${PARTY_LETTER[t.same] || "?"}`;
+      return c.totals.rep > 0 ? "no Democrat" : c.totals.dem > 0 ? "no Republican" : "no D or R";
+    }
+    if (c.baseTotals && !bothParties(c.baseTotals)) return "then";
+    return null;
+  }
+
   function cellFill(c, atState) {
     const T = theme();
     if (c.noRace || c.notUp) return T.basefill;
@@ -2436,6 +2487,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // its circle carries the result.
     if (c.kind === "piece" && circlesOn() && cellValue(c, "lead") != null) return d3.interpolateRgb(T.paper, T.ink)(0.14);
     if (arrowsOn() && cellValue(c, "swing") != null) return d3.interpolateRgb(T.paper, T.ink)(0.1);
+    if (variable === "swing" && variableAvailable("swing") && c.baseTotals && oneSided(c)) return uncontFill();
     if (variable === "rating") return ratingFill(c);
     if (variable === "vsrating") {
       const v = versus(c);
@@ -3381,10 +3433,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const v = cellValue(c, "swing");
     if (v != null) return { value: v === 0 ? "even" : marginLabel(v), vs: `vs ${label}` };
     const why = c.notUp ? "not on the ballot this year"
-      : c.totals && store.totalVotes(c.totals) > 0 && !bothParties(c.totals) ? "no D-vs-R race this year"
+      : c.totals && store.totalVotes(c.totals) > 0 && !bothParties(c.totals) ? oneSided(c)
       : (c.redrawn || (c.kind === "piece" && redrawn.has(c.st))) ? "new lines" : c.kind === "piece" ? `no ${label} by county piece`
       : !c.baseTotals ? `no ${label} here` : !(c.totals && store.totalVotes(c.totals) > 0) ? "no votes yet"
-      : !bothParties(c.baseTotals) ? `no D-vs-R race in ${label}` : "not comparable";
+      : !bothParties(c.baseTotals) ? `uncontested in ${label}` : "not comparable";
     return { value: "n/a", vs: `(${why})` };
   }
 
@@ -4442,8 +4494,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     keys.push(["Awaiting votes", "hatch"]);
     // Before votes the shapes carry the compare-to election (compareCell).
     const live = FIXED_MODES.find((m) => m.districts).cycle;
+    // Only while some shape is in that state: a count that is all in has none.
     if (variable === "swing" && (store.baseline(baselineKey) || store.race(baselineKey)) &&
-        (raceId ? raceId.slice(0, 4) : mode().cycle) === live) {
+        (raceId ? raceId.slice(0, 4) : mode().cycle) === live &&
+        legendData().some((f) => beforeVotes(cellFor(f)))) {
       keys.push([`No votes yet: ${store.baselineLabel(baselineKey)} margin shown`, "text"]);
     }
     if (presHouse && variable === "swing") {
@@ -4493,6 +4547,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         keys.push([`${L} vs. ${L}: race leader`, P ? mid(P[party]) : T[party]],
                   [`${L} vs. ${L}: runner-up`, P ? mid(P[`alt-${party}`]) : altColor(party)]);
       }
+    }
+    if (variable === "swing" && !note) {
+      const kinds = new Set(legendData().map((f) => oneSided(cellFor(f))).filter(Boolean));
+      if (kinds.size) keys.push([[...kinds].every((x) => x === "uncontested") ? "Uncontested — no swing"
+        : "Uncontested or no D-vs-R race — no swing", "uncont"]);
     }
     keys.push(["No data", T.nodata]);
     // Called races solid, the rest muted (callOf): on tonight's maps of
@@ -4669,7 +4728,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         kx += sw + 4 * k + ctx.measureText(label).width + 10 * k;
         continue;
       }
-      const pat = fill === "hatch" ? hatchFill() : fill === "dots" ? dotFill()
+      const pat = fill === "hatch" ? hatchFill() : fill === "dots" ? dotFill() : fill === "uncont" ? uncontFill()
         : fill === "redrawn" ? redrawnFill() : fill === "partial" ? partialFill(T.inkSoft) : null;
       ctx.fillStyle = pat || fill;
       if (pat && pat.setTransform) pat.setTransform(new DOMMatrix());
@@ -4701,7 +4760,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * Battle tabs agree; under Rating and vs. Rating it is the rating. A past
    * chamber is counted from its results on the map. */
   const bins = { on: false, items: [], spec: null, t0: 0, dur: 0, out: false, move: false, raf: 0,
-                 hover: null, layout: null };
+                 hover: null, layout: null, mode: "bins" };
   const BIN_ORDER = ["dem", "mid", "rep"];
 
   function seatsSrc() {
@@ -4800,6 +4859,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return 1 + (100 - b);
   }
 
+  /* Where a seat goes in the histogram: { share } its Democratic share of
+   * the two-party vote in percent, or { end } "dem" or "rep" for a seat only
+   * one of the two parties ran in (unopposed, or a same-party pair: CA-12,
+   * two Democrats), or neither with no count yet. */
+  function shareOfTotals(t, party = null) {
+    if (t && t.dem > 0 && t.rep > 0) return { share: 100 * t.dem / (t.dem + t.rep), end: null };
+    if (t && t.dem > 0) return { share: null, end: "dem" };
+    if (t && t.rep > 0) return { share: null, end: "rep" };
+    return { share: null, end: party === "dem" || party === "rep" ? party : null };
+  }
+
   /** The chamber's seats as squares-to-be: { id, f, fill, bin, rank, muted, html, sort }. */
   /* The squares take each seat's own color. Under the Chiclets style a
    * shape's map fill is plain land (the chiclet carries the rating), and the
@@ -4826,13 +4896,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const live = spec.cycle === "2026";
     // Under a rating or before a count, the rating; once a count is on, the boards' count.
     const fromSeat = (s, c) => {
-      if (ratingVar()) return ratingBin(c);
+      const sh = shareOfTotals(S.seatTotals ? S.seatTotals(s) : null, s.status === "called" ? s.party : null);
+      if (ratingVar()) return { ...ratingBin(c), ...sh };
       if (s.status === "called" || s.status === "leading") {
         const p = s.party === "dem" || s.party === "rep" ? s.party : "mid";
-        return { bin: p, rank: seatRank(s, S),
+        return { bin: p, rank: seatRank(s, S), ...sh,
                  how: `${s.status === "called" ? "Called" : "Leading"}${p === "mid" ? ": other" : ""}` };
       }
-      return { bin: "mid", rank: 9, how: "No leader yet" };
+      return { bin: "mid", rank: 9, how: "No leader yet", ...sh };
     };
     if (spec.chamber === "house") {
       if (live) {
@@ -4846,7 +4917,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         for (const f of feats) {
           const c = cellFor(f, false);
           out.push({ id: f.properties.id, key: f.properties.id, st: f.properties.state,
-                     fill: fillOf(cellFill(c, false)), ...resultBin(c) });
+                     fill: fillOf(cellFill(c, false)), ...resultBin(c), ...shareOfTotals(c.totals, c.unopposed) });
         }
       }
     } else if (spec.chamber === "senate") {
@@ -4887,7 +4958,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
             const c = unitCell(f.properties.id);
             if (c.notUp) continue;
             out.push({ id: f.properties.id, key: f.properties.id, st,
-                       fill: fillOf(cellFill(c, false)), ...resultBin(c) });
+                       fill: fillOf(cellFill(c, false)), ...resultBin(c), ...shareOfTotals(c.totals, c.unopposed) });
           }
         });
       }
@@ -4959,6 +5030,99 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
   }
 
+  /* The histogram (the user, November 11: "next to Seats: Map, Bins, can we
+   * add a new one, which shows a histogram (using the bins squares) and
+   * having vote share be the x-axis?"): the same squares in columns by the
+   * seat's Democratic share of the two-party vote, Republicans' side at the
+   * left and Democrats' at the right as on the legend, 2.5 points a column
+   * (5 on a narrow pane), with a rule at 50%. A seat only one of the two
+   * parties ran in -- unopposed, or a same-party pair -- has no share: it
+   * goes in a stack of its own at that party's end. Seats not up this year
+   * shrink away; so does a seat with no count and no call. */
+  function histLayout(W, H, items) {
+    const k = theme().scale || 1;
+    const ins = binsInsets();
+    const x0 = 24, x1 = W - 24, y0 = ins.top + 104 * Math.min(k, 1.5), yb = H - 78 * k - ins.bottom;
+    const live = items.filter((it) => !it.muted);
+    const shares = live.filter((it) => it.share != null).map((it) => it.share);
+    const step = x1 - x0 >= 640 ? 2.5 : 5;
+    // Symmetric about 50%, so the even line is the middle of the axis.
+    const half = Math.min(50, Math.max(10, ...shares.map((v) => Math.abs(v - 50))));
+    const span = Math.ceil(half / step) * step;
+    const lo = 50 - span, hi = 50 + span, nb = Math.round((hi - lo) / step);
+    const colOf = (v) => Math.max(0, Math.min(nb - 1, Math.floor((v - lo) / step)));
+    const cols = new Array(nb).fill(0);
+    const ends = { dem: 0, rep: 0 };
+    for (const it of live) {
+      if (it.share != null) cols[colOf(it.share)] += 1;
+      else if (it.end) ends[it.end] += 1;
+    }
+    const endPer = 3;                       // squares a row in an end stack
+    const gapCols = 1.5;                    // between an end stack and the axis
+    const unit = (x1 - x0) / (nb + 2 * endPer + 2 * gapCols);
+    const tall = Math.max(1, ...cols, Math.ceil(ends.dem / endPer), Math.ceil(ends.rep / endPer));
+    const sz = Math.min(unit, (yb - y0) / tall, 28 * k);
+    const ax0 = x0 + (endPer + gapCols) * unit;
+    const xOf = (v) => ax0 + (v - lo) / step * unit;
+    return { kind: "hist", s: sz, unit, yb, y0, x0, x1, ax0, lo, hi, step, nb, colOf, xOf, endPer, cols, ends,
+             endX: { rep: x0, dem: x1 - endPer * unit }, W, H, ins,
+             n: { dem: 0, mid: 0, rep: 0 } };
+  }
+
+  function placeHist(items, L) {
+    const inCol = Array.from({ length: L.nb }, () => []);
+    const inEnd = { dem: [], rep: [] };
+    for (const it of items) {
+      if (!it.muted && it.share != null) inCol[L.colOf(it.share)].push(it);
+      else if (!it.muted && it.end) inEnd[it.end].push(it);
+      else {                                // shrinks away where it is
+        it.tx = (it.x ?? it.tx ?? L.W / 2) + (it.s || 0) / 2;
+        it.ty = (it.y ?? it.ty ?? L.yb) + (it.s || 0) / 2;
+        it.ts = 0;
+      }
+    }
+    const pad = (L.unit - L.s) / 2;
+    inCol.forEach((list, ci) => {
+      list.sort((a, z) => a.share - z.share || String(a.id).localeCompare(String(z.id)));
+      list.forEach((it, i) => {
+        it.tx = L.ax0 + ci * L.unit + pad;
+        it.ty = L.yb - (i + 1) * L.s;
+        it.ts = L.s;
+      });
+    });
+    for (const p of ["rep", "dem"]) {
+      inEnd[p].sort((a, z) => String(a.st).localeCompare(String(z.st)) || String(a.id).localeCompare(String(z.id)));
+      inEnd[p].forEach((it, i) => {
+        const c = i % L.endPer, r = Math.floor(i / L.endPer);
+        it.tx = L.endX[p] + c * L.unit + pad;
+        it.ty = L.yb - (r + 1) * L.s;
+        it.ts = L.s;
+      });
+    }
+    // Who is ahead on each side of 50%, the end stacks with their party.
+    // An end stack's seat counts for its party only where that party is
+    // the one ahead (an independent can lead a seat with no Republican).
+    L.side = { dem: 0, rep: 0, even: 0 };
+    for (const it of items) {
+      if (it.muted) continue;
+      if (it.share == null) {
+        const p = it.end && (it.how && /^(Called|Leading)/.test(it.how) ? it.bin : it.end);
+        if (p === "dem" || p === "rep") L.side[p] += 1;
+      } else if (it.share > 50) L.side.dem += 1; else if (it.share < 50) L.side.rep += 1; else L.side.even += 1;
+    }
+  }
+
+  /** Lay the squares out for the mode in view, in a pane W x H. */
+  function layoutBins(items, W = canvas.clientWidth, H = canvas.clientHeight) {
+    if (bins.mode === "hist") {
+      bins.layout = histLayout(W, H, items);
+      placeHist(items, bins.layout);
+    } else {
+      bins.layout = binsLayout(W, H, items, bins.maj);
+      placeBins(items, bins.layout);
+    }
+  }
+
   /** Where a seat starts and ends on the map: the square of its shape's own size. */
   function mapSquares(items) {
     const path = d3.geoPath(view.projection);
@@ -5010,20 +5174,53 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     bins.raf = requestAnimationFrame(tick);
   }
 
-  function binsOpen() {
+  function binsOpen(how = "bins") {
     const spec = binsSpec();
     if (!spec) return;
     hovered = null;
     pressed = null;
+    bins.mode = how === "hist" ? "hist" : "bins";
     bins.spec = spec;
     bins.items = binSeats(spec);
     bins.maj = binsMajority(spec, bins.items);
-    bins.layout = binsLayout(canvas.clientWidth, canvas.clientHeight, bins.items, bins.maj);
-    placeBins(bins.items, bins.layout);
+    for (const it of bins.items) { it.x = it.y = it.s = undefined; }
+    layoutBins(bins.items);
     mapSquares(bins.items);
     bins.on = true;
     view.setLayers(layers());
     flyBins(false);
+    syncBinsButton();
+    showReadout(null);
+  }
+
+  /** Bins to histogram or back: each square from where it is to its new
+   *  place, west to east, over the stacks (the map stays covered). */
+  function binsSwitch(how) {
+    if (!bins.on || bins.out) return;
+    bins.mode = how === "hist" ? "hist" : "bins";
+    bins.hover = null;
+    for (const it of bins.items) {
+      const q = binProgress(it);
+      it.fx = it.x ?? lerp(it.fx, it.tx, q);
+      it.fy = it.y ?? lerp(it.fy, it.ty, q);
+      it.fs = it.s ?? lerp(it.fs, it.ts, q);
+    }
+    layoutBins(bins.items);
+    const order = [...bins.items].sort((a, z) => (a.tx - z.tx) || (z.ty - a.ty));
+    order.forEach((it, i) => { it.delay = order.length > 1 ? 0.35 * i / (order.length - 1) : 0; });
+    cancelAnimationFrame(bins.raf);
+    bins.out = false;
+    bins.move = true;
+    bins.dur = 1500;
+    bins.t0 = performance.now();
+    const tick = () => {
+      view.render();
+      if (performance.now() - bins.t0 < bins.dur) { bins.raf = requestAnimationFrame(tick); return; }
+      bins.raf = 0;
+      view.render();
+      showReadout(null);
+    };
+    bins.raf = requestAnimationFrame(tick);
     syncBinsButton();
     showReadout(null);
   }
@@ -5056,8 +5253,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     bins.spec = spec;
     const items = binSeats(spec);
     bins.maj = binsMajority(spec, items);
-    bins.layout = binsLayout(canvas.clientWidth, canvas.clientHeight, items, bins.maj);
-    placeBins(items, bins.layout);
+    // A square shrinking away in the histogram stays where it was.
+    for (const it of items) { const o = was.get(it.id); if (o) { it.x = o.x; it.y = o.y; it.s = o.s; } }
+    layoutBins(items);
     mapSquares(items);
     if (same) {
       let moved = false;
@@ -5106,6 +5304,80 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return bins.out ? 1 - Math.max(0, Math.min(1, (p - 0.6) / 0.35)) : Math.min(1, p / 0.35);
   }
 
+  /** The histogram's axis: ticks by the leading party's share, the 50%
+   *  rule, the end stacks' names, and who leads on each side. */
+  function drawHistAxis(ctx, L, T, k) {
+    const narrowPane = L.W < 600;
+    ctx.strokeStyle = T.inkSoft;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(L.ax0, L.yb + 0.5);
+    ctx.lineTo(L.xOf(L.hi), L.yb + 0.5);
+    for (const p of ["rep", "dem"]) {
+      ctx.moveTo(L.endX[p], L.yb + 0.5);
+      ctx.lineTo(L.endX[p] + L.endPer * L.unit, L.yb + 0.5);
+    }
+    ctx.stroke();
+    // Ticks every 10 points (5 on a short axis), labeled with the share of
+    // the side ahead there: "R 60%", "50%", "D 60%".
+    const every = L.hi - L.lo > 40 ? 10 : 5;
+    ctx.font = FONT(600, 11);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    // The end stacks' names first; a tick label that would touch one is left out.
+    const endName = { rep: narrowPane ? "No D" : "No Democrat", dem: narrowPane ? "No R" : "No Republican" };
+    const endBox = {};
+    for (const p of ["rep", "dem"]) {
+      const cx = L.endX[p] + L.endPer * L.unit / 2;
+      const lab = `${endName[p]} · ${L.ends[p]}`;
+      const w = ctx.measureText(lab).width;
+      endBox[p] = [cx - w / 2, cx + w / 2];
+      ctx.fillStyle = p === "dem" ? T.dem : T.rep;
+      ctx.fillText(lab, cx, L.yb + 7);
+    }
+    let lastRight = endBox.rep[1];
+    for (let v = Math.ceil(L.lo / every) * every; v <= L.hi + 1e-9; v += every) {
+      const x = L.xOf(v);
+      ctx.strokeStyle = T.inkSoft;
+      ctx.beginPath();
+      ctx.moveTo(x + 0.5, L.yb);
+      ctx.lineTo(x + 0.5, L.yb + 5);
+      ctx.stroke();
+      const lab = v === 50 ? "50%" : narrowPane ? `${Math.round(v > 50 ? v : 100 - v)}` : `${v > 50 ? "D" : "R"} ${Math.round(v > 50 ? v : 100 - v)}%`;
+      const w = ctx.measureText(lab).width;
+      if (x - w / 2 < lastRight + 4 || x + w / 2 > endBox.dem[0] - 4) continue;
+      ctx.fillStyle = v === 50 ? T.ink : v > 50 ? T.dem : T.rep;
+      ctx.fillText(lab, x, L.yb + 7);
+      lastRight = x + w / 2;
+    }
+    // Even: a dashed rule up through the columns.
+    const xm = L.xOf(50);
+    ctx.strokeStyle = T.ink;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(xm, L.yb);
+    ctx.lineTo(xm, L.y0 - 6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Who leads on each side of the rule, under the axis.
+    const y2 = L.yb + 26 * Math.min(k, 1.5);
+    ctx.font = FONT(800, 22);
+    ctx.textBaseline = "top";
+    ctx.textAlign = "right";
+    ctx.fillStyle = T.rep;
+    ctx.fillText(String(L.side.rep), xm - 10, y2);
+    ctx.textAlign = "left";
+    ctx.fillStyle = T.dem;
+    ctx.fillText(String(L.side.dem), xm + 10, y2);
+    ctx.font = FONT(600, 12);
+    ctx.fillStyle = T.ink;
+    ctx.textAlign = "right";
+    ctx.fillText(narrowPane ? "R ahead" : "Republicans ahead", xm - 10, y2 + 26 * Math.min(k, 1.5));
+    ctx.textAlign = "left";
+    ctx.fillText(narrowPane ? "D ahead" : "Democrats ahead", xm + 10, y2 + 26 * Math.min(k, 1.5));
+  }
+
   function drawBins(ctx, dpr, W, H) {
     const T = theme();
     const k = T.scale || 1;
@@ -5115,8 +5387,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const ins = binsInsets();
     if (bins.layout.W !== W || bins.layout.H !== H || bins.layout.ins.top !== ins.top ||
         bins.layout.ins.bottom !== ins.bottom) {
-      bins.layout = binsLayout(W, H, bins.items, bins.maj);
-      placeBins(bins.items, bins.layout);
+      layoutBins(bins.items, W, H);
     }
     const L = bins.layout;
     const cover = binsCover();
@@ -5152,44 +5423,47 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       ctx.lineWidth = 2;
       ctx.strokeRect(it.x, it.y, it.s, it.s);
     }
-    // The majority: a rule across a party's stack at the seat that makes it.
-    const maj = bins.maj;
-    ctx.font = FONT(600, 12);
-    ctx.textBaseline = "bottom";
-    if (maj) {
-      for (const p of ["dem", "rep"]) {
-        const need = maj[p];
-        if (!need) continue;
-        const col = L.cols[p];
-        const y = L.yb - Math.ceil(need / L.per) * L.s;
-        ctx.strokeStyle = T.ink;
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([5, 4]);
-        ctx.beginPath();
-        ctx.moveTo(col.left, y);
-        ctx.lineTo(col.left + col.w, y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = T.ink;
-        ctx.textAlign = p === "dem" ? "left" : "right";
-        const vp = maj.tiebreak && maj.tiebreak.party === p ? " with the VP" : "";
-        ctx.fillText(`${need} for majority${vp}`, p === "dem" ? col.left : col.left + col.w, y - 3);
+    if (L.kind === "hist") drawHistAxis(ctx, L, T, k);
+    else {
+      // The majority: a rule across a party's stack at the seat that makes it.
+      const maj = bins.maj;
+      ctx.font = FONT(600, 12);
+      ctx.textBaseline = "bottom";
+      if (maj) {
+        for (const p of ["dem", "rep"]) {
+          const need = maj[p];
+          if (!need) continue;
+          const col = L.cols[p];
+          const y = L.yb - Math.ceil(need / L.per) * L.s;
+          ctx.strokeStyle = T.ink;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.moveTo(col.left, y);
+          ctx.lineTo(col.left + col.w, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = T.ink;
+          ctx.textAlign = p === "dem" ? "left" : "right";
+          const vp = maj.tiebreak && maj.tiebreak.party === p ? " with the VP" : "";
+          ctx.fillText(`${need} for majority${vp}`, p === "dem" ? col.left : col.left + col.w, y - 3);
+        }
       }
-    }
-    // Counts under each stack, counting up as the squares land.
-    const names = { dem: "Democrats", rep: "Republicans", mid: midName() };
-    const color = { dem: T.dem, rep: T.rep, mid: ratingVar() ? tossupColor() : T.inkSoft };
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    for (const b of BIN_ORDER) {
-      const col = L.cols[b];
-      const cx = col.left + col.w / 2;
-      ctx.fillStyle = color[b];
-      ctx.font = FONT(800, 30);
-      ctx.fillText(String(bins.out || bins.move ? L.n[b] : landed[b]), cx, L.yb + 6 * k);
-      ctx.fillStyle = T.ink;
-      ctx.font = FONT(600, 13);
-      ctx.fillText(names[b], cx, L.yb + 40 * k);
+      // Counts under each stack, counting up as the squares land.
+      const names = { dem: "Democrats", rep: "Republicans", mid: midName() };
+      const color = { dem: T.dem, rep: T.rep, mid: ratingVar() ? tossupColor() : T.inkSoft };
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      for (const b of BIN_ORDER) {
+        const col = L.cols[b];
+        const cx = col.left + col.w / 2;
+        ctx.fillStyle = color[b];
+        ctx.font = FONT(800, 30);
+        ctx.fillText(String(bins.out || bins.move ? L.n[b] : landed[b]), cx, L.yb + 6 * k);
+        ctx.fillStyle = T.ink;
+        ctx.font = FONT(600, 13);
+        ctx.fillText(names[b], cx, L.yb + 40 * k);
+      }
     }
     ctx.textAlign = "left";
     ctx.font = FONT(700, 15);
@@ -5212,6 +5486,16 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   /** One line on what put each seat in its stack. */
   function binsBasis() {
     const S = bins.spec;
+    if (bins.mode === "hist") {
+      const L = bins.layout || {};
+      const off = bins.items.filter((it) => it.muted).length;
+      const none = bins.items.filter((it) => !it.muted && it.share == null && !it.end).length;
+      if (L.W && L.W < 600) {
+        return `${L.step || 5}-pt columns by D two-party share` + (off ? ` · ${off} not up` : "") + (none ? ` · ${none} no count` : "");
+      }
+      return `Each seat by the Democratic share of its two-party vote, ${L.step || 2.5} points a column` +
+        (off ? ` · ${off} not up this year, left out` : "") + (none ? ` · ${none} with no count yet` : "");
+    }
     const muted = bins.items.filter((it) => it.muted).length;
     const notUp = muted ? ` · ${muted} not up this year, muted at the bottom` : "";
     if (ratingVar()) return `By rating${notUp}`;
@@ -5225,6 +5509,15 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const it = bins.hover;
     if (it) return it.html || (it.f ? readoutHTML(it.f) : "");
     const L = bins.layout, n = L.n;
+    if (L.kind === "hist") {
+      const r = (name, v, p) => `<tr><td style="padding:2px 0">${name}</td><td style="text-align:right;font-weight:700${p ? `;color:${partyColor(p)}` : ""}">${v}</td></tr>`;
+      return `<h2>${esc(bins.spec.title)}</h2><p class="hint" style="margin:-6px 0 10px">${esc(binsBasis())}</p>` +
+        `<table class="cands" style="width:100%;border-collapse:collapse;margin:0 0 10px;font-variant-numeric:tabular-nums">` +
+        r("Democrats ahead in the vote", L.side.dem, "dem") + r("Republicans ahead in the vote", L.side.rep, "rep") +
+        (L.side.even ? r("Tied", L.side.even) : "") +
+        r("No Republican running (in the Democrats' count)", L.ends.dem) + r("No Democrat running (in the Republicans' count)", L.ends.rep) +
+        `</table><p class="hint">Point at a square for its seat. Pick Seats: Map to put them back on the map.</p>`;
+    }
     const muted = { dem: 0, mid: 0, rep: 0 };
     for (const x of bins.items) if (x.muted) muted[x.bin] += 1;
     const row = (b, name) => `<tr><td style="padding:2px 0">${name}</td><td style="text-align:right;font-weight:700">${n[b]}</td>` +
@@ -5374,7 +5667,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     circleMax = 0;
     if (focus && circlesOn() && binsCover() < 0.5) drawLeadCircles(ctx, dpr, W, H, transform);
     if (arrowsOn() && binsCover() < 0.5) drawSwingArrows(ctx, dpr, W, H, transform);
-    if (!focus) {
+    stateLabelBoxes = [];
+    if (!labelsOn) {
+      // No labels: nothing to draw, nothing for chiclets or city names to avoid.
+    } else if (!focus) {
       const items = [];
       // On the cartogram the cells are the data, so a state's label sits
       // beside it, in the gap (cartoLabelSpots), not on it -- the user's call.
@@ -5413,7 +5709,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       numberBoxes = layoutLabels(ctx, items, { x: 0, y: 0, w: W, h: H }, FONT(600, 11));
       drawLabels(ctx, numberBoxes, dpr, FONT(600, 11), T.ink, T.paper);
     }
-    if (focus && binsCover() < 0.5) drawCities(ctx, dpr, W, H, transform, numberBoxes);
+    if (focus && labelsOn && binsCover() < 0.5) drawCities(ctx, dpr, W, H, transform, numberBoxes);
     numberBoxes = [];
     if (chiclets()) drawChiclets(ctx, dpr, W, H, transform, focus ? [] : stateLabelBoxes);
     if (bins.on) drawBins(ctx, dpr, W, H);
@@ -5566,7 +5862,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // Smallest last, so a short arrow is not lost under a long neighbor's.
     items.sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
     for (const d of items) {
-      const len = Math.max(3 * k, arrowLen(d.v));
+      // A swing of a point or two still shows: no shorter than a head and a
+      // stem, and with the numbers on, long enough to clear the district's
+      // number at its tail.
+      const len = Math.max((labelsOn && focus ? 17 : 9) * k, arrowLen(d.v));
       if (d.x < -len || d.y < -len || d.x > W + len || d.y > H + len) continue;
       arrow(ctx, d.x, d.y, len, d.v > 0 ? "dem" : "rep", d.v > 0 ? T.dem : T.rep, k);
     }
@@ -6139,15 +6438,29 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (split) split.setTip(on);
     },
     tip() { return tipOn; },
-    setBins(on) { if (on) { if (!bins.on || bins.out) binsOpen(); } else binsClose(); },
+    /** true or "bins": the bins; "hist": the histogram; false: the map. */
+    setBins(on) {
+      if (!on) { binsClose(); return; }
+      const how = on === "hist" ? "hist" : "bins";
+      if (!bins.on || bins.out) binsOpen(how); else if (bins.mode !== how) binsSwitch(how);
+    },
     bins() { return bins.on && !bins.out; },
     /** The squares in the bins, for checks: { id, bin, rank, x, y, muted }. */
     binItems() {
-      return bins.on ? bins.items.map((it) => ({ id: it.id, bin: it.bin, rank: it.rank, x: it.tx, y: it.ty, muted: !!it.muted })) : [];
+      return bins.on ? bins.items.map((it) => ({ id: it.id, bin: it.bin, rank: it.rank, x: it.tx, y: it.ty, s: it.ts,
+        share: it.share ?? null, end: it.end || null, muted: !!it.muted, mode: bins.mode })) : [];
     },
     /** The boards' seat count (data/seats.js), for the bins. Optional: the
      *  shell's own is found at window.wall.seats without it. */
     useSeats(s) { seatsIn = s; changed(); },
+    /** Map labels (state letters, district numbers, city names), remembered. */
+    setLabels(on) {
+      labelsOn = !!on;
+      try { localStorage.setItem("mw.labels", labelsOn ? "on" : "off"); } catch (_) { /* private window */ }
+      view.render();
+      if (split) split.setLabels(on);
+    },
+    labels() { return labelsOn; },
     /** The canvas legend, on by default; a preset may want a clean map. */
     setLegend(on) { legendOn = !!on; view.render(); if (split) split.setLegend(on); },
 

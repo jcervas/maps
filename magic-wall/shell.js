@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-11k";
+const BUILD = "2026-11-11m";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -149,15 +149,22 @@ function fillBaselineSelect(status) {
   const opts = status.baselineOptions || [];
   const cur = sel.value;
   sel.innerHTML = "";
+  // Only elections counted on the same units as the map: 2024 PA House beside
+  // 2026 PA House, not every election in the system (the user, November 11:
+  // "We should only be able to compare where the units are the same"). The
+  // one exception is the comparison already on, kept so the menu never
+  // shows a choice it isn't making.
   for (const o of opts) {
+    if (!o.ok && o.key !== status.baselineKey) continue;
     const n = document.createElement("option");
     n.value = o.key;
-    // A tier mismatch is shown rather than hidden: "no county baseline for a
-    // town" is a fact about the data worth seeing.
-    n.textContent = o.ok ? o.label : `${o.label} (different tier)`;
+    n.textContent = o.ok ? o.label : `${o.label} (different units)`;
     sel.append(n);
   }
   sel.value = status.baselineKey || cur || (opts[0] && opts[0].key) || "";
+  // Compare to matters only to Swing (the user, November 11: "Compare to
+  // only needs to show when Swing is selected").
+  sel.closest(".field").hidden = status.variable !== "swing";
   // The comparison shows only as Swing or Turnout. Where neither can be
   // drawn right now (a race compared with itself) the menu stays usable --
   // picking another election is the way out -- and its tooltip says why.
@@ -220,11 +227,18 @@ function fillRaceSelect(store, status) {
  * each can be drawn here and why not -- swing needs a baseline at the same
  * tier, turnout a baseline at all. Buttons are rebuilt only when the list
  * itself changes, so a press is never lost to a re-render. */
+/* Only these three in the Color menu (the user, November 11: "let's limit
+ * the Color menu to Margin, Swing, and Rating"). The map still draws the
+ * others; one already on screen (from a preset or a saved view) stays in
+ * the menu so the menu never hides the choice it is showing. */
+const COLOR_MENU = new Set(["margin", "swing", "rating"]);
+
 function fillVariables(status) {
   const seg = el("vars");
-  const vars = status.variables ||
+  const vars = (status.variables ||
     [{ key: "margin", label: "Margin", available: true },
-     { key: "swing", label: "Swing", available: !!status.swingAvailable }];
+     { key: "swing", label: "Swing", available: !!status.swingAvailable }])
+    .filter((v) => COLOR_MENU.has(v.key) || v.key === status.variable);
   const sig = vars.map((v) => v.key).join(",");
   if (seg.dataset.sig !== sig) {
     seg.dataset.sig = sig;
@@ -948,6 +962,18 @@ async function main() {
       renderAll();
     });
   }
+  // Map labels on or off (the map remembers it: mw.labels).
+  const syncLabels = () => {
+    const on = !app.labels || app.labels();
+    for (const b of $$("#labelsSeg button")) b.setAttribute("aria-pressed", String((b.dataset.labels === "on") === on));
+  };
+  for (const b of $$("#labelsSeg button")) {
+    b.addEventListener("click", () => {
+      if (app.setLabels) app.setLabels(b.dataset.labels === "on");
+      syncLabels();
+    });
+  }
+  syncLabels();
   el("build").textContent = BUILD;
 
   // Display menu: open on its button, shut on a click anywhere else or Esc.

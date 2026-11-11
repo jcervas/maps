@@ -126,6 +126,13 @@ permalink: /magic-wall/
           <button data-theme-key="studio" aria-pressed="false">Studio</button>
         </div>
       </div>
+      <div class="field">
+        <span>Labels</span>
+        <div class="seg" id="labelsSeg" role="group" aria-label="Map labels">
+          <button data-labels="on" aria-pressed="true">On</button>
+          <button data-labels="off" aria-pressed="false">Off</button>
+        </div>
+      </div>
     </div>
   </div>
   <button id="updatesBtn" aria-pressed="false" aria-controls="updates" title="Latest updates: new numbers as they arrive (N)">Updates</button>
@@ -215,7 +222,7 @@ permalink: /magic-wall/
      with BUILD in shell.js. -->
 <script>
 (function () {
-  var BUILD = "2026-11-11k";
+  var BUILD = "2026-11-11m";
   var MODULES = [
     "apps/battle.js", "apps/boards.js", "apps/calls.js", "apps/map.js",
     "apps/seatbar.js", "apps/sources.js", "apps/table.js",
