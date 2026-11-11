@@ -3381,11 +3381,16 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // A district, or a county piece of one, has its PVI where the margin
     // was (the user, November 9); anything else keeps its margin.
     // (The swing is the readout's headline now, withSwing.)
-    const right = pvi ? `<span title="${esc(PVI_NOTE)}">PVI <span style="font-weight:700">${esc(pvi)}</span></span>`
-      : m != null ? `Margin <span style="font-weight:700">${mText}</span>` : "";
     const lv = total > 0 ? cellValue(c, "lead") : null;
     // Under a ranked-choice count the first-round lead is only that.
     const rcv = rcvPending(c);
+    // The margin in votes beside the points (the user, November 11: "it
+    // should have the raw vote margin"). The points already name the side
+    // ("D+0.5", "Colom +0.5" between two Democrats), so the votes are a count.
+    const mVotes = m == null || m === 0 || !lv ? ""
+      : ` · <span style="font-weight:700">${fmt(Math.abs(lv))}</span> ${rcv && rcv.rcv ? "first-choice " : ""}votes`;
+    const right = pvi ? `<span title="${esc(PVI_NOTE)}">PVI <span style="font-weight:700">${esc(pvi)}</span></span>`
+      : m != null ? `Margin <span style="font-weight:700">${mText}</span>${mVotes}` : "";
     const lead = lv == null ? "" : lv === 0 ? "tied" : `${sideLabel(lv, topOf(c))} +${fmt(Math.abs(lv))}${rcv && rcv.rcv ? " first-choice" : ""}`;
     // With the PVI there, the margin goes; the lead in votes says who is ahead.
     if (pvi && lead) left = left ? `${left} · ${lead} votes` : `${lead} votes`;
@@ -3394,8 +3399,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       ? `${d3.format(".0f")(c.reporting)}% in` : c.basis === "certified" ? "Certified" : "";
     const data = ` data-in="${esc(inShort)}" data-lead="${esc(lead)}" data-margin="${esc(mText)}"${pvi ? ` data-pvi="${esc(pvi)}"` : ""}` +
       (sw ? ` data-swing="${esc(sw.value)}" data-swingvs="${esc(sw.vs)}"` : "");
-    return `<div class="mw-chead"${data} style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;` +
-      `margin:0 0 2px;font-size:0.857rem;color:var(--ink-soft);font-variant-numeric:tabular-nums"><span>${left}</span><span>${right}</span></div>` +
+    return `<div class="mw-chead"${data} style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:0 8px;` +
+      `margin:0 0 2px;font-size:0.857rem;color:var(--ink-soft);font-variant-numeric:tabular-nums"><span>${left}</span>` +
+      `<span style="margin-left:auto;text-align:right">${right}</span></div>` +
       (rcv ? `<p class="hint mw-rcv" style="margin:2px 0 4px;font-size:0.857rem;color:var(--ink)">No candidate has a majority; ` +
         `${esc(rcv.rcv ? `${rcv.state} will tabulate ranked-choice rounds` : "the top two advance to a December runoff")} if that holds when counting ends.</p>` : "");
   }
