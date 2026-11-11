@@ -19,8 +19,11 @@ const NOT_A_CONTENDER = /^(write-?ins?(-.*)?|scatter.*|blank.*|void.*|none-of.*|
 // States whose candidates are never pooled by party: Alaska's top-four
 // primary sends two or three of one party to a ranked-choice general, so
 // Sullivan and Heikes are two contenders, not one Republican line (the
-// Senate race read R+1.1 with Peltola ahead; November 10).
-const EACH_ALONE = new Set(["AK"]);
+// Senate race read R+1.1 with Peltola ahead; November 10). Louisiana's
+// House races are open first rounds, four to ten candidates on one ballot
+// (data/reference/holdovers_2026.json first_round_runoff): LA-05 read
+// R+26 with Moore, a Democrat, first (November 11).
+const EACH_ALONE = new Set(["AK", "LA"]);
 
 /* A person's name as surname and given names, for matching a ballot's
  * spelling against a seat holder's: the first of a ticket ("JOSH SHAPIRO /
@@ -278,7 +281,7 @@ export function createStore() {
      * is a contender of their own. So Maine's 2024 Senate race is King
      * against Kouzounas, not Kouzounas against Costello, and Nebraska's
      * 2026 Senate race -- no Democrat on the ballot -- is Ricketts against
-     * Osborn. In Alaska (EACH_ALONE) every named candidate is a contender of
+     * Osborn. In Alaska and Louisiana (EACH_ALONE) every named candidate is a contender of
      * their own, party or not. In a race where the top two are a Democrat and a Republican,
      * which is nearly every race, this is exactly the old two-party margin.
      * A baseline file's party-keyed "other" is a remainder of many

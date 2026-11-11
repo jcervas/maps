@@ -3208,7 +3208,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const lv = total > 0 ? cellValue(c, "lead") : null;
     // Under a ranked-choice count the first-round lead is only that.
     const rcv = rcvPending(c);
-    const lead = lv == null ? "" : lv === 0 ? "tied" : `${sideLabel(lv, topOf(c))} +${fmt(Math.abs(lv))}${rcv ? " first-choice" : ""}`;
+    const lead = lv == null ? "" : lv === 0 ? "tied" : `${sideLabel(lv, topOf(c))} +${fmt(Math.abs(lv))}${rcv && rcv.rcv ? " first-choice" : ""}`;
     // With the PVI there, the margin goes; the lead in votes says who is ahead.
     if (pvi && lead) left = left ? `${left} · ${lead} votes` : `${lead} votes`;
     if (!left && !right) return "";
@@ -3219,25 +3219,30 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return `<div class="mw-chead"${data} style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;` +
       `margin:0 0 2px;font-size:0.857rem;color:var(--ink-soft);font-variant-numeric:tabular-nums"><span>${left}</span><span>${right}</span></div>` +
       (rcv ? `<p class="hint mw-rcv" style="margin:2px 0 4px;font-size:0.857rem;color:var(--ink)">No candidate has a majority; ` +
-        `${esc(rcv)} will tabulate ranked-choice rounds if that holds when counting ends.</p>` : "");
+        `${esc(rcv.rcv ? `${rcv.state} will tabulate ranked-choice rounds` : "the top two advance to a December runoff")} if that holds when counting ends.</p>` : "");
   }
 
   /* Alaska (every general election race here) and Maine (Congress) count
    * by ranked choice: under 50% of the first-choice vote, the leader is
-   * only the first round's (the user, November 10). Null, or the state's
-   * name while that holds and the race is uncalled. */
+   * only the first round's (the user, November 10). Louisiana's House races
+   * are open first rounds: under 50%, the top two go to a runoff in
+   * December (November 11; the day is not in any file here, so the note
+   * names the month only). Null, or { state, rcv } while that holds and the
+   * race is uncalled -- AP writes no call for a runoff advance. */
   const RCV = { AK: new Set(["house", "senate", "governor"]), ME: new Set(["house", "senate"]) };
+  const RUNOFF = { LA: new Set(["house"]) };
   function rcvPending(c) {
     if (!c || !(c.kind === "district" || c.kind === "state") || !c.votes || !liveRaceKey(c)) return null;
     const race = c.race || store.race(c.subj);
     const st = c.st || (race && race.state);
-    if (!race || !RCV[st] || !RCV[st].has(race.office) || callFor(c)) return null;
+    const rcv = !!(RCV[st] && RCV[st].has(race && race.office));
+    if (!race || !(rcv || (RUNOFF[st] && RUNOFF[st].has(race.office))) || callFor(c)) return null;
     const t = topOf(c);
     // A majority of the ballots cast for someone: Maine's blank ballots
     // (and any over- or undervote line) are not in it; write-ins are.
     const total = d3.sum(Object.entries(c.votes), ([k, v]) => (/^(blank|void|over|under)/i.test(k) ? 0 : Number(v) || 0));
     if (!t || !t.leader || !total || t.leader.votes / total > 0.5) return null;
-    return stateName(st);
+    return { state: stateName(st), rcv };
   }
 
   /** With Color on Swing: { value: "D+12.3" or "n/a", vs: "vs 2024 House"
@@ -5567,7 +5572,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     showReadout(pinned, f.properties.id);
     if (split) split.highlight(f.properties.id);
     if (again && pinned) {
-      zoomedCd = pinnedCd();
+      // A legislative district zoomed to is a link's district too
+      // (wall-shell's #pa/state-house/105): its own id, "PA-105", "PA-S05".
+      zoomedCd = pinnedCd() || (DISTRICT_TIERS.has(pinned.properties.tier) ? String(pinned.properties.id) : null);
       // The pieces (and the Circles row with them) come in now, not at the
       // end of the zoom. Settle the menus first and, at the state's own
       // frame, the fit they leave: otherwise fitWatch refits the projection
@@ -5991,13 +5998,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       // Not in its state yet (a link opened on a fresh load, where the drill
       // lands after the caller's wait): held, and pinned when focus gets
       // there. False now; onState reports the district once it is pinned.
+      // A House seat ("NC-05", "AK-AL") or a legislative one ("PA-105",
+      // "PA-S05"; the shapes pad to "PA-005", so matched by number).
       if (!focus || !want.startsWith(`${focus}-`)) {
-        pendingPin = /^[A-Z]{2}-(\d{2}|AL)$/.test(want) ? want : null;
+        pendingPin = /^[A-Z]{2}-(S?\d{1,3}|AL)$/.test(want) ? want : null;
         return false;
       }
       pendingPin = null;
+      const norm = (x) => String(x).toUpperCase().replace(/^([A-Z]{2})-(S?)0*(\d+)$/, "$1-$2$3");
+      const key = norm(want);
       const f = view.getLayers().flatMap((x) => x.features || [])
-        .find((x) => x.properties && x.properties.tier === "cd" && x.properties.id === want);
+        .find((x) => x.properties && DISTRICT_TIERS.has(x.properties.tier) && norm(x.properties.id) === key);
       if (!f || inert(f)) return false;
       clickOn(f);
       return true;

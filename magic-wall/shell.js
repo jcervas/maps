@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-10y";
+const BUILD = "2026-11-10z";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -430,27 +430,105 @@ async function main() {
   apps.map = { el: el("stage"), render: () => app.refresh() };
   startPollClock();
 
-  /* Links to a view, for sharing (the user, November 10): #nc opens North
-   * Carolina, #nc-05 (or #nc-5, #nc-al) that district as if it had been
-   * tapped. The address bar follows the wall (replaceState, so moving about
-   * adds no history), so it is always a link to what is on screen; a pasted
-   * or edited hash, or Back to one, moves the wall. Anything else after the
-   * # is dropped and the wall goes to the nation. The district half needs
-   * the map's pinDistrict and status().district. */
+  /* Links to a view, for sharing: the place, the election and the district.
+   *
+   *   #nc, #nc-05, #wy-al          House 2026 (the opening race), as first
+   *                                 shipped (the user, November 10)
+   *   #pa/state-house, #pa/state-house/105, #pa/state-senate/s5
+   *                                 another 2026 race, and one of its seats
+   *   #pa/house-2024/07, #pa/president-2024, #us/president-2024
+   *                                 an earlier election; "us" (or nothing:
+   *                                 #/senate-2024) is the national map
+   *
+   * The election rode along from November 11: a link copied on Pennsylvania's
+   * State House opened the House for whoever it was sent to. The races are
+   * the map's own modes (status().raceModes), named by office, with the year
+   * only when it is not this year's; "sos" for Secretary of State. The
+   * address bar follows the wall (replaceState, so moving about adds no
+   * history), so it is always a link to what is on screen; a pasted or
+   * edited hash, or Back to one, moves the wall: the race first, then the
+   * state, then the seat. A race the state does not have (#wy/state-house)
+   * lands on the state's House and the address says so. Anything unreadable
+   * goes to the nation. */
+  const HOME_MODE = "house-2026";
+  const OFFICE_SLUG = { "secretary-of-state": "sos" };
+  const SLUG_ALIAS = { pres: "president", "secretary-of-state": "sos", "sec-of-state": "sos",
+                       gov: "governor", "us-senate": "senate", sen: "senate", "us-house": "house" };
+  const liveYear = (st) => String(Math.max(0, ...(st.raceModes || []).map((m) => Number(m.cycle) || 0)) || "");
+  function modeSlug(m, st) {
+    const office = OFFICE_SLUG[m.office] || m.office;
+    return String(m.cycle) === liveYear(st) ? office : `${office}-${m.cycle}`;
+  }
+  /** The mode a link's race names, or null if the wall has no such race. */
+  function modeFor(token, st) {
+    if (!token) return HOME_MODE;
+    let t = token.toLowerCase();
+    const yr = /-(\d{4})$/.exec(t);
+    let office = yr ? t.slice(0, -5) : t;
+    office = SLUG_ALIAS[office] || office;
+    const modes = st.raceModes || [];
+    const hit = modes.find((m) => m.key === t) ||
+      modes.find((m) => (OFFICE_SLUG[m.office] || m.office) === office &&
+                        String(m.cycle) === (yr ? yr[1] : liveYear(st)));
+    return hit ? hit.key : null;
+  }
+  const modeOffice = (key, st) => ((st.raceModes || []).find((m) => m.key === key) || {}).office ||
+    String(key).replace(/-\d{4}$/, "");
+  /** A seat's id as the map draws it, best guess before the state is
+   *  drawn: PA-105, PA-S05, NC-05, WY-AL. */
+  function seatGuess(stAbbr, office, tok) {
+    if (!tok) return null;
+    const t = tok.toUpperCase();
+    if (t === "AL") return `${stAbbr}-AL`;
+    const m = /^(S?)(\d{1,3})$/.exec(t);
+    if (!m) return null;
+    if (office === "state-senate" || m[1]) return `${stAbbr}-S${m[2].padStart(2, "0")}`;
+    if (office === "state-house") return `${stAbbr}-${m[2].padStart(3, "0")}`;
+    return `${stAbbr}-${m[2].padStart(2, "0")}`;
+  }
+  const seatKey = (s) => String(s).toUpperCase().replace(/^([A-Z]*)0*(\d)/, "$1$2");
+  /** The id of the seat drawn now that the link means: "PA-82" finds
+   *  PA-082, whatever padding a state's file uses. */
+  function seatDrawn(stAbbr, tok) {
+    const want = seatKey(tok);
+    const f = app.view.getLayers().flatMap((x) => x.features || []).find((x) => {
+      const p = x.properties || {};
+      return ["cd", "district", "senate-district"].includes(p.tier) &&
+        String(p.id).startsWith(`${stAbbr}-`) && seatKey(String(p.id).slice(3)) === want;
+    });
+    return f ? f.properties.id : null;
+  }
   function parseHash(h) {
     let raw = String(h || "").replace(/^#/, "");
     try { raw = decodeURIComponent(raw); } catch (_) { return null; }
-    const m = /^([a-z]{2})(?:-(\d{1,2}|al))?$/i.exec(raw.trim());
-    if (!m || !STATE_NAMES[m[1].toUpperCase()]) return null;
-    const st = m[1].toUpperCase();
-    const d = m[2] && (/^al$/i.test(m[2]) ? "AL" : m[2].padStart(2, "0"));
-    return { st, cd: d ? `${st}-${d}` : null };
+    raw = raw.trim().replace(/\/+$/, "");
+    if (!raw) return null;
+    const parts = raw.split("/");
+    if (parts.length > 3) return null;
+    const head = /^(?:([a-z]{2})(?:-(\d{1,2}|al))?)?$/i.exec(parts[0]);
+    if (!head) return null;
+    let st = head[1] ? head[1].toUpperCase() : null;
+    if (st === "US") st = null;
+    else if (st && !STATE_NAMES[st]) return null;
+    const race = parts[1] || null;
+    if (race && !/^[a-z-]+(?:-\d{4})?$/i.test(race)) return null;
+    // #nc-05 is a House 2026 seat; #pa/state-house/105 a seat of that race.
+    const seat = head[2] && !race ? head[2] : (parts[2] || null);
+    if ((head[2] && race) || (seat && (!st || !/^(s?\d{1,3}|al)$/i.test(seat)))) return null;
+    return { st, race, seat };
   }
   function hashFor(st) {
-    if (!st.focus) return "";
+    const m = (st.raceModes || []).find((x) => x.key === st.raceMode);
+    const home = !m || st.raceMode === HOME_MODE;
+    const slug = home ? "" : modeSlug(m, st);
+    if (!st.focus) return slug ? `#us/${slug}` : "";
     const pre = `${st.focus}-`;
-    const d = st.district && String(st.district).startsWith(pre) ? String(st.district).slice(pre.length) : null;
-    return `#${st.focus.toLowerCase()}${d ? `-${d.toLowerCase()}` : ""}`;
+    const id = st.district && String(st.district).startsWith(pre) ? String(st.district).slice(pre.length) : null;
+    const place = st.focus.toLowerCase();
+    if (home) return `#${place}${id ? `-${id.toLowerCase()}` : ""}`;
+    // A legislature's seat reads as its number: /105, /s5.
+    const tok = id && (/^\d{1,2}$|^AL$/i.test(id) && m.office === "house" ? id : seatKey(id)).toLowerCase();
+    return `#${place}/${slug}${tok ? `/${tok}` : ""}`;
   }
   function setHash(h) {
     if (h === location.hash || (!h && !location.hash)) return;
@@ -475,16 +553,28 @@ async function main() {
     const want = parseHash(location.hash);
     hashApplying = true;
     // Someone has taken the wall elsewhere meanwhile: their view wins.
-    const elsewhere = (st) => !!(want && st.focus && st.focus !== want.st);
+    const elsewhere = (st) => !!(want && want.st && st.focus && st.focus !== want.st);
     try {
       if (!want) {
         if (app.status().focus) { app.unfocus(); await waitUntil((st) => !st.focus); }
+        if (app.status().raceMode !== HOME_MODE) app.setRaceMode(HOME_MODE);
         return;
       }
       setView("map");
-      // A district is a House seat: its link opens on the House whatever the
-      // wall was showing. A state's keeps the election on screen.
-      if (want.cd && app.status().raceMode !== "house-2026") app.setRaceMode("house-2026");
+      // The race first, so the state lands drawn for it. The modes come with
+      // the registry; a race the wall has not offered yet gets a moment.
+      if (want.race && !modeFor(want.race, app.status())) {
+        await waitUntil((st) => !!modeFor(want.race, st), 4000);
+        if (run !== hashRun) return;
+      }
+      const mode = modeFor(want.race, app.status()) || HOME_MODE;
+      if (app.status().raceMode !== mode) app.setRaceMode(mode);
+      if (!want.st) {
+        if (app.status().focus) { app.unfocus(); await waitUntil((st) => !st.focus); }
+        return;
+      }
+      const office = modeOffice(mode, app.status());
+      let seat = seatGuess(want.st, office, want.seat);
       if (app.status().focus !== want.st) {
         // State to state goes by way of the nation, as a reader's taps do:
         // the map does not morph from one state straight to another.
@@ -494,26 +584,34 @@ async function main() {
           if (run !== hashRun) return;
         }
         app.focusState(want.st);
-        // Asked before the state is on screen, the map holds the district
-        // and pins it when it lands there (apps/map.js pinDistrict).
-        if (want.cd && app.pinDistrict) app.pinDistrict(want.cd);
+        // Asked before the state is on screen, the map holds the seat and
+        // pins it when it lands there (apps/map.js pinDistrict).
+        if (seat && app.pinDistrict) app.pinDistrict(seat);
         // On a fresh load the map lands only once the first results are in
         // (ten seconds and more on a slow line), so a long wait.
         await waitUntil((st) => st.focus === want.st || elsewhere(st), 30000);
         if (run !== hashRun || app.status().focus !== want.st) return;
-        if (want.cd) await waitUntil((st) => st.district === want.cd || elsewhere(st), 1500);
+        if (seat) await waitUntil((st) => st.district === seat || elsewhere(st), 1500);
       }
-      if (run !== hashRun || !app.pinDistrict) return;
-      // In the state already: pin the district asked for (false, and the
-      // state alone, for a seat that is not there), or go back to the whole
-      // state from one.
-      if ((app.status().district || null) !== want.cd) {
-        if (app.pinDistrict(want.cd) && want.cd) await waitUntil((st) => st.district === want.cd, 3000);
+      if (run !== hashRun) return;
+      // No such race here (#wy/state-house): the state's House instead.
+      const now = app.status();
+      if (mode !== HOME_MODE && !now.districts && !now.raceId) {
+        app.setRaceMode(HOME_MODE);
+        return;
+      }
+      if (!app.pinDistrict) return;
+      // In the state: the seat asked for, by the id it is drawn with (false,
+      // and the state alone, for a seat that is not there), or back to the
+      // whole state from one.
+      if (want.seat) seat = seatDrawn(want.st, want.seat) || seat;
+      if ((app.status().district || null) !== (seat || null)) {
+        if (app.pinDistrict(seat) && seat) await waitUntil((st) => st.district === seat, 3000);
       }
     } finally {
       if (run === hashRun) {
         hashApplying = false;
-        writeHash(app.status());      // a bad district, or a state with no map, says so
+        writeHash(app.status());      // a bad seat or race, or a state with no map, says so
       }
     }
   }
