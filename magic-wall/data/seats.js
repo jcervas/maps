@@ -624,6 +624,17 @@ export function createSeats({ store, base = ".", root = ".", interval = 30000,
         net: t.gained[p] - t.lost[p],
       };
     }
+    /* A chamber with no call source (no AP or state calls: the PA and WV
+     * legislatures) is counted by its current leaders, the user, November 11:
+     * "we don't have calls for PA Leg or WV Leg, so fill in [the bar] based on
+     * who is ahead". `ahead` is not up + called + simulated + leading, so the
+     * map's bar, Boards and Battle (with no picks) show the same number; a
+     * pick replaces its seat's leader. Unopposed calls (scripts/call_unopposed.py)
+     * are not a call source. `leads` is the majority on that count, never
+     * `controller`, which stays for calls. */
+    t.byLeader = !!LEG[chamber] && list.length > 0 &&
+      !list.some((s) => s.status === "called" && !(s.call && s.call.by === "Unopposed"));
+    for (const p of ["dem", "rep", "other"]) t[p].ahead = t[p].projected + t.leading[p];
     t.controller = null;
     if (r.control) {
       for (const p of ["dem", "rep"]) {
@@ -633,6 +644,12 @@ export function createSeats({ store, base = ".", root = ".", interval = 30000,
         for (const p of ["dem", "rep"]) {
           if (t[p].projected >= r.need[p]) t.controller = { party: p, how: "simulated" };
         }
+      }
+    }
+    t.leads = null;
+    if (t.byLeader && r.control && !t.controller) {
+      for (const p of ["dem", "rep"]) {
+        if (t[p].ahead >= r.need[p]) t.leads = { party: p, how: picks && (t.sim.dem + t.sim.rep) ? "simulated" : "leading" };
       }
     }
     return t;

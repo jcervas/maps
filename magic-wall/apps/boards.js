@@ -73,9 +73,16 @@ export function createBoardsApp({ el, seats, onSelect = null }) {
   function card(chamber) {
     const t = seats.tally(chamber);
     const list = seats.seats(chamber);
+    // No call source (PA and WV legislatures): by current leader, as the
+    // map's bar counts it (data/seats.js tally byLeader).
+    const by = t.byLeader;
     const ctl = t.controller
-      ? `<div class="ctl ${t.controller.party}">${PARTY_SHORT[t.controller.party]} control</div>` : "<div></div>";
-    const lead = (p) => t.leading[p] ? `+${t.leading[p]} leading` : "&nbsp;";
+      ? `<div class="ctl ${t.controller.party}">${PARTY_SHORT[t.controller.party]} control</div>`
+      : t.leads ? `<div class="ctl leads ${t.leads.party}" title="A majority by current leader; no race has been called">${PARTY_SHORT[t.leads.party]} leads</div>`
+      : "<div></div>";
+    const lead = (p) => by ? (t.notUp[p] ? `${t.notUp[p]} not up` : "&nbsp;")
+      : t.leading[p] ? `+${t.leading[p]} leading` : "&nbsp;";
+    const big = (p) => (by ? t[p].ahead : t[p].secured);
     const rows = (cat, label, f) => `
       <div>${catButton(chamber, cat, null, label)}</div>
       <div class="d">${catButton(chamber, cat, "dem", f("dem"))}</div>
@@ -85,9 +92,9 @@ export function createBoardsApp({ el, seats, onSelect = null }) {
     return `<section class="mw-card ${pick.chamber === chamber ? "active" : ""}" data-chamber="${chamber}">
       <header><h3>${TITLES[chamber]}</h3><div class="rule">${ruleText(t)}</div></header>
       <div class="mw-big">
-        <div class="dem"><div class="n">${t.dem.secured}</div><div class="sub">${lead("dem")}</div></div>
+        <div class="dem"><div class="n">${big("dem")}</div><div class="sub">${lead("dem")}</div></div>
         ${ctl}
-        <div class="rep"><div class="n">${t.rep.secured}</div><div class="sub">${lead("rep")}</div></div>
+        <div class="rep"><div class="n">${big("rep")}</div><div class="sub">${lead("rep")}</div></div>
       </div>
       ${seatBar(t)}
       <div class="mw-rows">
@@ -99,7 +106,7 @@ export function createBoardsApp({ el, seats, onSelect = null }) {
         ${rows("flips", "Net gain", (p) => signed(t[p].net))}
       </div>
       <div class="mw-und">
-        ${catButton(chamber, "undecided", null, `${t.undecided} undecided`)}
+        ${by ? `<b>By current leader — no race calls</b> · ` : ""}${catButton(chamber, "undecided", null, `${t.undecided} undecided`)}
         · ${catButton(chamber, "reporting", null, `${t.reportingAny} of ${t.seats_up} reporting votes`)}
         ${t.notUp.other + t.called.other + t.leading.other
           ? ` · ${t.notUp.other + t.called.other + t.leading.other} other/independent` : ""}

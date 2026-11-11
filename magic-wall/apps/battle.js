@@ -148,10 +148,18 @@ export function createBattleApp({ el, seats, onSelect = null }) {
 
   function counter(chamber) {
     const t = seats.tally(chamber, state.working.picks);
+    // No call source (PA and WV legislatures): unpicked seats count for
+    // their current leader, so with no picks this matches Boards and the
+    // map's bar (data/seats.js tally byLeader).
+    const by = t.byLeader;
     const ctl = t.controller
       ? `<div class="ctl ${t.controller.how === "simulated" ? "simulated" : t.controller.party}">${
           PARTY_SHORT[t.controller.party]} control${t.controller.how === "simulated" ? " · sim" : ""}</div>`
+      : t.leads
+      ? `<div class="ctl ${t.leads.how === "simulated" ? "simulated" : `leads ${t.leads.party}`}">${
+          PARTY_SHORT[t.leads.party]} leads${t.leads.how === "simulated" ? " · sim" : ""}</div>`
       : "<div></div>";
+    const big = (p) => (by ? t[p].ahead : t[p].projected);
     const rest = t.leading.dem + t.leading.rep + t.leading.other + t.undecided;
     const tb = t.tiebreak ? ` · VP tiebreak ${PARTY_SHORT[t.tiebreak.party]}`
       : (t.tiebreakNote ? ` · Lt. Gov. ${PARTY_SHORT[t.tiebreakNote.party]} breaks procedural ties only` : "");
@@ -159,12 +167,12 @@ export function createBattleApp({ el, seats, onSelect = null }) {
       <header><h3>${TITLES[chamber]}</h3>
         <div class="rule">${t.control ? `${t.need.dem === t.need.rep ? t.majority : `D ${t.need.dem} · R ${t.need.rep}`} for control${tb}` : `${t.seats} states`}</div></header>
       <div class="mw-big">
-        <div class="dem"><div class="n">${t.dem.projected}</div><div class="sub">${t.sim.dem} simulated</div></div>
+        <div class="dem"><div class="n">${big("dem")}</div><div class="sub">${t.sim.dem} simulated</div></div>
         ${ctl}
-        <div class="rep"><div class="n">${t.rep.projected}</div><div class="sub">${t.sim.rep} simulated</div></div>
+        <div class="rep"><div class="n">${big("rep")}</div><div class="sub">${t.sim.rep} simulated</div></div>
       </div>
       ${seatBar(t, { sim: true })}
-      <div class="mw-und">${rest} not set${t.leading.dem + t.leading.rep ? ` (${t.leading.dem} D / ${t.leading.rep} R leading live)` : ""}
+      <div class="mw-und">${by ? `<b>By current leader — no race calls</b> · ` : ""}${rest} not set${t.leading.dem + t.leading.rep ? ` (${t.leading.dem} D / ${t.leading.rep} R leading live${by ? ", counted" : ""})` : ""}
         · flips D ${t.simFlips.dem + t.gained.dem}, R ${t.simFlips.rep + t.gained.rep}
         ${t.superseded.length ? ` · <b>${t.superseded.length} pick${t.superseded.length > 1 ? "s" : ""} overridden by calls</b>` : ""}</div>
     </section>`;

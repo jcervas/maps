@@ -148,18 +148,24 @@ export function createControlStrip({ el, seats, titles = {} }) {
     const need = t.control
       ? (t.need.dem !== t.need.rep ? `D ${t.need.dem} · R ${t.need.rep} for control` : `${t.majority} for control`)
       : `${t.seats_up} up`;
+    // No call source (the PA and WV legislatures): each side's seats by
+    // current leader, labeled so (data/seats.js tally byLeader).
+    const by = t.byLeader;
     const side = (p) => {
-      const lead = t.leading[p] ? `<span class="cs-lead">+${t.leading[p]} leading</span>` : "";
-      return `<div class="cs-side ${p}"><b>${t[p].secured}</b>${lead}</div>`;
+      const lead = by ? (t.notUp[p] ? `<span class="cs-lead">${t.notUp[p]} not up</span>` : "")
+        : t.leading[p] ? `<span class="cs-lead">+${t.leading[p]} leading</span>` : "";
+      return `<div class="cs-side ${p}"><b>${by ? t[p].ahead : t[p].secured}</b>${lead}</div>`;
     };
-    const ctl = t.controller ? `<span class="cs-ctl ${t.controller.party}">${PARTY_SHORT[t.controller.party]} control</span>` : "";
+    const ctl = t.controller ? `<span class="cs-ctl ${t.controller.party}">${PARTY_SHORT[t.controller.party]} control</span>`
+      : t.leads ? `<span class="cs-ctl ${t.leads.party} leads" title="A majority by current leader; no race has been called">${PARTY_SHORT[t.leads.party]} leads</span>` : "";
     const other = t.notUp.other + t.called.other + t.leading.other;
+    const byNote = by ? `<span class="cs-by" title="No AP or state race calls for this chamber: each district counts for the candidate ahead now">By current leader — no race calls</span> · ` : "";
     el.innerHTML = `
       <div class="cs-top">${side("dem")}
         <div class="cs-mid"><b>${esc(titles[chamber] || chamber)}</b> ${ctl}<span>${need}</span></div>
         ${side("rep")}</div>
       ${seatBar(t)}
-      <div class="cs-foot">${t.reportingAny} of ${t.seats_up} reporting${other ? ` · ${other} other` : ""}</div>`;
+      <div class="cs-foot">${byNote}${t.reportingAny} of ${t.seats_up} reporting${other ? ` · ${other} other` : ""}</div>`;
   }
   seats.onChange(() => render());
   return {
@@ -246,6 +252,10 @@ const CSS = `
 .mw-ctlstrip .cs-ctl.dem { background: var(--dem); } .mw-ctlstrip .cs-ctl.rep { background: var(--rep); }
 .mw-ctlstrip .cs-mid span:last-child { display: block; }
 .mw-ctlstrip .sb-bar { height: 14px; }
+.mw-ctlstrip .cs-ctl.leads, .mw-big .ctl.leads { background: transparent; border: 1px solid currentColor; }
+.mw-ctlstrip .cs-ctl.leads.dem, .mw-big .ctl.leads.dem { color: var(--dem); }
+.mw-ctlstrip .cs-ctl.leads.rep, .mw-big .ctl.leads.rep { color: var(--rep); }
+.mw-ctlstrip .cs-by { font-weight: 600; color: var(--ink); }
 .mw-ctlstrip .cs-foot { margin-top: 3px; font-size: 10px; color: var(--ink-soft); text-align: center; }
 
 .mw-rows { display: grid; grid-template-columns: 1fr auto auto; gap: 1px 14px; margin: 10px 0 4px; font-size: 13px; }
