@@ -655,6 +655,47 @@ export function createSeats({ store, base = ".", root = ".", interval = 30000,
     return t;
   }
 
+  /* The chamber's popular vote: every candidate of each party summed over
+   * the seats on the ballot this year (a legislature seat is its district's
+   * unit; the Senate and governors are the 2026 races only, no holdovers),
+   * through store.partyTotals, the readouts' own sums. Blank, void, over-
+   * and under-vote lines are not votes for anyone and are left out. A seat
+   * with votes but none for one of the two parties is `oneSided` (uncontested
+   * by a party, or a same-party pair; or called with no count at all),
+   * which skews the totals; the user,
+   * November 11: "add the popular vote counts to class="mw-ctlstrip" for
+   * each chamber". */
+  const NOT_VOTES = /^(blank|void|over|under)/i;
+  /** A seat's votes by candidate, blank lines left out, or null with no
+   *  count yet. */
+  function seatVotes(s) {
+    const res = s.raceId ? store.results(s.raceId) : null;
+    const v = !res ? null : s.unitId ? (((res.units || []).find((u) => u.id === s.unitId)) || {}).votes
+      : res.statewide && res.statewide.votes;
+    if (!v || !Object.values(v).some((n) => Number(n) > 0)) return null;
+    return Object.keys(v).some((k) => NOT_VOTES.test(k))
+      ? Object.fromEntries(Object.entries(v).filter(([k]) => !NOT_VOTES.test(k))) : v;
+  }
+  /** The same by party ({ dem, rep, other }), or null. */
+  function seatTotals(s) {
+    const votes = seatVotes(s);
+    if (!votes) return null;
+    const t = store.partyTotals(votes, store.race(s.raceId));
+    return t.dem + t.rep + t.other > 0 ? t : null;
+  }
+  function popularVote(chamber) {
+    const out = { dem: 0, rep: 0, other: 0, seats: 0, oneSided: 0 };
+    for (const s of api.seats(chamber)) {
+      const t = seatTotals(s);
+      // Called with no votes at all: Florida prints no count for an
+      // unopposed race (FL-10, 2026), so it is uncontested too.
+      if (!t) { if (s.status === "called") out.oneSided += 1; continue; }
+      out.dem += t.dem; out.rep += t.rep; out.other += t.other; out.seats += 1;
+      if (!t.dem || !t.rep) out.oneSided += 1;
+    }
+    return out;
+  }
+
   const api = {
     calls,
     async load() {
@@ -703,6 +744,9 @@ export function createSeats({ store, base = ".", root = ".", interval = 30000,
     },
     baseline: seatBaseline,
     pres2024: (st) => pres2024(st, false),
+    popularVote,
+    seatTotals,
+    seatVotes,
     tally,
   };
   return api;

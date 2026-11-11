@@ -4479,7 +4479,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * a glance. The user's ask, for the U.S. House and Senate and
    * Pennsylvania's two chambers. Squares keep the color their place has on
    * the map; seats not on the ballot (65 senators, Pennsylvania's odd
-   * Senate districts) sit at the bottom of their party's stack, muted.
+   * Senate districts) sit at the bottom of their party's stack, muted, with
+   * the closest races at the top (seatRank, resultBin).
    *
    * A 2026 chamber is counted by data/seats.js, the boards' own count
    * (a call, else the leader, else nothing), so the bins and the Boards and
@@ -4560,6 +4561,31 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
              how: marginLabel(v, t) };
   }
 
+  /* A live seat's place in its stack by its two-party margin, the user,
+   * November 11: "order the 'bins' according to vote share, so the most
+   * lopsided are near the bottom and most competitive near the top".
+   * The margin is the leader's over the runner-up of another party, in
+   * points of the two's vote (store.topTwo, the readouts' margin), so
+   * Alaska's Begich against Bill Hill, an independent, reads as the close
+   * race it is and not R+73 over the Democrat.
+   * Bottom up: seats not up (rank -1), uncontested seats (0: called with
+   * no count, or nobody of another party with a vote, a same-party pair
+   * included), then 1 (100 points) to 101 (even). Margins go by whole
+   * points with a little give, so a seat moves only when its margin
+   * clearly crosses into another point, not on every poll. */
+  const binMargins = new Map();
+  function seatRank(s, S) {
+    const v = S.seatVotes ? S.seatVotes(s) : null;
+    const top = v ? store.topTwo(v, store.race(s.raceId)) : null;
+    const opp = top && top.second && top.second.votes > 0 && top.second.party !== top.leader.party;
+    if (!opp) { binMargins.delete(s.id); return v || s.status === "called" ? 0 : 1; }
+    const m = top.pts;
+    const was = binMargins.get(s.id);
+    const b = was != null && Math.abs(m - was) < 0.8 ? was : Math.round(m);
+    binMargins.set(s.id, b);
+    return 1 + (100 - b);
+  }
+
   /** The chamber's seats as squares-to-be: { id, f, fill, bin, rank, muted, html, sort }. */
   /* The squares take each seat's own color. Under the Chiclets style a
    * shape's map fill is plain land (the chiclet carries the rating), and the
@@ -4589,7 +4615,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (ratingVar()) return ratingBin(c);
       if (s.status === "called" || s.status === "leading") {
         const p = s.party === "dem" || s.party === "rep" ? s.party : "mid";
-        return { bin: p, rank: s.status === "called" ? 0 : 1,
+        return { bin: p, rank: seatRank(s, S),
                  how: `${s.status === "called" ? "Called" : "Leading"}${p === "mid" ? ": other" : ""}` };
       }
       return { bin: "mid", rank: 9, how: "No leader yet" };
@@ -5901,6 +5927,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     tip() { return tipOn; },
     setBins(on) { if (on) { if (!bins.on || bins.out) binsOpen(); } else binsClose(); },
     bins() { return bins.on && !bins.out; },
+    /** The squares in the bins, for checks: { id, bin, rank, x, y, muted }. */
+    binItems() {
+      return bins.on ? bins.items.map((it) => ({ id: it.id, bin: it.bin, rank: it.rank, x: it.tx, y: it.ty, muted: !!it.muted })) : [];
+    },
     /** The boards' seat count (data/seats.js), for the bins. Optional: the
      *  shell's own is found at window.wall.seats without it. */
     useSeats(s) { seatsIn = s; changed(); },

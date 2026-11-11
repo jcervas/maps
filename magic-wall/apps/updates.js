@@ -4,6 +4,13 @@
  * onUpdate). For each, this keeps a snapshot -- votes counted, share in,
  * who leads and by how much -- and logs the difference from the last one:
  * "+12,345 votes · 34% in · Casey (D) +2.1". A change of leader is marked.
+ * Under the total, the batch itself (the user, November 11: "otherwise it's
+ * hard to know what the update is"): "D +7,210 · R +4,980 · other +155 ·
+ * batch D+18.6", from a per-candidate diff of the two snapshots. Where the
+ * race is not a Democrat against a Republican -- California's top two from
+ * one party, Louisiana and Alaska where every candidate runs alone,
+ * Nebraska's independent -- the batch goes by candidate instead. A
+ * legislature's is the whole chamber's, by party.
  * A race's first sighting after the page loads is its baseline, not an
  * update, so a reload does not log 540 races; instead the panel opens on the
  * races that moved most recently by the manifest's own `updated` stamps.
@@ -22,6 +29,9 @@ const CYCLE = "2026";
 const MAX = 300;
 const OFFICE = { sen: "Senate", gov: "Governor", sos: "Secretary of State", statehouse: "State House", statesenate: "State Senate" };
 const LETTER = { dem: "D", rep: "R" };
+// Where every candidate runs on their own (store.js EACH_ALONE): the batch by candidate.
+const EACH_ALONE = new Set(["AK", "LA"]);
+const NOT_A_CANDIDATE = /write|^other$|scatter|blank|void|none of/i;
 const RID = /^(\d{4})-(sen|gov|sos|house|statehouse|statesenate)-([a-z]{2})(?:-(.+))?$/;
 
 const TAB_KEY = "mw.updates.tab";
@@ -72,11 +82,64 @@ export function createUpdates({ store, panel, button, onPick = null, calls = () 
     const top = !leg && total > 0 ? store.topTwo(votes, race) : null;
     let who = null;
     if (top) {
-      const row = store.candidateRows(votes, race).find((r) => r.party === top.leader.party);
+      const rows = store.candidateRows(votes, race);
+      const row = rows.find((r) => r.party === top.leader.party);
       who = { party: top.leader.party, name: top.leader.name || (row && row.name) || top.leader.key, pts: top.pts };
+      // Two from one party at the top (California's top two): topTwo counts
+      // a party as one contender, which read "Simon (D) +100.0" in CA-12.
+      const named = rows.filter((r) => !NOT_A_CANDIDATE.test(r.id) && !NOT_A_CANDIDATE.test(r.name));
+      const [x, y] = named;
+      if (x && y && x.party === y.party && x.votes + y.votes > 0) {
+        who = { party: x.party, name: x.name, pts: (100 * (x.votes - y.votes)) / (x.votes + y.votes) };
+      }
     }
     return { total, reporting: store.reportingPct(sw, data), who, districts, units: (data.units || []).length,
-             provider: (data.source && data.source.provider) || null };
+             provider: (data.source && data.source.provider) || null, votes: { ...votes }, leg };
+  }
+
+  /** What one update added, by party or, where parties do not tell the
+   *  candidates apart, by candidate. Null if no candidate's count moved. */
+  function batch(id, p, s) {
+    const race = store.race(id);
+    const d = {};
+    for (const k of new Set([...Object.keys(p.votes || {}), ...Object.keys(s.votes || {})])) {
+      const v = (Number(s.votes[k]) || 0) - (Number((p.votes || {})[k]) || 0);
+      if (v) d[k] = v;
+    }
+    if (!Object.keys(d).length) return null;
+    const named = store.candidateRows(s.votes, race)
+      .filter((r) => !NOT_A_CANDIDATE.test(r.id) && !NOT_A_CANDIDATE.test(r.name));
+    const top = s.leg ? null : store.topTwo(s.votes, race);
+    const dvr = top && top.second && new Set([top.leader.party, top.second.party]).size === 2 &&
+      [top.leader.party, top.second.party].every((x) => x === "dem" || x === "rep");
+    const byCandidate = !s.leg && named.length >= 2 && (
+      (race && EACH_ALONE.has(race.state)) ||
+      named[0].party === named[1].party ||
+      (top && top.second && !dvr));
+    if (byCandidate) {
+      // The leading three as the count now stands, then everyone else.
+      const shown = named.slice(0, 3);
+      const ids = new Set(shown.map((r) => r.id));
+      const rest = Object.entries(d).filter(([k]) => !ids.has(k)).reduce((a, [, v]) => a + v, 0);
+      const parts = shown.map((r) => ({ label: surname(r.name), party: r.party, v: d[r.id] || 0,
+                                        tag: LETTER[r.party] || null }));
+      if (rest) parts.push({ label: "others", party: "other", v: rest });
+      const [a, b] = shown;
+      const da = d[a.id] || 0, db = d[b.id] || 0;
+      const lead = da + db > 0 && da >= 0 && db >= 0
+        ? { label: surname(da >= db ? a.name : b.name), party: (da >= db ? a : b).party,
+            pts: (100 * Math.abs(da - db)) / (da + db) } : null;
+      return { parts, lead };
+    }
+    const t = store.partyTotals(d, race);
+    const parts = [];
+    if (t.dem) parts.push({ label: "D", party: "dem", v: t.dem });
+    if (t.rep) parts.push({ label: "R", party: "rep", v: t.rep });
+    if (t.other) parts.push({ label: "other", party: "other", v: t.other });
+    const lead = t.dem >= 0 && t.rep >= 0 && t.dem + t.rep > 0
+      ? { label: t.dem >= t.rep ? "D" : "R", party: t.dem >= t.rep ? "dem" : "rep",
+          pts: (100 * Math.abs(t.dem - t.rep)) / (t.dem + t.rep), letter: true } : null;
+    return { parts, lead };
   }
 
   function surname(name) {
@@ -102,7 +165,8 @@ export function createUpdates({ store, panel, button, onPick = null, calls = () 
       if (!p) continue;                                     // first sighting: the baseline
       if (s.total === p.total && s.reporting === p.reporting) continue;
       const flip = !!(p.who && s.who && p.who.party !== s.who.party);
-      log.unshift({ t: now, id, s, dv: s.total - p.total, first: p.total === 0 && s.total > 0, flip });
+      log.unshift({ t: now, id, s, dv: s.total - p.total, first: p.total === 0 && s.total > 0, flip,
+                    b: batch(id, p, s) });
       added += 1;
     }
     if (log.length > MAX) log.length = MAX;
@@ -128,12 +192,27 @@ export function createUpdates({ store, panel, button, onPick = null, calls = () 
     return parts.join(" · ");
   }
 
+  const signed = (v) => `${v < 0 ? "\u2212" : "+"}${fmt(Math.abs(v))}`;
+  const pc = (party) => (party === "dem" ? "pd" : party === "rep" ? "pr" : "po");
+
+  /** "D +7,210 · R +4,980 · other +155 · batch D+18.6" */
+  function batchLine(b) {
+    if (!b) return "";
+    const parts = b.parts.map((x) => `<span class="${pc(x.party)}">${esc(x.label)}${x.tag ? ` (${x.tag})` : ""} ${signed(x.v)}</span>`);
+    if (b.lead && b.parts.length > 1) {
+      const pts = b.lead.pts.toFixed(1);
+      parts.push(`<span class="lead">batch <b class="${pc(b.lead.party)}">${b.lead.letter ? `${b.lead.label}+${pts}` : `${esc(b.lead.label)} +${pts}`}</b></span>`);
+    }
+    return `<span class="batch">${parts.join(" · ")}</span>`;
+  }
+
   function row(e) {
     const what = e.first ? "<b>first votes</b>" : e.dv > 0 ? `+${fmt(e.dv)} votes` : e.dv < 0 ? `${fmt(e.dv)} votes (revised)` : "reporting updated";
     return `<li data-race="${esc(e.id)}"${e.flip ? ' class="flip"' : ""}>
       <span class="when">${time(e.t)}</span>
       <span class="race">${esc(label(e.id))}${e.flip ? ' <span class="tag">lead change</span>' : ""}</span>
       <span class="what">${what} · ${fmt(e.s.total)} total${e.s.provider ? ` · ${esc(e.s.provider.toUpperCase())}` : ""}</span>
+      ${batchLine(e.b)}
       <span class="now">${line(e.s)}</span></li>`;
   }
 
