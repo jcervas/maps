@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-11a";
+const BUILD = "2026-11-11b";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -487,6 +487,10 @@ async function main() {
     return `${stAbbr}-${m[2].padStart(2, "0")}`;
   }
   const seatKey = (s) => String(s).toUpperCase().replace(/^([A-Z]*)0*(\d)/, "$1$2");
+  /** The same seat whatever the padding: the map reports the shape's own
+   *  id (PA-005, AK-01), a link may say PA-5. */
+  const sameSeat = (a, b) => (a && b ? String(a).slice(0, 3).toUpperCase() === String(b).slice(0, 3).toUpperCase() &&
+    seatKey(String(a).slice(3)) === seatKey(String(b).slice(3)) : !a && !b);
   /** The id of the seat drawn now that the link means: "PA-82" finds
    *  PA-082, whatever padding a state's file uses. */
   function seatDrawn(stAbbr, tok) {
@@ -591,7 +595,7 @@ async function main() {
         // (ten seconds and more on a slow line), so a long wait.
         await waitUntil((st) => st.focus === want.st || elsewhere(st), 30000);
         if (run !== hashRun || app.status().focus !== want.st) return;
-        if (seat) await waitUntil((st) => st.district === seat || elsewhere(st), 1500);
+        if (seat) await waitUntil((st) => sameSeat(st.district, seat) || elsewhere(st), 1500);
       }
       if (run !== hashRun) return;
       // No such race here (#wy/state-house): the state's House instead. By
@@ -613,8 +617,8 @@ async function main() {
       // and the state alone, for a seat that is not there), or back to the
       // whole state from one.
       if (want.seat) seat = seatDrawn(want.st, want.seat) || seat;
-      if ((app.status().district || null) !== (seat || null)) {
-        if (app.pinDistrict(seat) && seat) await waitUntil((st) => st.district === seat, 3000);
+      if (!sameSeat(app.status().district, seat)) {
+        if (app.pinDistrict(seat) && seat) await waitUntil((st) => sameSeat(st.district, seat), 3000);
       }
     } finally {
       if (run === hashRun) {
