@@ -341,7 +341,7 @@ export function createTableApp({ el, store, context, seats: seatsOf = () => null
       { key: null, label: "Held by", align: "left" },
       { key: "pres", label: "2024 Pres.", title: dist.chamber === "senate" || dist.chamber === "governor"
         ? "The state's 2024 presidential result, two-party margin."
-        : "2024 presidential two-party margin in the 2026 district, from Dave's Redistricting App (data/district_pres.js; legislative districts estimated from The New York Times's precinct results)." },
+        : "2024 presidential two-party margin in the 2026 district, from Dave's Redistricting App (data/district_pres.js). West Virginia's legislative districts: estimated from The New York Times's precinct results; other states' legislative districts have none." },
       { key: "rating", label: "Rating", title: "Ordered Solid D … Toss-up … Solid R; unrated seats last." },
     ];
     const head = COLS.map((c) => `<th${c.key ? ` data-dkey="${c.key}"` : ' style="cursor:default"'}${
@@ -376,7 +376,9 @@ export function createTableApp({ el, store, context, seats: seatsOf = () => null
         ${scopeSeg}
         <h2>${esc(seatMod.CHAMBER_TITLES[dist.chamber] || dist.chamber)}${scope ? ` — ${scope}` : ""}</h2>
         <p class="hint">${list.length} seats on the 2026 ballot &middot; ${rated} rated &middot; ${withPres} with a 2024 presidential margin${
-          dist.chamber === "senate" || dist.chamber === "governor" ? " (statewide)" : " (estimated from NYT precinct results)"}.
+          dist.chamber === "senate" || dist.chamber === "governor" ? " (statewide)"
+            : dist.chamber === "house" ? " (Dave's Redistricting App)"
+            : dist.chamber.startsWith("wv-") ? " (estimated from NYT precinct results)" : ""}.
           Click a column to sort.</p>
       </div>
       <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
