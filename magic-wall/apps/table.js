@@ -341,7 +341,7 @@ export function createTableApp({ el, store, context, seats: seatsOf = () => null
       { key: null, label: "Held by", align: "left" },
       { key: "pres", label: "2024 Pres.", title: dist.chamber === "senate" || dist.chamber === "governor"
         ? "The state's 2024 presidential result, two-party margin."
-        : "2024 presidential two-party margin in the 2026 district: an estimate from The New York Times's precinct results laid over the district (scripts/district_pres_2024.py), not an official count." },
+        : "2024 presidential two-party margin in the 2026 district, from Dave's Redistricting App (data/district_pres.js; legislative districts estimated from The New York Times's precinct results)." },
       { key: "rating", label: "Rating", title: "Ordered Solid D … Toss-up … Solid R; unrated seats last." },
     ];
     const head = COLS.map((c) => `<th${c.key ? ` data-dkey="${c.key}"` : ' style="cursor:default"'}${

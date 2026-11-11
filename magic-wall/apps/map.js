@@ -46,8 +46,8 @@ export function districtPVI(id) {
   return d === 0 ? "EVEN" : `${d > 0 ? "D" : "R"}+${Math.abs(d)}`;
 }
 const PVI_NOTE = "PVI: the district's 2024 presidential vote against the nation's, " +
-  "estimated from The New York Times's precinct results. Not Cook's PVI, which also weights 2020.";
-const PVI_SHORT = "PVI: 2024 vote vs. the nation, est. from The New York Times's precinct results.";
+  "from Dave's Redistricting App. Not Cook's PVI, which also weights 2020.";
+const PVI_SHORT = "PVI: 2024 vote vs. the nation, from Dave's Redistricting App.";
 
 // Canvas text follows the broadcast type scale (theme().scale: 1, 1.5, 2):
 // 12 px is a laptop size and unreadable on a wall seen from across a room.
@@ -1488,6 +1488,17 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     cell.expected = (expected.get(`${rid.slice(0, 4)} house ${st}`) || []).find((e) => e.race_id === rid) || null;
     cell.partial = (!!(cell.expected && cell.expected.partial) || selfPartial(data)) && !fromFallback(data);
     if (!data) {
+      // Called with no results file: an unopposed seat in a state that prints
+      // no votes for one (FL-10, Maxwell Frost, November 2026: AP calls it,
+      // the feed has nothing to count, so harvest makes no file). The call
+      // decides it: drawn as won, read out as unopposed.
+      const S = seatsSrc();
+      const call = S && S.call && S.call(rid);
+      if (call) {
+        cell.calledOnly = call;
+        cell.unopposed = call.party;
+        return cell;
+      }
       const f = districtFeed(st, rid);
       cell[f === "staged" ? "awaiting" : FEED_STATE[f] || "noLive"] = true;
       return cell;
@@ -1658,8 +1669,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
           (c.partial ? ` · <span style="color:var(--warn)">partial</span>` : "");
       } else {
         by = c.data || c.awaiting ? "awaiting votes" : c.waiting ? "feed waiting" : c.certOnly ? "override only" : "no live feed";
+        if (c.calledOnly) {
+          const w = calledOnlyLine(c);
+          who = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${partyColor(w.party)}"></span> ${esc(w.name)}` +
+            ` <span class="mw-won" title="Called by ${esc(w.by)}" style="color:${partyColor(w.party)};font-weight:800">✓</span>`;
+          by = w.alone ? "unopposed" : "called";
+        }
         // What the Swing map shows for it until then: the compare-to election.
-        const b = variable === "swing" ? compareCell(c) : null;
+        const b = variable === "swing" && !c.calledOnly ? compareCell(c) : null;
         const m = b && cellValue(b, "margin");
         if (m != null) {
           const side = m > 0 ? "dem" : m < 0 ? "rep" : null;
@@ -1711,6 +1728,28 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return `${m.cycle}-${office}-${c.st.toLowerCase()}${c.seat && c.seat.special ? "-special" : ""}`;
   }
 
+  /** A race called with no results file: who won, unopposed, and why there
+   *  is no count. No vote table, no margin. */
+  function calledOnlyLine(c) {
+    const call = c.calledOnly;
+    const like = { race_id: c.rid, state: c.st, office: "house" };
+    const list = ballots.get(c.rid) || [];
+    const name = call.winner || (list[0] && list[0].name) || "";
+    const inc = name && store.isIncumbent(like, name);
+    // One name on the ballot (or none listed): unopposed.
+    const alone = list.length <= 1;
+    return { name, inc, alone, party: call.party, by: call.by };
+  }
+  function calledOnlyHTML(c) {
+    const w = calledOnlyLine(c);
+    const swatch = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${partyColor(w.party)}"></span>`;
+    const check = `<span class="mw-won" title="Called by ${esc(w.by)}" style="color:${partyColor(w.party)};font-weight:800">✓</span>`;
+    return `<div class="mw-calledonly"><p style="margin:0 0 6px;font-weight:700">${swatch} ${esc(w.name)}${w.inc ? ' <span title="Incumbent" style="color:var(--ink-soft);font-size:11px;font-weight:400">(i)</span>' : ""} ${check}</p>` +
+      `<p class="hint" style="margin:0 0 8px">${w.alone
+        ? `Unopposed. ${esc(stateName(c.st))} doesn't count votes for unopposed candidates.`
+        : "No vote count on this wall for this race."} Called by ${esc(w.by)}.</p></div>`;
+  }
+
   function districtReadout(id) {
     const c = districtCell(id);
     const d = id.slice(3);
@@ -1719,6 +1758,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       `<p class="hint" style="margin:-6px 0 10px">${esc(mode().label)}${pvi && !c.data
         ? `<span class="mw-pvi-tag"> · <span title="${esc(PVI_NOTE)}">PVI <span style="color:var(--ink);font-weight:600">${pvi}</span></span></span>` : ""}</p>`;
     const pviNote = pvi ? `<p class="hint mw-pvi" style="margin:6px 0 0;font-size:0.786rem">${esc(PVI_NOTE)}</p>` : "";
+    if (c.calledOnly) return html + calledOnlyHTML(c) + pviNote;
     if (!c.data) {
       const what = c.awaiting ? "results file staged; no votes yet."
         : c.waiting ? "feed waiting for the state to publish its 2026 results."
@@ -3113,7 +3153,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const pres = presCdOn() && (c.kind === "district" || c.kind === "piece" || (c.kind === "unit" && store.baselineTier(c.subj) === "cd"));
     const label = pres ? "2024 president" : store.baselineLabel(baselineKey);
     const v = cellValue(c, "swing");
-    if (v != null) return { value: v === 0 ? "even" : marginLabel(v), vs: pres ? "vs 2024 president (est.)" : `vs ${label}` };
+    // A 2026 district's 2024 vote is DRA's; a county piece's, and a 2024-lines
+    // district's (the House 2024 map), an estimate from the Times's precincts.
+    const presVs = c.kind === "district" ? "vs 2024 president" : "vs 2024 president (est.)";
+    if (v != null) return { value: v === 0 ? "even" : marginLabel(v), vs: pres ? presVs : `vs ${label}` };
     const why = (c.redrawn || (c.kind === "piece" && redrawn.has(c.st))) ? "new lines" : c.kind === "piece" ? `no ${label} by county piece`
       : !c.baseTotals ? `no ${label} here` : !(c.totals && store.totalVotes(c.totals) > 0) ? "no votes yet" : "not comparable";
     return { value: "n/a", vs: `(${why})` };
@@ -3517,12 +3560,19 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     const facts = root.querySelector(".mw-facts");
     if (facts && !table) out += `<div style="color:var(--ink-soft);font-size:12px;margin:4px 0 2px">${facts.innerHTML}</div>`;
+    // A race called with no count (an unopposed seat): the winner and why.
+    const only = root.querySelector(".mw-calledonly");
+    if (only && !table) {
+      const [who, why] = only.querySelectorAll("p");
+      out += `<div style="font-size:12.5px;font-weight:700;margin:4px 0 2px">${who ? who.innerHTML : ""}</div>` +
+        (why ? `<div style="color:var(--ink-soft);font-size:11.5px">${why.innerHTML}</div>` : "");
+    }
     // The Times is credited wherever its data shows.
     // (Results the Times supplied as a fallback source; the PVI's note is
     // the aside's.)
     const credit = [...root.querySelectorAll(".mw-src")].filter((x) => /New York Times/.test(x.textContent));
     for (const x of credit) out += `<div style="color:var(--ink-soft);font-size:11px;margin:2px 0 0">${x.innerHTML}</div>`;
-    if (!table && !facts) {
+    if (!table && !facts && !only) {
       const hint = root.querySelector(".hint:not(:first-of-type)") || null;
       if (hint && !out.includes(hint.innerHTML)) out += `<div style="color:var(--ink-soft);font-size:12px">${hint.innerHTML}</div>`;
     }
@@ -4067,7 +4117,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (presHouse && (variable === "swing" || variable === "turnout")) {
       // Two short lines, so a phone's legend does not run off its edge.
       keys.push([variable === "swing" ? "House margin − Harris–Trump margin" : "Votes vs 2024 presidential, same place", "text"],
-                ["2024 by district: estimates", "text"]);
+                ["2024 by district: Dave's Redistricting App", "text"]);
+      if (piecesShown || !districtMode()) keys.push([`2024 by ${piecesShown ? "county piece" : "2024 district"}: est. from NYT precincts`, "text"]);
     }
     const lr = focus && raceOf(raceId);
     if (lr && LEGISLATURE.has(lr.office)) {
