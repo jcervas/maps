@@ -55,6 +55,12 @@ defaults:
   # matter, where it beats anything set here, and a tie leaves the two in
   # whatever order site.pages happened to come out in. The newest map leads.
   - scope:
+      path: "elections/2028/index.html"
+    values:
+      breadcrumb: "2028 Senate ratings"
+      wide: true
+      order: -4
+  - scope:
       path: "magic-wall/index.html"
     values:
       breadcrumb: "Magic wall 2026"
