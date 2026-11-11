@@ -1,36 +1,36 @@
 state,seat,party_before,incumbent,incumbent_retiring,cook_rating,status,winner_party,winner_name,winner_incumbent,flipped,leader_party,lead_would_flip,cand1_name,cand1_party,cand1_votes,cand1_pct,cand2_name,cand2_party,cand2_votes,cand2_pct,margin_pts,total_votes,pct_expected_counted,as_of_utc,as_of_et
-AK,Class II,R,Dan Sullivan,N,Toss Up,Not called,,,,,D,Y,Mary Peltola,D,118926,48.95,Dan Sullivan,R,114676,47.2,1.75,242947,84.32,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-AL,Class II,R,Tommy Tuberville,Y,Solid Republican,Called,R,Barry Moore,N,N,,,Barry Moore,R,917338,54.71,Everett Wess,D,759321,45.29,9.42,1676659,98.96,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-AR,Class II,R,Tom Cotton,N,Solid Republican,Called,R,Tom Cotton,Y,N,,,Tom Cotton,R,480802,54.26,Hallie Shoffner,D,375831,42.41,11.85,886121,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-CO,Class II,D,John W. Hickenlooper,N,Solid Democrat,Called,D,John Hickenlooper,Y,N,,,John Hickenlooper,D,1613608,60.45,Mark Baisley,R,935147,35.03,25.42,2669282,98.09,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-DE,Class II,D,Christopher A. Coons,N,Solid Democrat,Called,D,Chris Coons,Y,N,,,Chris Coons,D,240587,63.35,Michael Katz,R,137837,36.3,27.05,379754,100.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-FL,Special,R,Ashley Moody,N,Likely Republican,Called,R,Ashley Moody,Y,N,,,Ashley Moody,R,4211455,50.86,Angie Nixon,D,3974149,48.0,2.86,8280269,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-GA,Class II,D,Jon Ossoff,N,Likely Democrat,Called,D,Jon Ossoff,Y,N,,,Jon Ossoff,D,2468986,59.03,Mike Collins,R,1713656,40.97,18.06,4182642,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-IA,Class II,R,Joni Ernst,Y,Toss Up,Called,D,Josh Turek,N,Y,,,Josh Turek,D,688616,50.55,Ashley Hinson,R,631439,46.36,4.19,1362156,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-ID,Class II,R,James E. Risch,N,Solid Republican,Called,R,Jim Risch,Y,N,,,Jim Risch,R,401778,56.53,Todd Achilles,I,238342,33.54,22.99,710724,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-IL,Class II,D,Richard J. Durbin,Y,Solid Democrat,Called,D,Juliana Stratton,N,N,,,Juliana Stratton,D,2536598,61.53,Don Tracy,R,1520609,36.89,24.64,4122445,96.79,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-KS,Class II,R,Roger Marshall,N,Toss Up,Called,D,Adam Hamilton,N,Y,,,Adam Hamilton,D,561353,51.01,Roger Marshall,R,505810,45.97,5.04,1100385,98.58,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-KY,Class II,R,Mitch McConnell,Y,Solid Republican,Called,R,Andy Barr,N,N,,,Andy Barr,R,784869,55.0,Charles Booker,D,612357,42.91,12.09,1427118,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-LA,Class II,R,Bill Cassidy,Y,Solid Republican,Called,R,Julia Letlow,N,N,,,Julia Letlow,R,746024,50.88,Jamie Davis,D,720222,49.12,1.76,1466246,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-MA,Class II,D,Edward J. Markey,N,Solid Democrat,Called,D,Edward Markey,Y,N,,,Edward Markey,D,1652355,63.4,John Deaton,R,837376,32.13,31.27,2606216,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-ME,Class II,R,Susan M. Collins,N,Toss Up,Called,D,Troy Jackson,N,Y,,,Troy Jackson,D,376955,53.07,Susan Collins,R,332918,46.87,6.2,710361,97.38,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-MI,Class II,D,Gary C. Peters,Y,Lean Democrat,Called,D,Abdul El-Sayed,N,N,,,Abdul El-Sayed,D,2520883,52.54,Mike Rogers,R,2181108,45.46,7.08,4798074,98.26,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-MN,Class II,D,Tina Smith,Y,Lean Democrat,Called,D,Peggy Flanagan,N,N,,,Peggy Flanagan,D,1520871,53.71,Michele Tafoya,R,1233467,43.56,10.15,2831786,98.85,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-MS,Class II,R,Cindy Hyde-Smith,N,Likely Republican,Not called,,,,,D,Y,Scott Colom,D,470309,49.12,Cindy Hyde-Smith,R,467133,48.78,0.34,957565,98.27,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-MT,Class II,R,Steve Daines,Y,Solid Republican,Called,R,Kurt Alme,N,N,,,Kurt Alme,R,235549,48.16,Seth Bodnar,I,184551,37.74,10.42,489063,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-NC,Class II,R,Thom Tillis,Y,Likely Democrat,Called,D,Roy Cooper,N,Y,,,Roy Cooper,D,2481017,58.75,Michael Whatley,R,1648945,39.05,19.7,4222769,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-NE,Class II,R,Pete Ricketts,N,Lean Republican,Called,R,Pete Ricketts,Y,N,,,Pete Ricketts,R,378439,50.14,Dan Osborn,I,331341,43.9,6.24,754694,97.16,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-NH,Class II,D,Jeanne Shaheen,Y,Lean Democrat,Called,D,Chris Pappas,N,N,,,Chris Pappas,D,356425,55.93,John Sununu,R,268712,42.17,13.76,637218,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-NJ,Class II,D,Cory A. Booker,N,Solid Democrat,Called,D,Cory Booker,Y,N,,,Cory Booker,D,1833369,62.43,Justin Murphy,R,1026834,34.97,27.46,2936569,97.54,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-NM,Class II,D,Ben Ray Luján,N,Solid Democrat,Called,D,Ben Lujan,Y,N,,,Ben Lujan,D,458756,63.26,Larry Marker,R,266434,36.74,26.52,725190,98.47,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-OH,Special,R,Jon Husted,N,Toss Up,Called,D,Sherrod Brown,N,Y,,,Sherrod Brown,D,2301078,50.0,Jon Husted,R,2077855,45.15,4.85,4601728,97.75,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-OK,Class II,R,Alan Armstrong,Y,Solid Republican,Called,R,Kevin Hern,N,N,,,Kevin Hern,R,639860,57.2,N'Kiyla Thomas,D,439522,39.29,17.91,1118730,100.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-OR,Class II,D,Jeff Merkley,N,Solid Democrat,Called,D,Jeff Merkley,Y,N,,,Jeff Merkley,D,1098047,58.0,David Smith,R,733039,38.72,19.28,1893153,94.01,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-RI,Class II,D,Jack Reed,N,Solid Democrat,Called,D,John Reed,Y,N,,,John Reed,D,240686,66.78,Raymond McKay,R,105453,29.26,37.52,360396,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-SC,Class II,R,Darline Graham,N,Lean Republican,Called,D,Annie Andrews,N,Y,,,Annie Andrews,D,1044001,51.14,Darline Graham,R,952191,46.64,4.5,2041487,100.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-SD,Class II,R,Mike Rounds,N,Solid Republican,Called,R,Mike Rounds,Y,N,,,Mike Rounds,R,184589,60.5,Brian Bengs,I,120509,39.5,21.0,305098,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-TN,Class II,R,Bill Hagerty,N,Solid Republican,Called,R,Bill Hagerty,Y,N,,,Bill Hagerty,R,1138457,55.08,Marquita Bradshaw,D,886974,42.91,12.17,2066890,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-TX,Class II,R,John Cornyn,Y,Toss Up,Called,D,James Talarico,N,Y,,,James Talarico,D,5447080,55.09,Ken Paxton,R,4250704,42.99,12.1,9888109,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-VA,Class II,D,Mark R. Warner,N,Solid Democrat,Called,D,Mark Warner,Y,N,,,Mark Warner,D,2215838,61.36,Bert Mizusawa,R,1385571,38.37,22.99,3611030,98.99,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-WV,Class II,R,Shelley Moore Capito,N,Solid Republican,Called,R,Shelley Capito,Y,N,,,Shelley Capito,R,266772,58.3,Rachel Anderson,D,173656,37.95,20.35,457611,99.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
-WY,Class II,R,Cynthia M. Lummis,Y,Solid Republican,Called,R,Harriet Hageman,N,N,,,Harriet Hageman,R,122174,64.88,James Byrd,D,65105,34.57,30.31,188318,100.0,2026-11-11T17:41:54.376000Z,2026-11-11 12:41
+AK,Class II,R,Dan Sullivan,N,Toss Up,Not called,,,,,D,Y,Mary Peltola,D,118926,48.95,Dan Sullivan,R,114676,47.2,1.75,242947,84.32,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+AL,Class II,R,Tommy Tuberville,Y,Solid Republican,Called,R,Barry Moore,N,N,,,Barry Moore,R,917338,54.71,Everett Wess,D,759321,45.29,9.42,1676659,98.96,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+AR,Class II,R,Tom Cotton,N,Solid Republican,Called,R,Tom Cotton,Y,N,,,Tom Cotton,R,480802,54.26,Hallie Shoffner,D,375831,42.41,11.85,886121,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+CO,Class II,D,John W. Hickenlooper,N,Solid Democrat,Called,D,John Hickenlooper,Y,N,,,John Hickenlooper,D,1613608,60.45,Mark Baisley,R,935147,35.03,25.42,2669282,98.09,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+DE,Class II,D,Christopher A. Coons,N,Solid Democrat,Called,D,Chris Coons,Y,N,,,Chris Coons,D,240587,63.35,Michael Katz,R,137837,36.3,27.05,379754,100.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+FL,Special,R,Ashley Moody,N,Likely Republican,Called,R,Ashley Moody,Y,N,,,Ashley Moody,R,4211455,50.86,Angie Nixon,D,3974149,48.0,2.86,8280269,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+GA,Class II,D,Jon Ossoff,N,Likely Democrat,Called,D,Jon Ossoff,Y,N,,,Jon Ossoff,D,2468986,59.03,Mike Collins,R,1713656,40.97,18.06,4182642,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+IA,Class II,R,Joni Ernst,Y,Toss Up,Called,D,Josh Turek,N,Y,,,Josh Turek,D,688616,50.55,Ashley Hinson,R,631439,46.36,4.19,1362156,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+ID,Class II,R,James E. Risch,N,Solid Republican,Called,R,Jim Risch,Y,N,,,Jim Risch,R,403011,56.5,Todd Achilles,I,239435,33.57,22.93,713327,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+IL,Class II,D,Richard J. Durbin,Y,Solid Democrat,Called,D,Juliana Stratton,N,N,,,Juliana Stratton,D,2536598,61.53,Don Tracy,R,1520609,36.89,24.64,4122445,96.79,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+KS,Class II,R,Roger Marshall,N,Toss Up,Called,D,Adam Hamilton,N,Y,,,Adam Hamilton,D,561353,51.01,Roger Marshall,R,505810,45.97,5.04,1100385,98.58,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+KY,Class II,R,Mitch McConnell,Y,Solid Republican,Called,R,Andy Barr,N,N,,,Andy Barr,R,784869,55.0,Charles Booker,D,612357,42.91,12.09,1427118,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+LA,Class II,R,Bill Cassidy,Y,Solid Republican,Called,R,Julia Letlow,N,N,,,Julia Letlow,R,746024,50.88,Jamie Davis,D,720222,49.12,1.76,1466246,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+MA,Class II,D,Edward J. Markey,N,Solid Democrat,Called,D,Edward Markey,Y,N,,,Edward Markey,D,1652345,63.4,John Deaton,R,837376,32.13,31.27,2606206,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+ME,Class II,R,Susan M. Collins,N,Toss Up,Called,D,Troy Jackson,N,Y,,,Troy Jackson,D,376955,53.07,Susan Collins,R,332918,46.87,6.2,710361,97.38,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+MI,Class II,D,Gary C. Peters,Y,Lean Democrat,Called,D,Abdul El-Sayed,N,N,,,Abdul El-Sayed,D,2520883,52.54,Mike Rogers,R,2181108,45.46,7.08,4798074,98.26,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+MN,Class II,D,Tina Smith,Y,Lean Democrat,Called,D,Peggy Flanagan,N,N,,,Peggy Flanagan,D,1520871,53.71,Michele Tafoya,R,1233467,43.56,10.15,2831786,98.85,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+MS,Class II,R,Cindy Hyde-Smith,N,Likely Republican,Not called,,,,,D,Y,Scott Colom,D,470309,49.12,Cindy Hyde-Smith,R,467133,48.78,0.34,957565,98.27,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+MT,Class II,R,Steve Daines,Y,Solid Republican,Called,R,Kurt Alme,N,N,,,Kurt Alme,R,235549,48.16,Seth Bodnar,I,184551,37.74,10.42,489063,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+NC,Class II,R,Thom Tillis,Y,Likely Democrat,Called,D,Roy Cooper,N,Y,,,Roy Cooper,D,2481017,58.75,Michael Whatley,R,1648945,39.05,19.7,4222769,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+NE,Class II,R,Pete Ricketts,N,Lean Republican,Called,R,Pete Ricketts,Y,N,,,Pete Ricketts,R,379355,50.09,Dan Osborn,I,332846,43.95,6.14,757414,97.51,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+NH,Class II,D,Jeanne Shaheen,Y,Lean Democrat,Called,D,Chris Pappas,N,N,,,Chris Pappas,D,356425,55.93,John Sununu,R,268712,42.17,13.76,637218,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+NJ,Class II,D,Cory A. Booker,N,Solid Democrat,Called,D,Cory Booker,Y,N,,,Cory Booker,D,1833369,62.43,Justin Murphy,R,1026834,34.97,27.46,2936569,97.54,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+NM,Class II,D,Ben Ray Luján,N,Solid Democrat,Called,D,Ben Lujan,Y,N,,,Ben Lujan,D,458756,63.26,Larry Marker,R,266434,36.74,26.52,725190,98.47,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+OH,Special,R,Jon Husted,N,Toss Up,Called,D,Sherrod Brown,N,Y,,,Sherrod Brown,D,2301078,50.0,Jon Husted,R,2077855,45.15,4.85,4601728,97.75,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+OK,Class II,R,Alan Armstrong,Y,Solid Republican,Called,R,Kevin Hern,N,N,,,Kevin Hern,R,639860,57.2,N'Kiyla Thomas,D,439522,39.29,17.91,1118730,100.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+OR,Class II,D,Jeff Merkley,N,Solid Democrat,Called,D,Jeff Merkley,Y,N,,,Jeff Merkley,D,1098047,58.0,David Smith,R,733039,38.72,19.28,1893153,94.01,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+RI,Class II,D,Jack Reed,N,Solid Democrat,Called,D,John Reed,Y,N,,,John Reed,D,240686,66.78,Raymond McKay,R,105453,29.26,37.52,360396,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+SC,Class II,R,Darline Graham,N,Lean Republican,Called,D,Annie Andrews,N,Y,,,Annie Andrews,D,1044001,51.14,Darline Graham,R,952191,46.64,4.5,2041487,100.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+SD,Class II,R,Mike Rounds,N,Solid Republican,Called,R,Mike Rounds,Y,N,,,Mike Rounds,R,184589,60.5,Brian Bengs,I,120509,39.5,21.0,305098,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+TN,Class II,R,Bill Hagerty,N,Solid Republican,Called,R,Bill Hagerty,Y,N,,,Bill Hagerty,R,1138457,55.08,Marquita Bradshaw,D,886974,42.91,12.17,2066890,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+TX,Class II,R,John Cornyn,Y,Toss Up,Called,D,James Talarico,N,Y,,,James Talarico,D,5447080,55.09,Ken Paxton,R,4250704,42.99,12.1,9888109,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+VA,Class II,D,Mark R. Warner,N,Solid Democrat,Called,D,Mark Warner,Y,N,,,Mark Warner,D,2215838,61.36,Bert Mizusawa,R,1385571,38.37,22.99,3611030,98.99,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+WV,Class II,R,Shelley Moore Capito,N,Solid Republican,Called,R,Shelley Capito,Y,N,,,Shelley Capito,R,266772,58.3,Rachel Anderson,D,173656,37.95,20.35,457611,99.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
+WY,Class II,R,Cynthia M. Lummis,Y,Solid Republican,Called,R,Harriet Hageman,N,N,,,Harriet Hageman,R,122174,64.88,James Byrd,D,65105,34.57,30.31,188318,100.0,2026-11-11T18:15:20.360000Z,2026-11-11 13:15
