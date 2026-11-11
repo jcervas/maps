@@ -1451,6 +1451,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         const pres = presCdVotes(String(id), "2024");
         if (pres) cell.baseTotals = pres;
       }
+      // A legislature's district against 2024 president in the same lines.
+      else if (presCdOn() && race && LEGISLATURE.has(race.office)) {
+        const pres = legPresVotes(String(id));
+        if (pres) cell.baseTotals = pres;
+      }
     }
     return cell;
   }
@@ -1577,6 +1582,36 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const v = presCd[lines] && presCd[lines].get(id);
     return v ? store.partyTotals(v, null) : null;
   }
+
+  /* The 2024 presidential vote by legislative district (data/district_pres.js),
+   * for Swing and Turnout on a legislature map with Compare to on 2024
+   * president (the user, November 11). Pennsylvania's are counts from Dave's
+   * Redistricting App's district totals, on the 2022 lines that are 2024's
+   * and 2026's; West Virginia's are estimates from precincts laid over the
+   * districts, so its maps say so and leave Turnout out. */
+  const LEG_DIST_ID = /^[A-Z]{2}-(\d{3}|S\d{2})$/;
+  const LEG_PRES_EST = new Set(["WV"]);
+  const legPresMemo = new Map();
+  /** { dem, rep, other } for a legislative district id, or null. */
+  function legPresVotes(id) {
+    if (!presCdOn()) return null;
+    if (!legPresMemo.has(id)) {
+      const v = LEG_DIST_ID.test(id) && DISTRICT_PRES_2024[id];
+      legPresMemo.set(id, v ? { dem: v[0], rep: v[1], other: v[2] || 0 } : null);
+    }
+    return legPresMemo.get(id);
+  }
+  /** A state has 2024 presidential numbers for its legislative districts. */
+  const legPresState = (st) => !!st && (`${st}-001` in DISTRICT_PRES_2024 || `${st}-S01` in DISTRICT_PRES_2024);
+  /** The legislature race on the map, if that is what is on it. */
+  function legRaceNow() {
+    const r = raceOf(subject());
+    return r && LEGISLATURE.has(r.office) ? r : null;
+  }
+  /** Swing here is against 2024 president by legislative district. */
+  const legPresHere = () => presCdOn() && !stateLevel() && !!legRaceNow() && legPresState(legRaceNow().state);
+  /** "2024 president", with "(est.)" where the district numbers are estimates. */
+  const presVsLabel = (st) => `2024 president${st && LEG_PRES_EST.has(st) ? " (est.)" : ""}`;
 
   function districtCell(id) {
     const st = id.slice(0, 2);
@@ -1755,7 +1790,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const side = (p) => `<span style="color:${partyColor(p)}">${fmt(n[p])}` +
       `<i style="font-style:normal;font-weight:400;font-size:11px;color:var(--ink-soft)"> · ${d3.format(".1f")(100 * n[p] / two)}%</i></span>`;
     const other = n.other >= 0.02 * (two + n.other)
-      ? `<p class="hint" style="margin:0 0 4px;font-size:11px">Other ${fmt(n.other)} votes</p>` : "";
+      ? `<p class="mw-statepv-other" style="margin:0 0 4px;font-size:11px;color:var(--ink-soft)">Other ${fmt(n.other)} votes</p>` : "";
     return `<div class="mw-statepv" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;` +
       `font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;margin:0 0 ${other ? 2 : 6}px">` +
       `${side("dem")}${side("rep")}</div>` + other;
@@ -1956,12 +1991,15 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (subj === baselineKey) return false;
     const tier = store.baselineTier(subj);
     if (tier === "cd" && presCdOn()) return presCdReady();
+    const lr = raceOf(subj);
+    if (presCdOn() && lr && LEGISLATURE.has(lr.office)) return legPresState(lr.state);
     return !!tier && tier === store.baselineTier(baselineKey);
   }
 
   function variableAvailable(key) {
     // DRA's district numbers are shares: no turnout against them.
-    if (key === "turnout") return comparable() && !presCdHere();
+    if (key === "turnout") return comparable() && !presCdHere() &&
+      !(legPresHere() && LEG_PRES_EST.has(legRaceNow().state));
     if (key === "swing") return comparable();
     if (key === "rating" || key === "vsrating") return ratingsHere();
     // Reporting is a property of a count in progress. A baseline file is a
@@ -1977,6 +2015,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (key === "rating" || key === "vsrating") return "Ratings are for 2026 races";
     if (subject() === baselineKey) return "Pick a different baseline to compare against";
     if (key === "turnout" && presCdHere() && comparable()) return "2024 by district has shares, not vote counts";
+    if (key === "turnout" && legPresHere()) return "2024 by district here is an estimate, not a count";
     return "No baseline at this tier";
   }
 
@@ -3166,6 +3205,15 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   const legendData = () => lastData;
 
   function refresh() {
+    // A race file that lands after its race was picked can change what
+    // Compare to starts on: a link straight to #pa/state-house opens before
+    // 2024's House file is in, and the pick fell to 2024 president. Asked
+    // again while nobody has chosen; changed() redraws with the new pick.
+    if (baselineAuto) {
+      const was = baselineKey;
+      autoBaseline();
+      if (baselineKey !== was) { changed(); return; }
+    }
     kindsMemo = null;
     view.setLayers(layers());
     view.render();
@@ -3280,8 +3328,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const sw = swingText(c);
     // A district, or a county piece of one, has its PVI where the margin
     // was (the user, November 9); anything else keeps its margin.
-    const right = sw ? `Swing <span style="font-weight:700">${esc(sw.value)}</span> ${esc(sw.vs)}`
-      : pvi ? `<span title="${esc(PVI_NOTE)}">PVI <span style="font-weight:700">${esc(pvi)}</span></span>`
+    // (The swing is the readout's headline now, withSwing.)
+    const right = pvi ? `<span title="${esc(PVI_NOTE)}">PVI <span style="font-weight:700">${esc(pvi)}</span></span>`
       : m != null ? `Margin <span style="font-weight:700">${mText}</span>` : "";
     const lv = total > 0 ? cellValue(c, "lead") : null;
     // Under a ranked-choice count the first-round lead is only that.
@@ -3327,11 +3375,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    *  or why not }, else null. */
   function swingText(c) {
     if (variable !== "swing") return null;
+    const legPres = presCdOn() && c.kind === "unit" && c.race && LEGISLATURE.has(c.race.office);
     const pres = presCdOn() && (c.kind === "district" || c.kind === "piece" || (c.kind === "unit" && store.baselineTier(c.subj) === "cd"));
-    const label = pres ? "2024 president" : store.baselineLabel(baselineKey);
+    const label = legPres ? presVsLabel(c.race.state) : pres ? "2024 president" : store.baselineLabel(baselineKey);
     const v = cellValue(c, "swing");
     if (v != null) return { value: v === 0 ? "even" : marginLabel(v), vs: `vs ${label}` };
-    const why = c.totals && store.totalVotes(c.totals) > 0 && !bothParties(c.totals) ? "no D-vs-R race this year"
+    const why = c.notUp ? "not on the ballot this year"
+      : c.totals && store.totalVotes(c.totals) > 0 && !bothParties(c.totals) ? "no D-vs-R race this year"
       : (c.redrawn || (c.kind === "piece" && redrawn.has(c.st))) ? "new lines" : c.kind === "piece" ? `no ${label} by county piece`
       : !c.baseTotals ? `no ${label} here` : !(c.totals && store.totalVotes(c.totals) > 0) ? "no votes yet"
       : !bothParties(c.baseTotals) ? `no D-vs-R race in ${label}` : "not comparable";
@@ -3437,7 +3487,78 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   /* The readout as HTML, so a split panel's readout can be put under this
    * one's rather than fighting it for the same element. */
+  /* Color on Swing: the swing as the headline of every readout and card, not
+   * only the arrow or the shade (the user, November 11: "when Swing is
+   * selected it should somewhere say what the swing is, beyond just the
+   * arrow. In the tooltip, in the <aside> somewhere!"). A district, county
+   * or county piece has its own; a state's aside the state's: the statewide
+   * count against the baseline's for a statewide race, and for a map of
+   * districts (the House, a legislature) the average of its districts'
+   * swings, since uncontested seats and DRA's district shares make a summed
+   * statewide margin a different question. Nothing while the bins are up. */
   function readoutHTML(f) {
+    return withSwing(readoutCore(f), f);
+  }
+  function swingLabelNow() {
+    const lr = legRaceNow();
+    return lr && presCdOn() ? presVsLabel(lr.state) : presCdOn() && districtMode() ? "2024 president"
+      : store.baselineLabel(baselineKey);
+  }
+  /** The mean of the cells' swings: { value, vs }, or n/a with why. */
+  function avgSwing(cells, noun) {
+    const v = cells.map((c) => cellValue(c, "swing")).filter((x) => x != null);
+    if (!v.length) return { value: "n/a", vs: `(no ${noun} to compare with ${swingLabelNow()})`, avg: true };
+    const m = d3.mean(v);
+    return { value: Math.abs(m) < 0.05 ? "even" : marginLabel(m), avg: true,
+             vs: `vs ${swingLabelNow()} · average of ${v.length} ${noun}${v.length === 1 ? "" : "s"}` };
+  }
+  function swingFor(f) {
+    if (variable !== "swing" || (bins.on && !bins.out) || !variableAvailable("swing")) return null;
+    const t = f && f.properties.tier;
+    const st = f ? (t === "state" ? f.properties.id : null) : focus;
+    if (f && t !== "state") return swingText(cellFor(f));
+    // A state at national zoom: its own cell in a statewide mode; on a
+    // county map it is only an outline (nationalStateHTML).
+    if (f && !districtMode()) return stateLevel() ? swingText(cellFor(f)) : null;
+    if (!st) return null;
+    if (districtMode()) return avgSwing(districtCellsIn(st), "district");
+    const lr = raceOf(raceId);
+    if (!f && lr && LEGISLATURE.has(lr.office)) {
+      const data = store.results(lr.race_id);
+      return avgSwing(((data && data.units) || []).map((u) => unitCell(u.id)), "contested district");
+    }
+    if (f) return swingText(cellFor(f));
+    const c = raceId ? statewideCellFor(raceId) : baselineStateCell(focus);
+    return c ? swingText(c) : null;
+  }
+  function swingLineHTML(sw) {
+    const side = /^D\+/.test(sw.value) ? "dem" : /^R\+/.test(sw.value) ? "rep" : null;
+    return `<p class="mw-swingline" style="margin:-2px 0 8px;font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums">` +
+      `${sw.avg ? "Avg. swing" : "Swing"} <span style="font-weight:800${side ? `;color:${partyColor(side)}` : ""}">${esc(sw.value)}</span> ` +
+      `<span style="font-weight:400;font-size:12px;color:var(--ink-soft)">${esc(sw.vs)}</span></p>`;
+  }
+  function withSwing(html, f) {
+    const sw = html && swingFor(f);
+    if (!sw) return html;
+    const t = document.createElement("template");
+    t.innerHTML = html;
+    const r = t.content;
+    // Beside the state's vote line where there is one; else under the
+    // heading and the short lines that name the place and the race.
+    let at = r.querySelector(".mw-statepv");
+    if (at && at.nextElementSibling && /^Other /.test(at.nextElementSibling.textContent)) at = at.nextElementSibling;
+    if (!at) {
+      at = r.querySelector("h2");
+      for (let el = at && at.nextElementSibling; el && el.matches(".hint:not(.mw-facts):not(.mw-src)") && el.textContent.length < 120 &&
+           !/^(Point|Tap|Click)/.test(el.textContent); el = el.nextElementSibling) at = el;
+    }
+    const line = document.createElement("template");
+    line.innerHTML = swingLineHTML(sw);
+    if (at) at.after(line.content); else r.prepend(line.content);
+    return t.innerHTML;
+  }
+
+  function readoutCore(f) {
     const m = mode();
     if (districtMode()) return districtReadoutHTML(f);
     if (!f) {
@@ -3713,6 +3834,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       out += `<div style="color:var(--ink-soft);font-size:12px;margin:0 0 4px">${el.innerHTML}</div>`;
       n += 1;
     }
+    // Color on Swing: the swing, the card's headline (withSwing).
+    const swl = root.querySelector(".mw-swingline");
+    if (swl) out += `<div style="font-size:13.5px;font-weight:600;margin:2px 0 4px;font-variant-numeric:tabular-nums">${swl.innerHTML}</div>`;
     // Candidates only (a party chip in the first cell), not a state's list
     // of districts.
     const table = [...root.querySelectorAll("table.cands")]
@@ -3733,8 +3857,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         // it is only the PVI's title, so the card carries no footnote.
         const d = head.dataset;
         const tally = [d.in, d.lead && `${d.lead} votes`].filter(Boolean).join(" · ");
-        const key = d.swing ? `Swing <span style="font-weight:700;color:var(--ink)">${esc(d.swing)}</span> ${esc(d.swingvs || "")}`
-          : d.pvi ? `<span title="${esc(PVI_SHORT)}">PVI <span style="font-weight:700;color:var(--ink)">${esc(d.pvi)}</span></span>`
+        const key = d.pvi ? `<span title="${esc(PVI_SHORT)}">PVI <span style="font-weight:700;color:var(--ink)">${esc(d.pvi)}</span></span>`
           : d.margin ? `Margin <span style="font-weight:700;color:var(--ink)">${esc(d.margin)}</span>` : "";
         out += `<div style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 8px;font-size:11.5px;color:var(--ink-soft);` +
           `margin:4px 0 0;font-variant-numeric:tabular-nums"><span>${key}</span><span style="text-align:right;margin-left:auto">${esc(tally)}</span></div>`;
@@ -3827,6 +3950,12 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       ? (store.baselineStateTotals(baselineKey, stateOf) || new Map()).get(race.state)
       : null;
     if (base && baselineKey !== id) c.baseTotals = base;
+    // Against another race of the same state (Compare to on 2024 Senate):
+    // its statewide count.
+    const br = !base && baselineKey !== id && store.race(baselineKey);
+    if (br && br.state === race.state && store.results(baselineKey)) {
+      c.baseTotals = store.partyTotals(statewideVotes(store.results(baselineKey)), br);
+    }
     return c;
   }
 
@@ -4284,8 +4413,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const v = VARIABLES.find((x) => x.key === variable) || VARIABLES[0];
     const note = variableNote(variable);
     const presHouse = presCdHere();
+    const presLeg = legPresHere() && legRaceNow().state;
     const title = note ? `${v.label}: ${note.toLowerCase()}` : v.label +
-      (variable === "swing" || variable === "turnout" ? ` vs ${presHouse ? "2024 president" : store.baselineLabel(baselineKey)}` : "");
+      (variable === "swing" || variable === "turnout"
+        ? ` vs ${presLeg ? presVsLabel(presLeg) : presHouse ? "2024 president" : store.baselineLabel(baselineKey)}` : "");
     if (variable === "rating" || variable === "vsrating") return ratingLegend(note);
     let stops, ends;
     // A national Senate map is drawn by county, so its lead scale is the
@@ -6182,10 +6313,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     // A pending legislature race has no file yet, so its tier is its own.
     const tier = store.baselineTier(subj) || (raceOf(subj) && raceOf(subj).unit_tier) || "county";
     const atState = stateLevel();
+    const legSubj = raceOf(subj) && LEGISLATURE.has(raceOf(subj).office) ? raceOf(subj) : null;
     const out = store.baselineKeys().map((k) => ({
       key: k, label: store.baselineLabel(k),
       // 2024 presidential compares by district too (presCd), on the House maps.
-      ok: atState || store.baselineTier(k) === tier || (k === "pres-2024" && (tier === "cd" || districtMode()) && presCd !== false),
+      ok: atState || store.baselineTier(k) === tier || (k === "pres-2024" && (tier === "cd" || districtMode()) && presCd !== false) ||
+        // And by legislative district where data/district_pres.js has the state.
+        (k === "pres-2024" && !!legSubj && legPresState(legSubj.state)),
     }));
     if (focus) {
       for (const r of store.racesIn(focus)) {
