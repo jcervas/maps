@@ -1908,6 +1908,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   const share = (t) => (t ? store.twoPartyDemShare(t) : null);
+  const bothParties = (t) => !!t && t.dem > 0 && t.rep > 0;
 
   /* Who leads a cell, computed once per cell. */
   function topOf(c) {
@@ -2010,6 +2011,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     if (!variableAvailable(key) || !c.baseTotals) return null;
     if (key === "swing") {
+      // A two-party shift needs both parties at both ends: with no
+      // Republican (CA-12, Simon against Joyce) the Democratic share is 100%
+      // and the "swing" a number about the ballot, not the voters.
+      if (!bothParties(c.totals) || !bothParties(c.baseTotals)) return null;
       const a = share(c.totals), b = share(c.baseTotals);
       return a == null || b == null ? null : (a - b) * 200;
     }
@@ -3253,8 +3258,10 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const label = pres ? "2024 president" : store.baselineLabel(baselineKey);
     const v = cellValue(c, "swing");
     if (v != null) return { value: v === 0 ? "even" : marginLabel(v), vs: `vs ${label}` };
-    const why = (c.redrawn || (c.kind === "piece" && redrawn.has(c.st))) ? "new lines" : c.kind === "piece" ? `no ${label} by county piece`
-      : !c.baseTotals ? `no ${label} here` : !(c.totals && store.totalVotes(c.totals) > 0) ? "no votes yet" : "not comparable";
+    const why = c.totals && store.totalVotes(c.totals) > 0 && !bothParties(c.totals) ? "no D-vs-R race this year"
+      : (c.redrawn || (c.kind === "piece" && redrawn.has(c.st))) ? "new lines" : c.kind === "piece" ? `no ${label} by county piece`
+      : !c.baseTotals ? `no ${label} here` : !(c.totals && store.totalVotes(c.totals) > 0) ? "no votes yet"
+      : !bothParties(c.baseTotals) ? `no D-vs-R race in ${label}` : "not comparable";
     return { value: "n/a", vs: `(${why})` };
   }
 

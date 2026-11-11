@@ -24,6 +24,7 @@ const NOT_A_CONTENDER = /^(write-?ins?(-.*)?|scatter.*|blank.*|void.*|none-of.*|
 // (data/reference/holdovers_2026.json first_round_runoff): LA-05 read
 // R+26 with Moore, a Democrat, first (November 11).
 const EACH_ALONE = new Set(["AK", "LA"]);
+const pairMemo = new Map();    // store.samePair, per race id
 
 /* A person's name as surname and given names, for matching a ballot's
  * spelling against a seat holder's: the first of a ticket ("JOSH SHAPIRO /
@@ -282,7 +283,11 @@ export function createStore() {
      * against Kouzounas, not Kouzounas against Costello, and Nebraska's
      * 2026 Senate race -- no Democrat on the ballot -- is Ricketts against
      * Osborn. In Alaska and Louisiana (EACH_ALONE) every named candidate is a contender of
-     * their own, party or not. In a race where the top two are a Democrat and a Republican,
+     * their own, party or not, and so they are in a same-party race (samePair:
+     * California's and Washington's top-two D-vs-D and R-vs-R generals), where
+     * pooling read CA-12 as "Simon (D) +100.0" over nobody; it is Simon over
+     * Tran by candidate, `same` set to the party and the overall runner-up
+     * marked `alt`, as the map draws it. In a race where the top two are a Democrat and a Republican,
      * which is nearly every race, this is exactly the old two-party margin.
      * A baseline file's party-keyed "other" is a remainder of many
      * candidates, never a contender, and neither is a write-in line.
@@ -295,7 +300,8 @@ export function createStore() {
     topTwo(votes, race) {
       if (!votes) return null;
       const byId = new Map(((race && race.candidates) || []).map((c) => [c.id, c]));
-      const alone = !!race && EACH_ALONE.has(race.state);
+      const pair = api.samePair(race, votes);
+      const alone = !!race && (EACH_ALONE.has(race.state) || !!pair);
       const sums = new Map();
       const add = (key, party, name, v) => {
         const e = sums.get(key) || { key, party, name, votes: 0 };
@@ -318,8 +324,46 @@ export function createStore() {
       const [a, b] = [...sums.values()].sort((x, y) => y.votes - x.votes);
       if (!a || a.votes <= 0) return null;
       const bv = b ? b.votes : 0;
-      return { leader: a, second: b || null, pts: (100 * (a.votes - bv)) / (a.votes + bv),
-               lead: a.votes - bv };
+      const out = { leader: a, second: b || null, pts: (100 * (a.votes - bv)) / (a.votes + bv),
+                    lead: a.votes - bv };
+      if (pair) {
+        out.same = pair.party;
+        for (const e of [a, b]) if (e) e.alt = e.key === pair.trail;
+      }
+      return out;
+    },
+
+    /**
+     * A race whose two leading named candidates are of one party:
+     * { party, lead, trail } by candidate id, else null. Decided over the
+     * whole race (its results file) so every county of CA-12 agrees; a
+     * legislature file holds every district at once, so there it is decided
+     * on the `votes` given, the district's own.
+     */
+    samePair(race, votes = null) {
+      if (!race || !race.candidates) return null;
+      const leg = /^state-(house|senate)$/.test(race.office || "");
+      const data = leg ? null : api.results(race.race_id);
+      let memo = null;
+      if (data) {
+        memo = pairMemo.get(race.race_id);
+        if (memo && memo.data === data && memo.race === race) return memo.pair;
+      }
+      const tot = new Map();
+      const add = (vs) => { for (const [k, v] of Object.entries(vs || {})) tot.set(k, (tot.get(k) || 0) + (Number(v) || 0)); };
+      if (data) {
+        if (data.statewide && data.statewide.votes) add(data.statewide.votes);
+        else for (const u of data.units || []) add(u.votes);
+      } else add(votes);
+      const party = new Map(race.candidates.filter((c) => !NOT_A_CONTENDER.test(c.id)).map((c) => [c.id, c.party]));
+      const top = [...tot].filter(([k]) => party.has(k)).sort((x, y) => y[1] - x[1]);
+      let pair = null;
+      if (top.length >= 2 && top[0][1] > 0 && top[1][1] > 0) {
+        const p = party.get(top[0][0]);
+        if ((p === "dem" || p === "rep") && party.get(top[1][0]) === p) pair = { party: p, lead: top[0][0], trail: top[1][0] };
+      }
+      if (data) pairMemo.set(race.race_id, { data, race, pair });
+      return pair;
     },
 
     totalVotes(totals) {
@@ -349,8 +393,12 @@ export function createStore() {
       // The baseline needs its own candidate-to-party map when it is a race;
       // a baseline file is already party-keyed and race() returns null for it.
       const baseRace = api.race(baselineKey);
-      const a = api.twoPartyDemShare(api.partyTotals(now.votes, race));
-      const b = api.twoPartyDemShare(api.partyTotals(was.votes, baseRace));
+      const tn = api.partyTotals(now.votes, race), tw = api.partyTotals(was.votes, baseRace);
+      // Both parties at both ends, or there is no two-party shift to measure
+      // (a same-party or unopposed race reads 100% for one side).
+      if (!(tn.dem > 0 && tn.rep > 0 && tw.dem > 0 && tw.rep > 0)) return null;
+      const a = api.twoPartyDemShare(tn);
+      const b = api.twoPartyDemShare(tw);
       return (a == null || b == null) ? null : (a - b) * 200;
     },
 

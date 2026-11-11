@@ -95,8 +95,29 @@ export function createTableApp({ el, store, context, seats: seatsOf = () => null
     // With a race loaded the rows come from the results file, so units with
     // no geography (an absentee batch, a house district) are listed too.
     // Without one, the rows are the state's geography over the baseline.
+    // House 2026 inside a state (ctx.districts) draws each district's own
+    // race and has no one race or subject: each row is its district's race,
+    // which read 0 votes everywhere when the rows were looked up in the
+    // county baseline instead (November 11).
+    const cycle = String(ctx.raceMode || "").slice(-4);
+    const distRace = (id) => {
+      const m = /^([A-Z]{2})-(\d+|AL)$/i.exec(String(id));
+      if (!m || !/^\d{4}$/.test(cycle)) return null;
+      const st = m[1].toLowerCase();
+      for (const d of m[2].toUpperCase() === "AL" ? ["al", "00"] : [m[2].padStart(2, "0")]) {
+        if (store.race(`${cycle}-house-${st}-${d}`)) return `${cycle}-house-${st}-${d}`;
+      }
+      return null;
+    };
     const src = data
       ? data.units
+      : ctx.districts && !raceId
+      ? (ctx.units || []).map((f) => {
+          const rid = distRace(f.properties.id);
+          const d = rid ? store.results(rid) : null;
+          return { id: f.properties.id, name: f.properties.name, votes: d && d.statewide ? d.statewide.votes : {},
+                   _race: rid ? store.race(rid) : null, _data: d };
+        })
       : (ctx.units || []).map((f) => ({
           id: f.properties.id,
           name: f.properties.name,
@@ -106,10 +127,11 @@ export function createTableApp({ el, store, context, seats: seatsOf = () => null
 
     const out = [];
     for (const u of src) {
-      const totals = store.partyTotals(u.votes || {}, race);
+      const r = u._race || race;
+      const totals = store.partyTotals(u.votes || {}, r);
       // The two leading contenders, as the map colors them: King against
       // Kouzounas in Maine, not Kouzounas against Costello.
-      const top = store.topTwo(u.votes || {}, race);
+      const top = store.topTwo(u.votes || {}, r);
       const lp = top && top.leader.party;
       out.push({
         id: u.id,
@@ -122,7 +144,8 @@ export function createTableApp({ el, store, context, seats: seatsOf = () => null
         lead: !top ? null : lp === "dem" || lp === "rep" ? lp : "ind",
         swing: raceId && u.id != null
           ? store.swingPts(raceId, u.id, baselineKey) : null,
-        reporting: data ? store.reportingPct(u, data) : null,
+        reporting: u._data && u._data.statewide ? store.reportingPct(u._data.statewide, u._data)
+          : data ? store.reportingPct(u, data) : null,
         outstanding: null,
         override: !!u.override,
       });
