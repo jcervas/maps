@@ -583,6 +583,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 :is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] label:has(input:checked) { background: var(--ink); color: var(--paper); }
 :is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] label:has(input:focus-visible) { outline: 2px solid var(--accent, var(--ink)); }
 :is(.map-pane.narrow .mw-ctlstrip, .mw-ctlstrip.narrow) [role=radiogroup] { justify-content: center; }
+/* No race for the pressed tab in this state: what is missing, then what the
+   map shows instead (modeMissing). */
+.mw-nomode { font-size: 12px; line-height: 1.35; font-weight: 600; color: var(--ink); margin: 0 0 6px;
+  padding: 0 0 6px; border-bottom: 1px solid var(--rule); }
+.mw-nomode span { font-weight: 400; color: var(--ink-soft); }
 /* The Shapes switch: Map | track | Cartogram, the side that is on in ink. */
 .mw-shapes > span:nth-child(2), .mw-shapes > span:nth-child(4) { color: var(--ink-soft); }
 .mw-shapes[data-on="map"] > span:nth-child(2), .mw-shapes[data-on="cartogram"] > span:nth-child(4) { color: var(--ink); font-weight: 600; }
@@ -869,8 +874,43 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   stripEl.hidden = true;
   stripBox.prepend(stripEl);
   let strip = null;
-  function stripChamber() {
+  /* Inside a state whose ballot has no race for the national mode's office
+   * (Pennsylvania from the Senate 2026 map), raceFor() falls back to another
+   * race so the state is not blank. The tab still means its office (the
+   * user, November 11: the Senate button pressed over "28 GOVERNORS 20"):
+   * the bar keeps that chamber, and a line says what is missing and what the
+   * map shows instead. The mode, plus whether a race is listed with no
+   * results yet; null when the race in view is the mode's own, or one the
+   * reader picked from the Race menu while the mode's race was there. */
+  function modeMissing() {
+    const m = mode();
+    if (!focus || !m.statewide || m.office === "house") return null;
     const r = raceId ? raceOf(raceId) : null;
+    if (r && r.office === m.office && r.race_id.startsWith(m.cycle)) return null;
+    const listed = store.racesFor(focus, m.office, m.cycle);
+    if (listed.some((x) => store.hasResults(x.race_id))) return null;
+    if (LEGISLATURE.has(m.office) && primaryRace(focus, m)) return null;
+    return { ...m, listed: listed.length > 0 };
+  }
+  const MISSING_WORD = { senate: "U.S. Senate", governor: "governor's", "secretary-of-state": "secretary of state",
+                         "state-house": "state House", "state-senate": "state Senate", president: "presidential" };
+  const missEl = document.createElement("div");
+  missEl.className = "mw-nomode";
+  missEl.hidden = true;
+  stripBox.prepend(missEl);
+  function syncMissing() {
+    const m = modeMissing();
+    const html = !m ? "" : (m.listed
+      ? `No ${esc(MISSING_WORD[m.office] || m.office)} results yet for ${esc(stateName(focus))} in ${esc(m.cycle)}.`
+      : `No ${esc(MISSING_WORD[m.office] || m.office)} race in ${esc(stateName(focus))} in ${esc(m.cycle)}.`) +
+      (m && raceId ? ` <span>Showing: ${esc(raceLabel(raceId))}.</span>`
+        : m ? ` <span>Showing: ${esc(raceLabel(drawKey()))}.</span>` : "");
+    if (missEl.innerHTML !== html) missEl.innerHTML = html;
+    missEl.hidden = !m;
+  }
+  function stripChamber() {
+    const miss = modeMissing();
+    const r = !miss && raceId ? raceOf(raceId) : null;
     const office = r ? r.office : mode().office;
     const cycle = r ? r.race_id.slice(0, 4) : mode().cycle;
     if (cycle !== "2026" || (bins.on && !bins.out)) return null;
@@ -888,17 +928,20 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!strip) strip = createControlStrip({ el: stripEl, seats: S, titles: CHAMBER_TITLES });
     const c = stripChamber();
     if (c !== strip.chamber) strip.show(c);
+    syncMissing();
     // The count drawn plain: the box is stripBox's.
     stripEl.style.cssText = "border:0;border-radius:0;background:none;padding:0;min-width:0;";
     const W = pane.clientWidth;
     // Not before the first poll: a bar of zeros is not news (the load fix).
-    stripBox.hidden = !dataReady() || (stripEl.hidden && binsBtn.hidden);
+    stripBox.hidden = !dataReady() || (stripEl.hidden && binsBtn.hidden && missEl.hidden);
     // Out of the map pane, the phone's segmented Seats buttons come along.
     stripBox.classList.toggle("narrow", !stripInPane && narrow());
     stripBox.style.cssText = !stripInPane ? "position:relative;min-width:0;width:auto;margin:0 0 14px;"
       : "position:absolute;right:10px;bottom:10px;z-index:2;" + (stripEl.hidden ? "min-width:0;"
         : narrow() ? "left:8px;right:8px;bottom:8px;min-width:0;"
         : `width:${Math.round(Math.max(260, Math.min(380, W - 270)))}px;`);
+    // The notice alone (secretary of state fills no chamber): no rule under it.
+    missEl.style.cssText = stripEl.hidden && binsBtn.hidden ? "border:0;margin:0;padding:0;" : "";
     binsBtn.style.borderTop = stripEl.hidden ? "0" : "1px solid var(--rule)";
     binsBtn.style.marginTop = stripEl.hidden ? "0" : "5px";
     binsBtn.style.paddingTop = stripEl.hidden ? "0" : "4px";
@@ -1689,6 +1732,35 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     return (cdsByState.get(st) || []).map((f) => f.properties.id).sort().map(districtCell);
   }
 
+  /* The state's raw vote by party over a by-district race, above the seat
+   * count in a state's House aside (the user, November 11: the seat bar's
+   * popular-vote line, which there is the nation's): Democrats left in blue, Republicans right in red, each
+   * with its two-party share; no label, no letters. Summed over the
+   * state's districts as the aside reads them, every
+   * candidate of a party together, so a same-party race (CA-12, two
+   * Democrats) counts toward that party. Blank and void lines are not
+   * votes; anyone else is a muted note at 2% or more. "" with no votes. */
+  const NOT_VOTES = /^(blank|void|over|under)/i;
+  function partyVoteRow(list) {
+    const n = { dem: 0, rep: 0, other: 0 };
+    for (const { votes, race } of list) {
+      if (!votes) continue;
+      const t = store.partyTotals(votes, race);
+      let blank = 0;
+      for (const k in votes) if (NOT_VOTES.test(k)) blank += Number(votes[k]) || 0;
+      n.dem += t.dem; n.rep += t.rep; n.other += Math.max(0, t.other - blank);
+    }
+    const two = n.dem + n.rep;
+    if (!two) return "";
+    const side = (p) => `<span style="color:${partyColor(p)}">${fmt(n[p])}` +
+      `<i style="font-style:normal;font-weight:400;font-size:11px;color:var(--ink-soft)"> · ${d3.format(".1f")(100 * n[p] / two)}%</i></span>`;
+    const other = n.other >= 0.02 * (two + n.other)
+      ? `<p class="hint" style="margin:0 0 4px;font-size:11px">Other ${fmt(n.other)} votes</p>` : "";
+    return `<div class="mw-statepv" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;` +
+      `font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;margin:0 0 ${other ? 2 : 6}px">` +
+      `${side("dem")}${side("rep")}</div>` + other;
+  }
+
   /* Every district of a state in a table: who leads and by how much, or why
    * there is nothing. Used for a redrawn state, and inside any state with
    * nothing under the pointer. */
@@ -1751,7 +1823,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       ? `Leading: D ${lead.dem} · R ${lead.rep}${lead.ind ? ` · other ${lead.ind}` : ""} of ${cells.length}`
       : `${cells.length} district${cells.length === 1 ? "" : "s"}, none reporting` +
         (shown ? `. Shown until votes: ${label}, D ${was.dem} · R ${was.rep}${was.ind ? ` · other ${was.ind}` : ""}` : "");
-    return `<p class="hint" style="margin:0 0 6px">${head}</p>` +
+    return partyVoteRow(cells.map((c) => ({ votes: c.data ? c.votes : null, race: c.race }))) +
+      `<p class="hint" style="margin:0 0 6px">${head}</p>` +
       `<table class="cands" style="width:100%;border-collapse:collapse;margin:0 0 10px;font-variant-numeric:tabular-nums">${rows}</table>`;
   }
 
@@ -3728,6 +3801,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     rows.push(["Districts", fmt(drawn || units)]);
     return `<h2>${esc(stateName(st))}</h2>` +
       `<p class="hint" style="margin:-6px 0 10px">${esc(raceLabel(race.race_id))} — by district</p>` +
+      // No statewide vote line here: the seat bar above is this same
+      // chamber and already carries it (partyVoteRow is for the House,
+      // whose bar is the nation's).
       dl([...rows, ...sourceRows({ data })]) + legislatureHint();
   }
 
