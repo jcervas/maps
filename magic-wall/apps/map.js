@@ -582,7 +582,24 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 :is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
 :is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] label:has(input:checked) { background: var(--ink); color: var(--paper); }
 :is(.map-pane.narrow, .mw-ctlstrip.narrow) [role=radiogroup] label:has(input:focus-visible) { outline: 2px solid var(--accent, var(--ink)); }
-:is(.map-pane.narrow .mw-ctlstrip, .mw-ctlstrip.narrow) [role=radiogroup] { justify-content: center; }`;
+:is(.map-pane.narrow .mw-ctlstrip, .mw-ctlstrip.narrow) [role=radiogroup] { justify-content: center; }
+/* The Shapes switch: Map | track | Cartogram, the side that is on in ink. */
+.mw-shapes > span:nth-child(2), .mw-shapes > span:nth-child(4) { color: var(--ink-soft); }
+.mw-shapes[data-on="map"] > span:nth-child(2), .mw-shapes[data-on="cartogram"] > span:nth-child(4) { color: var(--ink); font-weight: 600; }
+.mw-switch { position: relative; flex: none; width: 40px; height: 22px; padding: 0; margin: 0; border-radius: 999px;
+  border: 1px solid var(--rule); background: color-mix(in srgb, var(--ink) 14%, var(--paper)); cursor: pointer;
+  transition: background 0.15s; }
+.mw-switch[aria-checked="true"] { background: var(--ink); border-color: var(--ink); }
+.mw-switch .mw-knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--paper); box-shadow: 0 1px 2px rgba(0,0,0,0.35); transition: left 0.15s; }
+.mw-switch[aria-checked="true"] .mw-knob { left: 20px; }
+.mw-switch:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 2px; }
+.map-pane.narrow .mw-shapes { padding: 5px 10px !important; gap: 10px !important; font-size: 14px !important; }
+.map-pane.narrow .mw-shapes > span:first-child { font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--ink-soft); }
+.map-pane.narrow .mw-switch { width: 52px; height: 30px; }
+.map-pane.narrow .mw-switch .mw-knob { width: 24px; height: 24px; }
+.map-pane.narrow .mw-switch[aria-checked="true"] .mw-knob { left: 24px; }`;
     document.head.append(st);
   }
   const corner = document.createElement("div");
@@ -642,15 +659,46 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     for (const r of el.querySelectorAll("input")) r.checked = r.value === now;
   }
 
-  const shapesBtn = radioMenu("Shapes",
-    "Draw the districts as an equal-size cartogram (one cell per seat) or on their lines", (v) => {
-      if (!shapeChoices().includes(v)) return;
-      shapes = v;
-      try { localStorage.setItem("mw.shapes", shapes); } catch (_) { /* private window */ }
-      hovered = null;
-      pinned = null; pinnedAt = null; zoomedCd = null;
-      changed();
-    });
+  /* Shapes is a switch, Map on the left and Cartogram on the right (the
+   * user, November 10: "instead of radio buttons, we can have a toggle"):
+   * a rounded track with a sliding knob, the side that is on in ink and
+   * the other muted. A real button with role="switch", so Space and Enter
+   * work; tapping either word picks that side. The 2024 lines are gone
+   * from it; see shapeChoices. */
+  function pickShapes(v) {
+    if (!shapeChoices().includes(v) || v === shapesNow()) return;
+    shapes = v;
+    try { localStorage.setItem("mw.shapes", shapes); } catch (_) { /* private window */ }
+    hovered = null;
+    pinned = null; pinnedAt = null; zoomedCd = null;
+    changed();
+  }
+  const shapesBtn = document.createElement("div");
+  shapesBtn.className = "mw-shapes";
+  shapesBtn.hidden = true;
+  shapesBtn.title = "Draw the districts on the map, or as an equal-size cartogram (one cell per seat)";
+  shapesBtn.style.cssText = PILL_CSS + "position:static;display:none;align-items:center;gap:8px;cursor:default;" +
+    "box-sizing:border-box;max-width:100%;";
+  const shapesHead = document.createElement("span");
+  shapesHead.textContent = "Shapes";
+  shapesHead.style.fontWeight = "600";
+  const shapesMapLbl = document.createElement("span");
+  const shapesCartoLbl = document.createElement("span");
+  shapesMapLbl.textContent = "Map";
+  shapesCartoLbl.textContent = "Cartogram";
+  const shapesSwitch = document.createElement("button");
+  shapesSwitch.type = "button";
+  shapesSwitch.setAttribute("role", "switch");
+  shapesSwitch.setAttribute("aria-label", "Cartogram");
+  shapesSwitch.className = "mw-switch";
+  shapesSwitch.innerHTML = '<span class="mw-knob"></span>';
+  shapesBtn.append(shapesHead, shapesMapLbl, shapesSwitch, shapesCartoLbl);
+  shapesSwitch.addEventListener("click", () => pickShapes(shapesNow() === "cartogram" ? "lines" : "cartogram"));
+  shapesMapLbl.addEventListener("click", () => pickShapes("lines"));
+  shapesCartoLbl.addEventListener("click", () => pickShapes("cartogram"));
+  for (const l of [shapesMapLbl, shapesCartoLbl]) l.style.cssText = "cursor:pointer;white-space:nowrap;user-select:none;";
+  for (const t of ["click", "pointerdown", "mousedown", "wheel"]) shapesBtn.addEventListener(t, (ev) => ev.stopPropagation());
+  corner.appendChild(shapesBtn);
   /* Circles, the user's ask (November 6): over a district's county pieces,
    * a circle on each piece as big as its vote lead (area for votes), in the
    * leader's color, with the pieces drawn as plain land under them so the
@@ -1048,7 +1096,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   const SHAPE_LABEL = { cartogram: "Cartogram", lines2024: "2024 lines" };
   function syncShapesButton() {
     const lines = mode().office === "house" && !raceId ? `${mode().cycle} lines` : "District lines";
-    syncRadioMenu(shapesBtn, shapeChoices().map((v) => [v, SHAPE_LABEL[v] || lines]), shapesNow());
+    const c = shapeChoices();
+    shapesBtn.hidden = c.length < 2;
+    shapesBtn.style.display = shapesBtn.hidden ? "none" : "flex";
+    if (shapesBtn.hidden) return;
+    const on = shapesNow() === "cartogram";
+    shapesSwitch.setAttribute("aria-checked", String(on));
+    shapesBtn.dataset.on = on ? "cartogram" : "map";
+    shapesMapLbl.title = lines;
   }
 
   /** Phone or not (see NARROW_W): the menus in rows across the top, or
@@ -2710,7 +2765,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       return (focus ? m.has(focus) : m.size) ? ["cartogram", "lines"] : [];
     }
     if (r || office !== "house") return [];
-    return mode().districts ? ["cartogram", "lines", "lines2024"] : ["cartogram", "lines"];
+    // The 2024 lines are no longer offered (the user, November 10); a stored
+    // or preset "lines2024" reads as the lines (shapesNow).
+    return ["cartogram", "lines"];
   }
   function shapesNow() {
     const c = shapeChoices();
@@ -5754,7 +5811,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     /** Shapes for the House and the legislatures: "cartogram", "lines" (the
      *  race's own lines) or "lines2024" (House 2026 on the 2024 lines). */
     setShapes(v) {
-      if (!["cartogram", "lines", "lines2024"].includes(v)) return;
+      if (v === "lines2024") v = "lines";           // no longer offered
+      if (!["cartogram", "lines"].includes(v)) return;
       shapes = v;
       try { localStorage.setItem("mw.shapes", shapes); } catch (_) { /* private window */ }
       changed();
