@@ -352,9 +352,9 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 
   // ---------- live results, November 3, 2026 ----------
   // The page reads the WV Secretary of State's election-night feed (Clarity ENR) straight
-  // from the browser; the feed allows that from any site. live.json names the statewide
-  // Clarity election. Each county's results are re-read only when that county posts a new
-  // version, so a visitor makes two small requests a minute once the page has loaded.
+  // from the browser when live.json says "poll": true; the feed allows that from any site. live.json
+  // names the statewide Clarity election. Each county's results are re-read only when that county
+  // posts a new version, so a visitor makes two small requests a minute once the page has loaded.
   const LIVE = { every: 60000, base: 'https://results.enr.clarityelections.com/WV', conc: 6 };
   const LIVE_RACES = [
     { id: 'uss26', office: 'U.S. Senate', re: /^U\.S\. SENATOR$/i, kind: 'state' },
@@ -372,12 +372,16 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
     }
     return null;
   }
-  const liveCfg = await optJSON('live.json', { cache: 'no-store' });
+  // wv_2026.json is a saved copy of the feed (scripts/snapshot_wv_2026.py), so the 2026 races show
+  // without the feed; the page reads the feed itself only when live.json says "poll": true.
+  const [liveCfg, snap] = await Promise.all([optJSON('live.json', { cache: 'no-store' }), optJSON('wv_2026.json', { cache: 'no-cache' })]);
   const liveExtra = await optJSON('wv_live.json');
-  const hodTopo = liveCfg && liveCfg.eid ? await optJSON('wv_hod.json') : null;
+  const polling = !!(liveCfg && liveCfg.eid && liveCfg.poll);
+  const liveOn = polling || !!snap;
+  const hodTopo = liveOn ? await optJSON('wv_hod.json') : null;
   if (hodTopo) { FCS.hod = topojson.feature(hodTopo, hodTopo.objects.hod); FCS.hod.features.forEach(f => FEATS.hod.set(f.properties.d, f)); }
-  const liveOn = !!(liveCfg && liveCfg.eid);
-  const LF = { eid: liveOn ? liveCfg.eid : null, label: liveCfg && liveCfg.label || '', test: !!(liveCfg && liveCfg.test),
+  const LF = { eid: polling ? liveCfg.eid : snap ? snap.eid : null, label: (liveCfg && liveCfg.label) || (snap && snap.label) || '',
+               test: !!(liveCfg && liveCfg.test), polling, asof: snap && !polling ? new Date(snap.asof) : null,
                at: null, err: null, busy: false, counties: new Map(), unplaced: [] };
   const liveEs = liveOn ? LIVE_RACES.filter(r => r.kind !== 'hd' || FCS.hod).map(r => ({
     id: r.id, year: 2026, office: r.office, label: `${r.office} 2026`, layer: 'p2024', multi: r.kind !== 'state', live: true, race: r,
@@ -415,13 +419,17 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   async function loadCounty(name, ceid, cver) {
     const cb = `${LIVE.base}/${name}/${ceid}/${cver}`;
     const [sum, all] = await Promise.all([getJSON(`${cb}/json/en/summary.json`), getJSON(`${cb}/json/ALL.json`)]);
+    return parseCounty(name, cver, sum, all.Contests);
+  }
+  // The same, from the feed's files or from the saved copy in wv_2026.json
+  function parseCounty(name, cver, sum, allContests) {
     const contests = [];
     for (const c of sum) for (const r of LIVE_RACES) {
       const m = r.re.exec((c.C || '').trim());
       if (m) contests.push({ race: r.id, kind: r.kind, d: m[1] ? +m[1] : 0, K: c.K, CH: c.CH, P: c.P, V: c.V, TP: c.TP, PR: c.PR });
     }
     const keys = new Set(contests.map(c => c.K)), precs = [];
-    for (const pc of all.Contests) {
+    for (const pc of allContests) {
       if (pc.A === '-1') continue;                     // votes not tied to a precinct
       const votes = {};
       pc.C.forEach((k, j) => { if (keys.has(k)) votes[k] = pc.V[j]; });
@@ -475,7 +483,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
     LF.unplaced = [...unplaced];
   }
   async function pollLive() {
-    if (!liveOn || LF.busy || document.hidden) return;
+    if (!polling || LF.busy || document.hidden) return;
     LF.busy = true;
     try {
       const v = (await (await enr(`${LIVE.base}/${LF.eid}/current_ver.txt?t=${Date.now()}`, { cache: 'no-store' })).text()).trim();
@@ -815,6 +823,7 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
       .style('stroke-width', width + 'px').style('opacity', u => !pm && S.sel && S.sel !== u.d ? .35 : 1);
   }
 
+  const asofText = f => f.asof.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' });
   function renderStatus(msg) {
     const e = cur(), el = document.getElementById('status');
     if (msg) { el.innerHTML = msg; return; }
@@ -822,6 +831,10 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
     let s = `<b>${esc(e.label)}</b> · `;
     if (e.live && !swingOn()) {
       const f = e.feed, t = f.at ? f.at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '', rp = e.rep.all;
+      if (!f.polling) {
+        s = `<b>Unofficial results</b> · ${esc(e.label)}${rp ? ` · ${fmt(rp.pr)} of ${fmt(rp.tp)} precincts reporting · as of ${asofText(f)}` : ''}`;
+        el.innerHTML = s; return;
+      }
       s = `<span class="livedot"></span><b>${f.test ? 'Test feed' : 'Live'} · unofficial</b> · ${esc(e.label)}`;
       if (f.err) s += `<br><span style="color:var(--muted)">Results could not load (${esc(f.err)}). Trying again in a few seconds${location.hostname.endsWith('claude.ai') || location.protocol === 'blob:' ? '; live results load on jonathancervas.com, not in this preview' : ''}.</span>`;
       else if (rp) s += ` · ${fmt(rp.pr)} of ${fmt(rp.tp)} precincts reporting · checked ${t}${f.test ? `<br><span style="color:var(--muted)">Showing ${esc(f.label || f.name || 'a test feed')}.</span>` : ''}`;
@@ -970,11 +983,11 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
 
     const rp = e.live && e.rep.all;
     let html = `${e.live ? `<section class="sec">
-        <h3><span class="livedot"></span>${e.feed.test ? 'Test feed · ' : ''}Live · unofficial</h3>
+        <h3>${e.feed.polling ? `<span class="livedot"></span>${e.feed.test ? 'Test feed · ' : ''}Live · unofficial` : 'Unofficial results'}</h3>
         ${rp && rp.tp ? `<div class="cand"><div class="who"><b>Precincts reporting</b></div><span class="num">${fmt(rp.pr)} of ${fmt(rp.tp)}</span>
           <div class="bar"><i style="width:${100 * rp.pr / rp.tp}%;background:var(--accent)"></i></div></div>` : '<p class="hint">Loading results…</p>'}
         ${rp && !st.total ? '<p class="hint">No votes reported yet. County clerks start posting results after polls close at 7:30 p.m.</p>' : ''}
-        <p class="note">Unofficial results from the county clerks through the WV Secretary of State’s election-night site, checked every minute. Votes not tied to a precinct (absentee and early votes in some counties) count in statewide totals but not on the map${byDistrict(e.race.kind) ? '' : ' or in senate-district totals'}.${e.feed.unplaced.length ? ` Not on the map (no matching precinct shape): ${esc(e.feed.unplaced.join(', '))}.` : ''}</p>
+        <p class="note">Unofficial results from the county clerks through the WV Secretary of State’s election-night site, ${e.feed.polling ? 'checked every minute' : `as of the last county update on ${asofText(e.feed)}; not the certified count`}. Votes not tied to a precinct (absentee and early votes in some counties) count in statewide totals but not on the map${byDistrict(e.race.kind) ? '' : ' or in senate-district totals'}.${e.feed.unplaced.length ? ` Not on the map (no matching precinct shape): ${esc(e.feed.unplaced.join(', '))}.` : ''}</p>
       </section>` : ''}<section class="sec">
         <h3>${e.cands.length && e.cands[0].d ? `Statewide, all ${new Set(e.cands.map(c => c.d)).size} contests` : e.multi ? `Statewide, all ${new Set(e.cands.map(c => c.cd)).size} districts` : 'Statewide result'}</h3>
         <h2>${esc(e.label)}</h2>
@@ -1188,8 +1201,13 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && S.sel) select(null); });
   new ResizeObserver(() => { size(); renderLeft(); }).observe(document.getElementById('mapwrap'));
   size();
-  if (liveOn && liveCfg.default) setElection(liveCfg.default === true ? 'su26' : liveCfg.default); else renderAll();
-  if (liveOn) { pollLive(); setInterval(pollLive, LIVE.every); document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); }); }
+  if (snap) {                                          // start from the saved results; polling, if on, updates changed counties
+    for (const c of snap.counties) LF.counties.set(c.name, { name: c.name, updated: c.updated, ...parseCounty(c.name, c.ver, c.sum, c.all) });
+    aggregate(); LF.at = new Date(snap.saved);
+  }
+  const dflt = liveCfg ? liveCfg.default : !!snap;
+  if (liveOn && dflt) setElection(dflt === true ? 'su26' : dflt); else renderAll();
+  if (polling) { pollLive(); setInterval(pollLive, LIVE.every); document.addEventListener('visibilitychange', () => { if (!document.hidden) pollLive(); }); }
 })().catch(err => {
   document.getElementById('loading').hidden = false;
   document.getElementById('loading').textContent = 'The map data could not load: ' + err.message + '. Reload the page to try again.';
