@@ -4902,7 +4902,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const live = spec.cycle === "2026";
     // Under a rating or before a count, the rating; once a count is on, the boards' count.
     const fromSeat = (s, c) => {
-      const sh = shareOfTotals(S.seatTotals ? S.seatTotals(s) : null, s.status === "called" ? s.party : null);
+      const tot = S.seatTotals ? S.seatTotals(s) : null;
+      const sh = { ...shareOfTotals(tot, s.status === "called" ? s.party : null), tot };
       if (ratingVar()) return { ...ratingBin(c), ...sh };
       if (s.status === "called" || s.status === "leading") {
         const p = s.party === "dem" || s.party === "rep" ? s.party : "mid";
@@ -4923,7 +4924,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         for (const f of feats) {
           const c = cellFor(f, false);
           out.push({ id: f.properties.id, key: f.properties.id, st: f.properties.state,
-                     fill: fillOf(cellFill(c, false)), ...resultBin(c), ...shareOfTotals(c.totals, c.unopposed) });
+                     fill: fillOf(cellFill(c, false)), ...resultBin(c), ...shareOfTotals(c.totals, c.unopposed), tot: c.totals });
         }
       }
     } else if (spec.chamber === "senate") {
@@ -4964,7 +4965,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
             const c = unitCell(f.properties.id);
             if (c.notUp) continue;
             out.push({ id: f.properties.id, key: f.properties.id, st,
-                       fill: fillOf(cellFill(c, false)), ...resultBin(c), ...shareOfTotals(c.totals, c.unopposed) });
+                       fill: fillOf(cellFill(c, false)), ...resultBin(c), ...shareOfTotals(c.totals, c.unopposed), tot: c.totals });
           }
         });
       }
@@ -5116,6 +5117,121 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         if (p === "dem" || p === "rep") L.side[p] += 1;
       } else if (it.share > 50) L.side.dem += 1; else if (it.share < 50) L.side.rep += 1; else L.side.even += 1;
     }
+    L.median = histMedian(items);
+    L.vote = histVote(items);
+  }
+
+  /* The median seat (the user, November 11: "maybe we can mark the median
+   * in the histogram?"): every seat up ranked by its Democratic share of the
+   * two-party vote, and the one a majority needs counted from the
+   * Democratic side -- the 218th of 435, the 102nd of 203. A seat only one
+   * party ran in is ranked at that party's end, a call with no count
+   * (Florida's 10th) included, though it sits in an end stack; seats not up
+   * are out of the count, and so is a seat with no count or call yet (it is
+   * named in the aside). { it, need, n, none, partial }, or null. */
+  function histMedian(items) {
+    const live = items.filter((it) => !it.muted);
+    const sideOf = (it) => {
+      const p = it.how && /^(Called|Leading)/.test(it.how) ? it.bin : null;
+      return p === "dem" || p === "rep" ? p : it.end;
+    };
+    const key = (it) => (it.share != null ? it.share : !it.end ? null : sideOf(it) === "dem" ? 1000 : -1000);
+    const ranked = live.filter((it) => key(it) != null)
+      .sort((a, z) => key(z) - key(a) || String(a.id).localeCompare(String(z.id)));
+    const n = live.length;
+    if (n < 3) return null;
+    const need = Math.floor(n / 2) + 1;
+    const it = ranked[need - 1];
+    if (!it) return null;
+    // Part of the chamber: seats not up (muted), or a past Senate's half.
+    const size = { "pa-senate": 50, "wv-senate": 34 }[bins.spec && bins.spec.chamber];
+    const partial = items.length > n || (!!size && n < size);
+    return { it, need, n, none: n - ranked.length, partial, side: sideOf(it) };
+  }
+
+  /** The two-party vote over the seats drawn: { share, name }, or null. */
+  function histVote(items) {
+    let dem = 0, rep = 0;
+    for (const it of items) {
+      if (it.muted || !it.tot) continue;
+      dem += it.tot.dem || 0;
+      rep += it.tot.rep || 0;
+    }
+    if (!(dem > 0 && rep > 0)) return null;
+    const S = bins.spec || {};
+    const name = S.chamber === "house" && !S.st ? "Nation" : S.chamber === "senate" ? "All races" : "Statewide";
+    return { share: 100 * dem / (dem + rep), name, dem, rep };
+  }
+
+  /** A seat's short name for the median's label: "OH-07", "HD 102", "SD 6". */
+  function seatShort(it) {
+    const id = String(it.key || it.id);
+    const m = /^[A-Z]{2}-(S?)(\d+)$/.exec(id);
+    if (m && bins.spec && bins.spec.chamber !== "house") return `${m[1] ? "SD" : "HD"} ${+m[2]}`;
+    if (bins.spec && bins.spec.chamber === "senate") return it.st + (it.special ? " (sp.)" : "");
+    return id;
+  }
+  const medianValue = (M) => (M.it.share != null ? marginLabel(2 * M.it.share - 100)
+    : M.side === "dem" ? "no Republican" : "no Democrat");
+
+  /** The median seat's rule and the chamber's vote: a solid rule at the
+   *  median's share, a dotted lighter one at the vote's, each up to its
+   *  label. Under the squares (behind) with under = true; the labels and the
+   *  median's ring over them otherwise. */
+  function drawHistMarks(ctx, L, T, k, under) {
+    const M = L.median, V = L.vote;
+    const marks = [];
+    const clampV = (v) => Math.max(L.lo, Math.min(L.hi, v));
+    const narrowPane = L.W < 600;
+    if (M && M.it.share != null) {
+      const word = M.partial ? "Median of seats up" : "Median seat";
+      marks.push({ v: M.it.share, x: L.xOf(clampV(M.it.share)), median: true,
+                   labels: [`${word}: ${seatShort(M.it)} ${medianValue(M)}`, `${M.partial ? "Median (up)" : "Median"} ${seatShort(M.it)} ${medianValue(M)}`] });
+    }
+    if (V) {
+      marks.push({ v: V.share, x: L.xOf(clampV(V.share)), median: false,
+                   labels: [`${V.name} ${marginLabel(2 * V.share - 100)}`] });
+    }
+    // The one farther from even gets the lower row, so the inner rule's
+    // label passes over the outer rule's top and nothing crosses.
+    marks.sort((a, z) => Math.abs(z.v - 50) - Math.abs(a.v - 50));
+    const row = 17 * Math.min(k, 1.5);
+    marks.forEach((m, i) => { m.y = L.y0 - 14 * Math.min(k, 1.5) - i * row; });
+    if (under) {
+      for (const m of marks) {
+        ctx.strokeStyle = m.median ? T.ink : T.inkSoft;
+        ctx.lineWidth = m.median ? 1.5 : 1.25;
+        ctx.setLineDash(m.median ? [] : [2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(Math.round(m.x) + 0.5, L.yb);
+        ctx.lineTo(Math.round(m.x) + 0.5, m.y - row / 2 + 3);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      return;
+    }
+    // The median's own square, ringed once it has landed.
+    if (M && M.it.s >= 0.5 && binProgress(M.it) > 0.98) {
+      const it = M.it, o = 2;
+      ctx.strokeStyle = T.ink;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(it.x - o, it.y - o, it.s + 2 * o, it.s + 2 * o);
+    }
+    ctx.textBaseline = "middle";
+    for (const m of marks) {
+      ctx.font = m.median ? FONT(700, 11.5) : FONT(600, 11);
+      ctx.fillStyle = m.median ? T.ink : T.inkSoft;
+      // Outward from even: to the right on the Democrats' side.
+      const out = m.v >= 50 ? 1 : -1;
+      let lab = m.labels[0], w = ctx.measureText(lab).width, dir = out;
+      const fits = (d, ww) => (d > 0 ? m.x + 4 + ww <= L.x1 + 20 : m.x - 4 - ww >= L.x0 - 20);
+      if (!fits(dir, w) && m.labels[1]) { lab = m.labels[1]; w = ctx.measureText(lab).width; }
+      if (!fits(dir, w)) dir = -dir;
+      ctx.textAlign = dir > 0 ? "left" : "right";
+      ctx.fillText(lab, m.x + dir * 4, m.y);
+    }
+    ctx.textBaseline = "top";
+    void narrowPane;
   }
 
   /** Lay the squares out for the mode in view, in a pane W x H. */
@@ -5405,6 +5521,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const landed = { dem: 0, mid: 0, rep: 0 };
     // The squares fade with the map's return on the way back.
     const fade = bins.out ? Math.min(1, cover / 0.6) : 1;
+    if (L.kind === "hist") drawHistMarks(ctx, L, T, k, true);
     for (const it of bins.items) {
       const q = binProgress(it);
       it.x = lerp(it.fx, it.tx, q);
@@ -5429,7 +5546,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       ctx.lineWidth = 2;
       ctx.strokeRect(it.x, it.y, it.s, it.s);
     }
-    if (L.kind === "hist") drawHistAxis(ctx, L, T, k);
+    if (L.kind === "hist") { drawHistAxis(ctx, L, T, k); drawHistMarks(ctx, L, T, k, false); }
     else {
       // The majority: a rule across a party's stack at the seat that makes it.
       const maj = bins.maj;
@@ -5522,7 +5639,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         r("Democrats ahead in the vote", L.side.dem, "dem") + r("Republicans ahead in the vote", L.side.rep, "rep") +
         (L.side.even ? r("Tied", L.side.even) : "") +
         r("No Republican running (in the Democrats' count)", L.ends.dem) + r("No Democrat running (in the Republicans' count)", L.ends.rep) +
-        `</table><p class="hint">Point at a square for its seat. Pick Seats: Map to put them back on the map.</p>`;
+        `</table>` + histMedianHTML(L) +
+        `<p class="hint">Point at a square for its seat. Pick Seats: Map to put them back on the map.</p>`;
     }
     const muted = { dem: 0, mid: 0, rep: 0 };
     for (const x of bins.items) if (x.muted) muted[x.bin] += 1;
@@ -5535,6 +5653,39 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       row("rep", "Republicans") + `</table>` +
       (maj ? `<p class="hint">Majority: ${maj.dem === maj.rep ? maj.dem : `${maj.dem} for Democrats, ${maj.rep} for Republicans (the vice president breaks ties)`} of ${maj.seats}.</p>` : "") +
       `<p class="hint">Point at a square for its seat. Pick Seats: Map to put them back on the map.</p>`;
+  }
+
+  /** The aside's lines on the median seat and the chamber's vote. */
+  function histMedianHTML(L) {
+    const M = L.median, V = L.vote;
+    if (!M && !V) return "";
+    const ord = (n) => `${fmt(n)}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th"}`;
+    const S = bins.spec || {};
+    const whole = S.chamber === "house" && S.st ? `${stateName(S.st)}'s ${fmt(M ? M.n : 0)} seats` : `${fmt(M ? M.n : 0)} seats${M && M.partial ? " up" : ""}`;
+    let html = "";
+    if (M) {
+      const v = medianValue(M);
+      const color = M.it.share != null ? partyColor(M.it.share >= 50 ? "dem" : "rep") : partyColor(M.side);
+      html += `<p style="margin:0 0 4px"><span style="color:var(--ink-soft)">${M.partial ? "Median of the seats up" : "Median seat"}:</span> ` +
+        `<b>${esc(seatShort(M.it))}</b> <b style="color:${color}">${esc(v)}</b></p>` +
+        `<p class="hint" style="margin:0 0 6px">The ${ord(M.need)} of ${whole} counted from the Democratic side` +
+        (M.partial ? `. With seats not up left out, it says little about control.`
+          : S.chamber === "house" && S.st ? "." : `: the seat that makes a majority.`) +
+        (M.none ? ` ${fmt(M.none)} with no count yet ${M.none === 1 ? "is" : "are"} not ranked.` : "") + `</p>`;
+    }
+    if (V) {
+      const vm = 2 * V.share - 100;
+      html += `<p style="margin:0 0 4px"><span style="color:var(--ink-soft)">${esc(V.name)}, two-party vote:</span> ` +
+        `<b style="color:${partyColor(vm >= 0 ? "dem" : "rep")}">${esc(marginLabel(vm))}</b></p>`;
+      if (M && M.it.share != null) {
+        // From the shown values, so D+13.8 against D+9.9 reads 3.9, not 4.0.
+        const r1 = (x) => Math.round(x * 10) / 10;
+        const gap = r1(vm) - r1(2 * M.it.share - 100);
+        html += `<p class="hint" style="margin:0 0 10px">${Math.abs(gap) < 0.05 ? "The median seat votes as the whole does."
+          : `The median seat is ${d3.format(".1f")(Math.abs(gap))} points more ${gap > 0 ? "Republican" : "Democratic"} than the ${V.name === "Nation" ? "nation" : V.name === "All races" ? "races together" : "state"}.`}</p>`;
+      }
+    }
+    return html;
   }
 
   canvas.addEventListener("pointermove", (ev) => {
@@ -6455,6 +6606,15 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     binItems() {
       return bins.on ? bins.items.map((it) => ({ id: it.id, bin: it.bin, rank: it.rank, x: it.tx, y: it.ty, s: it.ts,
         share: it.share ?? null, end: it.end || null, muted: !!it.muted, mode: bins.mode })) : [];
+    },
+    /** The histogram's median seat and chamber vote, for checks. */
+    binsMedian() {
+      const L = bins.on && bins.layout;
+      if (!L || L.kind !== "hist") return null;
+      const M = L.median, V = L.vote;
+      return { median: M && { id: M.it.id, short: seatShort(M.it), share: M.it.share ?? null, side: M.side, need: M.need, n: M.n,
+                              none: M.none, partial: M.partial, value: medianValue(M) },
+               vote: V && { name: V.name, share: V.share, label: marginLabel(2 * V.share - 100) } };
     },
     /** The boards' seat count (data/seats.js), for the bins. Optional: the
      *  shell's own is found at window.wall.seats without it. */
