@@ -1,6 +1,7 @@
 /* The 2024 presidential vote (Dem, Rep) by district. The 2026 congressional
  * districts: Harris's and Trump's shares from Dave's Redistricting App, in
- * parts per million of the district's vote. The Pennsylvania legislative
+ * parts per million of the district's vote (DRA's 2026 lines in the states
+ * that redrew, its 2024 lines elsewhere). The Pennsylvania legislative
  * districts (PA-001, PA-S01): vote counts from Dave's Redistricting App's own
  * district totals (CC BY-SA 4.0), with a third number for everyone else. The
  * West Virginia legislative districts: estimates from The New York Times's
@@ -61,9 +62,9 @@ export const DISTRICT_PRES_2024 = {
   "MI-07": [490000, 500000], "MI-08": [480000, 500000], "MI-09": [330000, 650000], "MI-10": [460000, 520000],
   "MI-11": [570000, 410000], "MI-12": [670000, 290000], "MI-13": [690000, 280000], "MN-01": [429170, 548813],
   "MN-02": [516940, 458872], "MN-03": [592569, 381101], "MN-04": [664273, 309256], "MN-05": [792635, 176694],
-  "MN-06": [390276, 586226], "MN-07": [308353, 672066], "MN-08": [418961, 561425], "MO-01": [778550, 203151],
-  "MO-02": [434708, 548441], "MO-03": [392561, 592167], "MO-04": [387912, 598731], "MO-05": [400846, 584290],
-  "MO-06": [360025, 626309], "MO-07": [280601, 707062], "MO-08": [225652, 764551], "MS-01": [308195, 678535],
+  "MN-06": [390276, 586226], "MN-07": [308353, 672066], "MN-08": [418961, 561425], "MO-01": [776554, 205252],
+  "MO-02": [451688, 531204], "MO-03": [359099, 626319], "MO-04": [283040, 704170], "MO-05": [608143, 374077],
+  "MO-06": [299678, 688235], "MO-07": [280601, 707062], "MO-08": [225652, 764551], "MS-01": [308195, 678535],
   "MS-02": [596749, 392950], "MS-03": [349067, 641175], "MS-04": [281881, 707274], "MT-01": [426640, 542156],
   "MT-02": [336421, 631795], "NC-01": [436769, 552647], "NC-02": [657926, 321056], "NC-03": [426503, 562650],
   "NC-04": [715072, 264244], "NC-05": [405136, 582042], "NC-06": [406823, 577731], "NC-07": [424849, 563386],
