@@ -364,9 +364,17 @@ select.pick { font: inherit; font-weight: 550; font-size: 12.5px; padding: 6px 2
     { id: 'hod26', office: 'House of Delegates', re: /^HOUSE OF DELEGATES,\s*(\d+)\w*\s+District$/i, kind: 'hd' },
   ];
   const byDistrict = k => k === 'sd' || k === 'hd';       // results come per district contest
-  const liveCfg = await fetch('live.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
-  const liveExtra = await fetch('wv_live.json').then(r => r.ok ? r.json() : null).catch(() => null);
-  const hodTopo = liveCfg && liveCfg.eid ? await fetch('wv_hod.json').then(r => r.ok ? r.json() : null).catch(() => null) : null;
+  // The 2026 races exist only if these files load, so a dropped request gets two more tries (a missing file, none)
+  async function optJSON(u, opt) {
+    for (let k = 0; k < 3; k++) {
+      try { const r = await fetch(u, opt); if (r.ok) return await r.json(); if (r.status === 404) return null; } catch (err) { /* try again */ }
+      await new Promise(res => setTimeout(res, 1000 * (k + 1)));
+    }
+    return null;
+  }
+  const liveCfg = await optJSON('live.json', { cache: 'no-store' });
+  const liveExtra = await optJSON('wv_live.json');
+  const hodTopo = liveCfg && liveCfg.eid ? await optJSON('wv_hod.json') : null;
   if (hodTopo) { FCS.hod = topojson.feature(hodTopo, hodTopo.objects.hod); FCS.hod.features.forEach(f => FEATS.hod.set(f.properties.d, f)); }
   const liveOn = !!(liveCfg && liveCfg.eid);
   const LF = { eid: liveOn ? liveCfg.eid : null, label: liveCfg && liveCfg.label || '', test: !!(liveCfg && liveCfg.test),
