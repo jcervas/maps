@@ -18,6 +18,7 @@ import { ballotText, createControlStrip, ensureStyles } from "./seatbar.js";
 import { CHAMBER_TITLES, ALL_CHAMBERS } from "../data/seats.js";
 import { ratingFor, legLabel, ratingSource, parseRating, RATINGS, LEG_RATINGS } from "../data/ratings.js";
 import { DISTRICT_PRES_2024 } from "../data/district_pres.js";
+import { PRES_2024_CD_TWOPARTY } from "../data/pres_2024_cd_votes.js";
 
 /* A district's PVI, Cook's formula on one election: its share of the 2024
  * two-party presidential vote for Harris less the nation's, in points,
@@ -5160,7 +5161,65 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!(dem > 0 && rep > 0)) return null;
     const S = bins.spec || {};
     const name = S.chamber === "house" && !S.st ? "Nation" : S.chamber === "senate" ? "All races" : "Statewide";
+    // This year's House: the races with no Democrat-vs-Republican count estimated.
+    const imp = S.chamber === "house" && S.cycle === "2026" ? imputedHouseVote(S.st) : null;
+    if (imp) return { ...imp, name };
     return { share: 100 * dem / (dem + rep), name, dem, rep };
+  }
+
+  /* The two-party House vote with the races lacking a Democrat-vs-Republican
+   * count estimated (the user, November 11: the raw sum counts an
+   * uncontested seat's one-sided total in full and overstates the side that
+   * ran). Contested seats -- a Democrat and a Republican both with votes --
+   * count as they are. Every other seat (Florida's 10th, with no count,
+   * included): the Democratic share is Harris's 2024 two-party share there
+   * (Dave's Redistricting App) plus the median over contested seats of 2026
+   * share minus Harris share, held to 0..1; the two-party total is the
+   * district's 2024 presidential two-party vote (data/pres_2024_cd_votes.js)
+   * times its state's median 2026/2024 ratio over its contested seats, or
+   * the nation's where the state has none. The shift and the nation's ratio
+   * come from every contested seat, inside a state too. Live, so it moves
+   * with the count. Null where nothing is estimated (all contested): the
+   * raw sum stands. Only the Histogram's line: the seat bar's totals stay
+   * the raw count. */
+  function imputedHouseVote(st) {
+    const src = seatsSrc();
+    if (!src || !src.seatTotals) return null;
+    const med = (a) => {
+      const b = [...a].sort((x, y) => x - y), n = b.length;
+      return !n ? null : n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2;
+    };
+    const rows = [];
+    for (const s of src.seats("house")) {
+      const t = src.seatTotals(s) || {};
+      const v = DISTRICT_PRES_2024[s.label];
+      const dem = t.dem || 0, rep = t.rep || 0;
+      rows.push({ st: s.state, dem, rep, con: dem > 0 && rep > 0,
+                  h: v && v[0] + v[1] > 0 ? v[0] / (v[0] + v[1]) : null, p24: PRES_2024_CD_TWOPARTY[s.label] || null });
+    }
+    const con = rows.filter((r) => r.con);
+    const shift = med(con.filter((r) => r.h != null).map((r) => r.dem / (r.dem + r.rep) - r.h));
+    const ratios = new Map();
+    for (const r of con) {
+      if (!r.p24) continue;
+      if (!ratios.has(r.st)) ratios.set(r.st, []);
+      ratios.get(r.st).push((r.dem + r.rep) / r.p24);
+    }
+    const all = med([...ratios.values()].flat());
+    if (shift == null || all == null) return null;
+    let dem = 0, rep = 0, est = 0, miss = 0;
+    for (const r of rows) {
+      if (st && r.st !== st) continue;
+      if (r.con) { dem += r.dem; rep += r.rep; continue; }
+      if (r.h == null || !r.p24) { dem += r.dem; rep += r.rep; miss += 1; continue; }
+      const share = Math.max(0, Math.min(1, r.h + shift));
+      const tv = r.p24 * (ratios.has(r.st) ? med(ratios.get(r.st)) : all);
+      dem += share * tv;
+      rep += (1 - share) * tv;
+      est += 1;
+    }
+    if (!est || !(dem + rep > 0)) return null;
+    return { share: 100 * dem / (dem + rep), dem, rep, est, miss, shift, ratio: all };
   }
 
   /** A seat's short name for the median's label: "OH-07", "HD 102", "SD 6". */
@@ -5190,7 +5249,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     if (V) {
       marks.push({ v: V.share, x: L.xOf(clampV(V.share)), median: false,
-                   labels: [`${V.name} ${marginLabel(2 * V.share - 100)}`] });
+                   labels: [`${V.name} ${marginLabel(2 * V.share - 100)}${V.est ? " (est.)" : ""}`] });
     }
     // The one farther from even gets the lower row, so the inner rule's
     // label passes over the outer rule's top and nothing crosses.
@@ -5675,7 +5734,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     }
     if (V) {
       const vm = 2 * V.share - 100;
-      html += `<p style="margin:0 0 4px"><span style="color:var(--ink-soft)">${esc(V.name)}, two-party vote:</span> ` +
+      html += `<p style="margin:0 0 4px"><span style="color:var(--ink-soft)">${esc(V.name)}, two-party vote${V.est ? " (est.)" : ""}:</span> ` +
         `<b style="color:${partyColor(vm >= 0 ? "dem" : "rep")}">${esc(marginLabel(vm))}</b></p>`;
       if (M && M.it.share != null) {
         // From the shown values, so D+13.8 against D+9.9 reads 3.9, not 4.0.
@@ -5683,6 +5742,12 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         const gap = r1(vm) - r1(2 * M.it.share - 100);
         html += `<p class="hint" style="margin:0 0 10px">${Math.abs(gap) < 0.05 ? "The median seat votes as the whole does."
           : `The median seat is ${d3.format(".1f")(Math.abs(gap))} points more ${gap > 0 ? "Republican" : "Democratic"} than the ${V.name === "Nation" ? "nation" : V.name === "All races" ? "races together" : "state"}.`}</p>`;
+      }
+      if (V.est) {
+        html += `<p class="hint mw-src" style="margin:0 0 10px;font-size:0.857rem">Two-party House vote, with races lacking a D-vs-R contest ` +
+          `estimated from 2024 presidential results: ${fmt(V.est)} ${V.est === 1 ? "seat" : "seats"} at Harris's share (Dave's Redistricting App) ` +
+          `plus the median shift in contested seats (${V.shift >= 0 ? "D" : "R"}+${d3.format(".1f")(Math.abs(V.shift * 200))}), ` +
+          `sized by the 2024 presidential vote (The New York Times's precinct results). The seat bar's totals are the raw count.</p>`;
       }
     }
     return html;
