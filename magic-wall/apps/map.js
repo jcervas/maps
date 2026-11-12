@@ -4918,7 +4918,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         for (const s of S.seats("house")) {
           if (spec.st && s.state !== spec.st) continue;
           const c = districtCell(s.label);
-          out.push({ id: s.label, key: s.label, st: s.state, fill: fillOf(cellFill(c, false)), ...fromSeat(s, c) });
+          out.push({ id: s.label, key: s.label, st: s.state, fill: fillOf(cellFill(c, false)), ...fromSeat(s, c),
+                     redrawn: redrawn.has(s.state) });
         }
       } else {
         const feats = spec.st ? unitsIn(spec.st) : (cartoNational() ? carto.cd2024 : geo.cds);
@@ -5597,6 +5598,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       ctx.fillStyle = it.muted ? (d3.hcl(T.paper).l >= 50 ? d3.interpolateLab(it.fill, d3.interpolateRgb(T.paper, T.ink)(0.62))(0.5)
         : muteColor(it.fill, 0.5)) : it.fill;
       ctx.fillRect(it.x + pad / 2, it.y + pad / 2, it.s - pad, it.s - pad);
+      if (it.redrawn && !it.muted) drawRedrawnMark(ctx, it.x + pad / 2, it.y + pad / 2, it.s - pad, T);
     }
     ctx.globalAlpha = cover;
     if (bins.hover) {
@@ -5654,6 +5656,57 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     ctx.font = FONT(400, 12);
     ctx.fillStyle = T.inkSoft;
     ctx.fillText(binsBasis(), 24, L.ins.top + 38 * Math.min(k, 1.5));
+    // The key for the redrawn seats' mark, under the basis line.
+    if (bins.items.some((it) => it.redrawn && !it.muted)) {
+      const kk = Math.min(k, 1.5), sw = 11 * kk, ky = L.ins.top + 60 * kk;
+      const seat = bins.items.find((it) => it.redrawn && !it.muted);
+      const real = Math.max(0, (seat.ts || seat.s || 0) * 0.9);
+      ctx.fillStyle = d3.interpolateRgb(T.paper, T.ink)(0.35);
+      ctx.fillRect(24, ky - sw / 2, sw, sw);
+      // The same mark the squares carry: a dash, or the tick on small squares.
+      drawRedrawnMark(ctx, 24, ky - sw / 2, sw, T, real < REDRAWN_DASH_MIN);
+      ctx.font = FONT(600, 12);
+      ctx.fillStyle = T.inkSoft;
+      ctx.textBaseline = "middle";
+      ctx.fillText("Redrawn for 2026", 24 + sw + 6 * kk, ky);
+    }
+    ctx.restore();
+  }
+
+  /* A seat in a state that redrew its House lines for 2026 (the user,
+   * November 12: "the histogram and bins need to mark which districts were
+   * drawn (maybe dashed stroke)"): a dashed outline just inside its square,
+   * ink dashes over a paper underlay so it reads on either party's fill,
+   * called or leading, on a light screen or a dark one. A square too small
+   * for a dash to read (a phone's national histogram, about 4 px) carries an
+   * ink tick in its top right corner instead. The median's ring and the
+   * hover outline sit outside the square and are drawn after, so they win. */
+  const REDRAWN_DASH_MIN = 7;
+  function drawRedrawnMark(ctx, x, y, s, T, tick = s < REDRAWN_DASH_MIN) {
+    if (s < 1) return;
+    ctx.save();
+    if (tick) {
+      const t = Math.max(1.5, s * 0.6);
+      ctx.fillStyle = T.ink;
+      ctx.beginPath();
+      ctx.moveTo(x + s - t, y);
+      ctx.lineTo(x + s, y);
+      ctx.lineTo(x + s, y + t);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+    const lw = Math.max(1, Math.min(2, s * 0.11)), r = s - lw;
+    // Dashes that bend round the corners: a whole number of periods a side.
+    const m = Math.max(1, Math.round(r / 7)), a = r / (2 * m);
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = T.paper;
+    ctx.strokeRect(x + lw / 2, y + lw / 2, r, r);
+    ctx.strokeStyle = T.ink;
+    ctx.setLineDash([a, a]);
+    ctx.lineDashOffset = a / 2;
+    ctx.strokeRect(x + lw / 2, y + lw / 2, r, r);
     ctx.restore();
   }
 
@@ -5689,7 +5742,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   function binsHTML() {
     const it = bins.hover;
-    if (it) return it.html || (it.f ? readoutHTML(it.f) : "");
+    if (it) {
+      const html = it.html || (it.f ? readoutHTML(it.f) : "");
+      if (!it.redrawn || !html) return html;
+      // On the readout's subtitle line, the way the map's key says it.
+      const tag = `<span class="mw-redrawn-tag"> · <b style="color:var(--ink)">Redrawn for 2026</b></span>`;
+      const at = html.indexOf("</p>");
+      return at < 0 ? html + `<p class="hint">${tag.replace(" · ", "")}</p>` : html.slice(0, at) + tag + html.slice(at);
+    }
     const L = bins.layout, n = L.n;
     if (L.kind === "hist") {
       const r = (name, v, p) => `<tr><td style="padding:2px 0">${name}</td><td style="text-align:right;font-weight:700${p ? `;color:${partyColor(p)}` : ""}">${v}</td></tr>`;
@@ -6670,7 +6730,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     /** The squares in the bins, for checks: { id, bin, rank, x, y, muted }. */
     binItems() {
       return bins.on ? bins.items.map((it) => ({ id: it.id, bin: it.bin, rank: it.rank, x: it.tx, y: it.ty, s: it.ts,
-        share: it.share ?? null, end: it.end || null, muted: !!it.muted, mode: bins.mode })) : [];
+        share: it.share ?? null, end: it.end || null, muted: !!it.muted, mode: bins.mode,
+        st: it.st || null, redrawn: !!it.redrawn })) : [];
     },
     /** The histogram's median seat and chamber vote, for checks. */
     binsMedian() {

@@ -6,7 +6,8 @@
  * data/district_pres.js. Used to weight the imputed two-party House vote,
  * where a seat with no Democrat-vs-Republican race gets Harris's share plus
  * the median shift and this total times its state's 2026/2024 turnout ratio
- * (the user, November 11, 2026). */
+ * (the user, November 11, 2026). Missouri's eight are on its 2022 lines,
+ * which it voted on in 2026 (its 2025 map was held up). */
 export const PRES_2024_CD_TWOPARTY = {
   "AK-AL": 324484, "AL-01": 323486, "AL-02": 290379, "AL-03": 312968, "AL-04": 323210, "AL-05": 347286,
   "AL-06": 343591, "AL-07": 293011, "AR-01": 268585, "AR-02": 312514, "AR-03": 299493, "AR-04": 274407,
@@ -44,8 +45,8 @@ export const PRES_2024_CD_TWOPARTY = {
   "MI-01": 481399, "MI-02": 432892, "MI-03": 420514, "MI-04": 425746, "MI-05": 418865, "MI-06": 452471,
   "MI-07": 458945, "MI-08": 424960, "MI-09": 477776, "MI-10": 428927, "MI-11": 452473, "MI-12": 360265,
   "MI-13": 324350, "MN-01": 380755, "MN-02": 416496, "MN-03": 413601, "MN-04": 369115, "MN-05": 357658,
-  "MN-06": 421848, "MN-07": 393292, "MN-08": 423232, "MO-01": 310151, "MO-02": 416739, "MO-03": 397834,
-  "MO-04": 390804, "MO-05": 330179, "MO-06": 371902, "MO-07": 371004, "MO-08": 363474, "MS-01": 319783,
+  "MN-06": 421848, "MN-07": 393292, "MN-08": 423232, "MO-01": 310306, "MO-02": 426764, "MO-03": 398423,
+  "MO-04": 372258, "MO-05": 331375, "MO-06": 378906, "MO-07": 371036, "MO-08": 363460, "MS-01": 319783,
   "MS-02": 284100, "MS-03": 320008, "MS-04": 290519, "MT-01": 312000, "MT-02": 271985, "NC-01": 411454,
   "NC-02": 398893, "NC-03": 343052, "NC-04": 430658, "NC-05": 402945, "NC-06": 385655, "NC-07": 437420,
   "NC-08": 404460, "NC-09": 376814, "NC-10": 410867, "NC-11": 434001, "NC-12": 346909, "NC-13": 423900,
