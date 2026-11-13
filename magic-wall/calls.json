@@ -72,6 +72,12 @@
    "by": "AP",
    "at": "2026-11-04T01:00:40.195Z"
   },
+  "2026-gov-ks": {
+   "party": "dem",
+   "winner": "Cindy Holscher",
+   "by": "AP",
+   "at": "2026-11-12T22:43:59.625Z"
+  },
   "2026-gov-ma": {
    "party": "dem",
    "winner": "Maura Healey",
@@ -1349,6 +1355,12 @@
    "winner": "Chellie Pingree",
    "by": "AP",
    "at": "2026-11-04T03:18:52.586Z"
+  },
+  "2026-house-me-02": {
+   "party": "rep",
+   "winner": "Paul LePage",
+   "by": "AP",
+   "at": "2026-11-12T18:31:29.417Z"
   },
   "2026-house-mi-01": {
    "party": "rep",
