@@ -1,5 +1,11 @@
 {
  "calls": {
+  "2026-gov-ak": {
+   "party": "dem",
+   "winner": "Jonathan Kreiss-Tomkins",
+   "by": "AP",
+   "at": "2026-11-14T05:01:13.762Z"
+  },
   "2026-gov-al": {
    "party": "rep",
    "winner": "Thomas Tuberville",
