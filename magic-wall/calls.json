@@ -1602,6 +1602,12 @@
    "by": "AP",
    "at": "2026-11-04T01:24:28.657Z"
   },
+  "2026-house-nc-03": {
+   "party": "dem",
+   "winner": "Raymond Smith",
+   "by": "AP",
+   "at": "2026-11-17T20:45:05.431Z"
+  },
   "2026-house-nc-04": {
    "party": "dem",
    "winner": "Valerie Foushee",
@@ -2778,6 +2784,12 @@
    "by": "AP",
    "at": "2026-11-04T04:40:29.036Z"
   },
+  "2026-sen-ak": {
+   "party": "dem",
+   "winner": "Mary Peltola",
+   "by": "AP",
+   "at": "2026-11-18T03:19:36.972Z"
+  },
   "2026-sen-al": {
    "party": "rep",
    "winner": "Barry Moore",
@@ -3047,6 +3059,12 @@
    "winner": "Beau Bayh",
    "by": "AP",
    "at": "2026-11-04T07:21:21.950Z"
+  },
+  "2026-sos-ks": {
+   "party": "rep",
+   "winner": "Pat Proctor",
+   "by": "AP",
+   "at": "2026-11-17T19:36:05.195Z"
   },
   "2026-sos-ma": {
    "party": "dem",
