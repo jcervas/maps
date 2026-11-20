@@ -2613,6 +2613,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * map (over its counties), the district, the legislature district. */
   function flipShapes(data) {
     if (!callsApply() || chiclets()) return [];
+    // Zoomed to one state, no stripes (the user, November 20, on Mississippi's
+    // Senate race: "we don't need the 'flipped' hash fill"). The national view
+    // keeps them; the readout still says "Flip" either way. This also takes the
+    // legend's "Flip (called)" key away, which reads from here.
+    if (focus) return [];
     // A legislature's seats are its districts, which it draws at every zoom.
     const r = raceId && raceOf(raceId);
     if (LEGISLATURE.has((r || mode()).office) || districtMode()) return data;
