@@ -782,6 +782,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       changed();
     }, pane);
   calledBtn.style.cssText += "position:absolute;top:10px;right:10px;z-index:2;max-width:none;";
+  /* The filter in force: all races once zoomed in on one state (the user,
+   * November 21: "it does not make sense to have this radio menu once zoomed
+   * in on a jurisdiction"). The menu is hidden there, and the national
+   * choice is kept, not cleared, so it comes back on the way out. */
+  const raceFilterNow = () => (focus ? "all" : raceFilter);
 
   /* The control bar's box (see syncStrip): the live count, then Seats, a
    * row of radio buttons inside the same box (the user's ask), so the
@@ -1136,7 +1141,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   }
 
   function syncCalledButton() {
-    syncRadioMenu(calledBtn, callsApply() ? RACE_FILTERS.map((v) => [v, RACE_FILTER_LABEL[v]]) : [], raceFilter);
+    syncRadioMenu(calledBtn, callsApply() && !focus ? RACE_FILTERS.map((v) => [v, RACE_FILTER_LABEL[v]]) : [], raceFilter);
   }
 
   function syncCirclesButton() {
@@ -2559,10 +2564,11 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   /** Called only / Flips only: a shape whose race is not in. */
   function raceHidden(c) {
-    if (raceFilter === "all" || !callsApply()) return false;
+    const rf = raceFilterNow();
+    if (rf === "all" || !callsApply()) return false;
     const id = liveRaceKey(c);
     if (!id) return false;
-    if (raceFilter === "called") return !seatsSrc().call(id);
+    if (rf === "called") return !seatsSrc().call(id);
     const s = seatByRace(id);
     return !(s && s.flip && s.status === "called");
   }
@@ -4571,13 +4577,13 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const tonight = (raceId ? raceId.slice(0, 4) : mode().cycle) === live;
     if ((variable === "margin" || variable === "lead") && tonight && seatsSrc() &&
         (stateLevel() || districtMode() || (lr && LEGISLATURE.has(lr.office)))) {
-      if (raceFilter === "all") {
+      if (raceFilterNow() === "all") {
         // Swatches, not words: the muted color is the map's own (muteColor),
         // so the key shows what a not-yet-called race looks like on this palette.
         const full = colorFor(15, "margin", atState, "dem");
         if (typeof full === "string") keys.push(["Called", full], ["Not yet called", pendingColor(full)]);
         else keys.push(["Full color: called · muted: not yet called", "text"]);
-      } else keys.push([raceFilter === "called" ? "Called races only" : "Called flips only", "text"]);
+      } else keys.push([raceFilterNow() === "called" ? "Called races only" : "Called flips only", "text"]);
       if (flipShapes(legendData()).some((f) => flipOf(cellFor(f)))) {
         keys.push(["Flip (called)", "flip"]);
       }
