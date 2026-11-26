@@ -20,7 +20,7 @@ permalink: /magic-wall/
      staleness badge is in the first row and the rail is sticky, so it is on
      screen whatever app is up and however far a phone has scrolled. -->
 <header class="rail">
-  <div class="brand">Magic&nbsp;Wall</div>
+  <a class="brand" id="brand" href="./" title="Back to the start page">Magic&nbsp;Wall</a>
   <div class="badge" id="status" data-level="unknown" role="status">starting</div>
   <button id="back" hidden>&larr; United States</button>
   <div class="where" id="where">United States</div>
@@ -222,7 +222,7 @@ permalink: /magic-wall/
      with BUILD in shell.js. -->
 <script>
 (function () {
-  var BUILD = "2026-11-26a";
+  var BUILD = "2026-11-26b";
   var MODULES = [
     "apps/battle.js", "apps/boards.js", "apps/calls.js", "apps/map.js",
     "apps/seatbar.js", "apps/sources.js", "apps/table.js",

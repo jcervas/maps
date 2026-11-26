@@ -120,6 +120,7 @@ body.app-boards #readout, body.app-battle #readout, body.app-calls #readout { di
 .tools { grid-area: tools; border-bottom: 1px solid var(--rule); padding-top: 0; }
 .rail select, .tools select { max-width: 14rem; }
 .brand { font-weight: 700; letter-spacing: -0.01em; }
+a.brand { color: inherit; text-decoration: none; cursor: pointer; }
 .where { font-weight: 600; }
 .spacer { flex: 1; }
 .field { display: flex; align-items: center; gap: 0.4rem; }

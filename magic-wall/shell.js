@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-26a";
+const BUILD = "2026-11-26b";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -326,6 +326,11 @@ function pressed(selector, match) {
 
 async function main() {
   const params = new URLSearchParams(location.search);
+  // "Magic Wall" goes back to the start page: this page with no hash, from
+  // any view (the user, November 26). Relative, so it works on the local
+  // server and under /maps/magic-wall/ alike; the query stays, so a ?data=
+  // replay sandbox is not swapped for live results.
+  if (location.search) el("brand").href = `./${location.search}`;
   const store = createStore();
   // Seat holders, so the candidate tables can mark an incumbent
   // (scripts/incumbents.py). Without it the tables are as before.
