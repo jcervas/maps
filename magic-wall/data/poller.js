@@ -4,6 +4,15 @@
  * interval, compares each race's `updated` stamp with what the store already
  * has, and refetches only the races that moved. ETags on everything.
  *
+ * Only the races something has asked for are loaded (the user, November 26:
+ * "Can things load as needed instead?"). A view reads a race from the store;
+ * a race the manifest lists but the store does not have yet asks for its
+ * group -- the race id's first two parts, "2026-house" for 2026-house-pa-07
+ * -- and the whole group loads at once: one file from results/bundles/ on a
+ * published copy (maps/build/magic-wall/publish.sh), one file a race where
+ * there are no bundles. From then on the group's races are polled like any
+ * other, one by one as their stamps move.
+ *
  * Staleness is a first-class output, not an afterthought: `status()` reports
  * the age of the newest successful fetch and whether a source has stopped
  * answering, because a stuck number presented confidently is the only
@@ -15,9 +24,9 @@ const STALE_BAD_MS = 15 * 60 * 1000;
 const MAX_FAILURES = 3;
 
 /* Promise.allSettled over job thunks, at most `limit` running at once. A
- * first load wants every race file in the manifest (about 530), and firing
- * them together reset connections on the laptop's Python server -- and would
- * push them through a tunnel all at once for every viewer. */
+ * group with no bundle (the wall's own server) is one file a race -- 434 for
+ * the House -- and firing them together reset connections on the laptop's
+ * Python server. */
 async function settleLimited(jobs, limit) {
   const out = new Array(jobs.length);
   let next = 0;
@@ -36,7 +45,7 @@ async function settleLimited(jobs, limit) {
 }
 
 export function createPoller({ store, base = ".", interval = 30000,
-                               watch = null, onUpdate = null, onStatus = null }) {
+                               watch = null, onUpdate = null, onStatus = null, onManifest = null }) {
   const etags = new Map();
   const seen = new Map();          // race_id -> last `updated` we ingested
   let timer = null;
@@ -63,52 +72,123 @@ export function createPoller({ store, base = ".", interval = 30000,
     return !watch || watch.includes(raceId);
   }
 
-  /* A published copy (maps/build/magic-wall/publish.sh) carries every race
-   * in one file, results/bundle.json: { races: { race_id: results file } },
-   * built from the same manifest. A first load reads it in one request
-   * instead of some 540, which from a public host left the map hatched
-   * "awaiting votes" for long enough to look broken (November 6). After
-   * that, only the races that move are fetched, one by one, as before. The
-   * wall's own server has no bundle; a 404 falls through to the old path. */
-  let bundleTried = false;
-  async function loadBundle() {
-    bundleTried = true;
-    try {
-      const b = await get(`${base}/results/bundle.json`, { optional: true });
-      const done = [];
-      for (const [raceId, data] of Object.entries((b && b.races) || {})) {
-        const meta = (manifest.races || {})[raceId];
-        if (!meta || !wanted(raceId) || !data) continue;
-        store.setResults(raceId, data);
-        seen.set(raceId, meta.updated);
-        done.push(raceId);
-      }
-      return done;
-    } catch (_) {
-      return [];
+  /* ------------------------------------------------ groups, as asked for */
+
+  const groupMemo = new Map();
+  function groupOf(raceId) {
+    let g = groupMemo.get(raceId);
+    if (g === undefined) { g = raceId.split("-", 2).join("-"); groupMemo.set(raceId, g); }
+    return g;
+  }
+  const asked = new Set();         // groups asked for: loaded, or in `queued`
+  const queued = new Set();        // asked for and not loaded yet
+  let inTick = false;
+  let drainTimer = null;
+  // Ticks and group loads take turns, so a group never loads twice at once.
+  let chain = Promise.resolve();
+  const serial = (fn) => (chain = chain.then(fn, fn));
+
+  function want(raceId) {
+    if (!manifest || !(manifest.races || {})[raceId] || !wanted(raceId)) return;
+    const g = groupOf(raceId);
+    if (asked.has(g)) return;
+    asked.add(g);
+    queued.add(g);
+    if (onStatus) onStatus(api.status());
+    // Inside a tick the tick loads it; otherwise soon, once whatever is
+    // drawing has asked for everything it wants.
+    if (inTick || drainTimer) return;
+    drainTimer = setTimeout(() => {
+      drainTimer = null;
+      serial(async () => {
+        const done = await drain();
+        if (done.length && onUpdate) onUpdate(done, manifest);
+        if (onStatus) onStatus(api.status());
+      });
+    }, 0);
+  }
+  store.onMiss && store.onMiss(want);
+
+  /* A published copy has results/bundles/<group>.json, { races: { race_id:
+   * results file } }, built with its manifest; the wall's own server has
+   * none. The first 404, before any bundle has loaded, means none here. */
+  let bundles = true;
+  let bundleSeen = false;
+  async function fetchRace(raceId) {
+    const meta = (manifest.races || {})[raceId];
+    const data = await get(`${base}/results/${raceId}.json`);
+    if (!data) return null;
+    store.setResults(raceId, data);
+    seen.set(raceId, meta ? meta.updated : data.updated);
+    return raceId;
+  }
+  async function loadGroup(g) {
+    const ids = Object.keys(manifest.races || {}).filter((id) => groupOf(id) === g && wanted(id));
+    const done = [];
+    if (bundles) {
+      try {
+        const r = await fetch(`${base}/results/bundles/${g}.json`, { cache: "no-store" });
+        if (r.status === 404 && !bundleSeen) bundles = false;
+        else if (r.ok) {
+          bundleSeen = true;
+          const b = await r.json();
+          for (const [raceId, data] of Object.entries((b && b.races) || {})) {
+            if (!data || !wanted(raceId) || !(manifest.races || {})[raceId]) continue;
+            store.setResults(raceId, data);
+            // The manifest's stamp: a group's bundle is built with the
+            // manifest beside it (a file's own `updated` is when it was
+            // harvested, which for a past race is not the manifest's).
+            seen.set(raceId, manifest.races[raceId].updated);
+            done.push(raceId);
+          }
+        }
+      } catch (_) { /* the races one by one, below */ }
     }
+    const jobs = ids.filter((id) => seen.get(id) !== manifest.races[id].updated || !seen.has(id))
+      .map((id) => () => fetchRace(id));
+    for (const x of await settleLimited(jobs, 12)) {
+      if (x.status === "fulfilled" && x.value) done.push(x.value);
+    }
+    return done;
+  }
+  async function drain() {
+    const done = [];
+    while (queued.size && manifest) {
+      const g = queued.values().next().value;
+      done.push(...await loadGroup(g));
+      queued.delete(g);
+    }
+    return done;
   }
 
   async function tick() {
     try {
       const m = await get(`${base}/manifest.json`);
-      if (m) manifest = m;
+      const first = !manifest && m;
+      if (m) {
+        manifest = m;
+        if (store.setListed) store.setListed(Object.keys(m.races || {}));
+      }
       if (manifest) {
-        const fromBundle = bundleTried ? [] : await loadBundle();
+        // The first manifest: let the views draw once, so they ask for what
+        // they show, and load that before this poll counts as in -- the map
+        // stays on "Loading" until then rather than drawing every race as
+        // awaiting votes.
+        if (first && onManifest) {
+          inTick = true;
+          try { onManifest(manifest); } catch (_) { /* a view's error is not the poll's */ }
+          inTick = false;
+        }
+        const done = await drain();
+        // Then the races already loaded whose stamps moved, and races new
+        // to a group that is loaded.
         const jobs = [];
         for (const [raceId, meta] of Object.entries(manifest.races || {})) {
-          if (!wanted(raceId)) continue;
-          if (seen.get(raceId) === meta.updated && store.hasResults(raceId)) continue;
-          jobs.push(() =>
-            get(`${base}/results/${raceId}.json`).then((data) => {
-              if (!data) return null;
-              store.setResults(raceId, data);
-              seen.set(raceId, meta.updated);
-              return raceId;
-            })
-          );
+          if (!wanted(raceId) || !asked.has(groupOf(raceId)) || queued.has(groupOf(raceId))) continue;
+          if (seen.has(raceId) && seen.get(raceId) === meta.updated) continue;
+          jobs.push(() => fetchRace(raceId));
         }
-        const done = fromBundle.concat((await settleLimited(jobs, 12))
+        done.push(...(await settleLimited(jobs, 12))
           .filter((x) => x.status === "fulfilled" && x.value)
           .map((x) => x.value));
         // The override file rides the same poll. Missing is normal (no
@@ -127,6 +207,7 @@ export function createPoller({ store, base = ".", interval = 30000,
       lastOk = Date.now();
       failures = 0;
     } catch (e) {
+      inTick = false;
       failures += 1;
       // A hard stop rather than retrying into the ground. The badge says so;
       // the operator decides whether to resume.
@@ -138,8 +219,8 @@ export function createPoller({ store, base = ".", interval = 30000,
   function start() {
     if (running) return api;
     running = true;
-    tick();
-    timer = setInterval(tick, interval);
+    serial(tick);
+    timer = setInterval(() => serial(tick), interval);
     return api;
   }
 
@@ -151,8 +232,11 @@ export function createPoller({ store, base = ".", interval = 30000,
   }
 
   const api = {
-    start, stop, tick,
+    start, stop, want,
+    tick: () => serial(tick),
     get manifest() { return manifest; },
+    /** Groups asked for and loaded, and those still loading. */
+    groups() { return { loaded: [...asked].filter((g) => !queued.has(g)), loading: [...queued] }; },
     status() {
       const age = lastOk == null ? null : Date.now() - lastOk;
       let level = "ok";
@@ -161,7 +245,7 @@ export function createPoller({ store, base = ".", interval = 30000,
       else if (age > STALE_BAD_MS) level = "bad";
       else if (age > STALE_WARN_MS) level = "warn";
       return { level, ageMs: age, failures, running, source: "live",
-               manifest, overrideError };
+               manifest, overrideError, loading: queued.size };
     },
   };
   return api;

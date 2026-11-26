@@ -21,7 +21,7 @@ import { createSources } from "./apps/sources.js";
 import { setTheme, setScale, themeKey } from "./core/theme.js";
 import { STATE_NAMES } from "./data/states.js";
 
-const BUILD = "2026-11-26b";
+const BUILD = "2026-11-26j";
 const CYCLE = "2024";
 const CYCLES = ["2026", "2025", "2024", "2022", "2020"];
 const BASELINES = ["pres-2024", "pres-2020"];
@@ -721,8 +721,10 @@ async function main() {
       mount(id, make({ el: node, seats, onSelect: (raceId) => goToRace(raceId) }));
     }
     // The Calls tab writes through scripts/serve.py, which accepts a call
-    // only on the wall's own machine; anywhere else the tab stays hidden.
-    const writable = await fetch("/api/calls", { cache: "no-store" })
+    // only on the wall's own machine; anywhere else the tab stays hidden,
+    // and a published copy does not ask (it would only 404).
+    const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    const writable = local && await fetch("/api/calls", { cache: "no-store" })
       .then((r) => r.ok && r.json()).then((j) => !!(j && j.writable)).catch(() => false);
     if (writable) {
       const { createCallsApp } = await import(`./apps/calls.js?v=${BUILD}`);
@@ -829,7 +831,10 @@ async function main() {
   const source = params.get("replay")
     ? createReplay({ store, raceIds: replayIds, speed: Number(params.get("speed") || 60),
                      onUpdate: onData, onStatus: setStatus })
-    : createPoller({ store, base: DATA, watch: null, onUpdate: onData, onStatus: setStatus });
+    : createPoller({ store, base: DATA, watch: null, onUpdate: onData, onStatus: setStatus,
+                     // A first draw once the manifest is in, so each view asks
+                     // for the races it shows (data/poller.js).
+                     onManifest: () => renderAll() });
   source.start();
   setInterval(() => setStatus(), 5000);   // ages tick even when nothing moves
 

@@ -284,18 +284,19 @@ let radioGroups = 0;
 // The tiers a district carries a number on, inside a state.
 const DISTRICT_TIERS = new Set(["cd", "district", "senate-district"]);
 
-/* Every file the map draws from, fetched once. A split panel is handed the
- * same bundle rather than parsing 1.5 MB of TopoJSON a second time. */
+/* The files the map draws from. A split panel is handed the same bundle
+ * rather than parsing the same TopoJSON a second time. Only what the default
+ * view draws is fetched up front: the counties (every state outline is
+ * dissolved from them), the basemap and both sets of congressional lines
+ * (House 2026 draws the 2026 lines where a state redrew and the 2024 lines
+ * everywhere else). The rest waits until a view needs it (the user,
+ * November 26: "Can things load as needed instead?"): see LAZY_GEO. */
 async function loadBundle(base) {
-  const [counties, towns, basemap, districts, congress, congress26, house, holdovers, expected, candidates,
-         senates] =
+  const [counties, basemap, congress, congress26, house, holdovers, expected, candidates] =
     await Promise.all([
     loadTopo(`${base}/geo/counties.topojson`),
-    loadTopo(`${base}/geo/towns.topojson`),
     loadTopo(`${base}/geo/nation-states.topojson`),
-    // Optional: a missing district file costs Alaska its map, not the wall.
-    loadTopo(`${base}/geo/state-house.topojson`).catch(() => ({ districts: [] })),
-    // Optional too, and the House mode is offered only when both the
+    // Optional, and the House mode is offered only when both the
     // districts and their baseline arrived.
     loadTopo(`${base}/geo/congress.topojson`).catch(() => ({ districts: [] })),
     // The 2026 lines (scripts/build_geo_2026.sh), for House 2026 in the
@@ -311,36 +312,47 @@ async function loadBundle(base) {
     // Who is on the 2026 ballot, read off Wikipedia (scripts/candidates_wiki.py),
     // for a race with no results file yet. Optional.
     getJSON(`${base}/registry/candidates_2026.json`, { cache: "no-store" }, { optional: true }).catch(() => null),
-    // State senate districts (Pennsylvania's 50), for a race whose unit_tier
-    // is "senate-district". Optional, like the state house file.
-    loadTopo(`${base}/geo/state-senate.topojson`).catch(() => ({ districts: [] })),
   ]);
-  return { base, counties, towns, basemap, districts, congress, congress26, house, holdovers, expected,
-           candidates, senates, carto: loadCarto(base),
-           // City and town names (scripts/build_places.py), not waited for:
-           // the map labels them inside a state once they land.
-           places: getJSON(`${base}/geo/places.json`, {}, { optional: true }).catch(() => null) };
+  return { base, counties, basemap, congress, congress26, house, holdovers, expected, candidates, parts: {} };
 }
 
-/* The equal-size district cartogram (scripts/build_cartogram.py): every
- * district one cell of the same area, so a map of the House is a map of
- * seats. Inside a state the cells are real longitude and latitude, carved
- * from the state's true outline, and drop in for the line files under the
- * state's own projection. national.topojson is the cartogram's own layout,
- * states resized to their seats, in layout pixels written as degrees near
- * 0,0: drawn under a plain equirectangular fitted to it (cartoProj), never
- * the Albers composite. Optional, and not waited for: until it lands, or
- * without it, the map draws lines. */
-function loadCarto(base) {
-  return Promise.all([
-    loadTopo(`${base}/geo/cartogram/national.topojson`),
-    loadTopo(`${base}/geo/cartogram/congress.topojson`),
-    loadTopo(`${base}/geo/cartogram/congress-2026.topojson`),
-    loadTopo(`${base}/geo/cartogram/state-house.topojson`).catch(() => ({ districts: [] })),
-    loadTopo(`${base}/geo/cartogram/state-senate.topojson`).catch(() => ({ districts: [] })),
-  ]).then(([nat, cd, cd26, house, senate]) => ({ nat, cd, cd26, house, senate }))
-    .catch(() => null);
+/* Fetched the first time a view asks (part()), once per bundle, so a split
+ * panel shares them. Each is optional: a missing file costs that view its
+ * shapes (the state draws whole, or as counties), never the wall.
+ *   towns   New England's towns, for a race reported by town
+ *   house   state house districts: Pennsylvania's and West Virginia's seats,
+ *           and Alaska's reporting units
+ *   senate  state senate districts (Pennsylvania, West Virginia)
+ *   places  city and town names, inside a state and in a district's readout
+ *   carto-* the equal-size cartogram (scripts/build_cartogram.py), only on
+ *           Cartogram: its national layout, then each chamber's cells when a
+ *           state, or a legislature, is drawn on it */
+const LAZY_GEO = {
+  towns: (base) => loadTopo(`${base}/geo/towns.topojson`).catch(() => ({ towns: [] })),
+  house: (base) => loadTopo(`${base}/geo/state-house.topojson`).catch(() => ({ districts: [] })),
+  senate: (base) => loadTopo(`${base}/geo/state-senate.topojson`).catch(() => ({ districts: [] })),
+  places: (base) => getJSON(`${base}/geo/places.json`, {}, { optional: true }).catch(() => null),
+  "carto-nat": (base) => loadTopo(`${base}/geo/cartogram/national.topojson`).catch(() => null),
+  "carto-cd": (base) => loadTopo(`${base}/geo/cartogram/congress.topojson`).catch(() => ({ districts: [] })),
+  "carto-cd26": (base) => loadTopo(`${base}/geo/cartogram/congress-2026.topojson`).catch(() => ({ districts: [] })),
+  "carto-house": (base) => loadTopo(`${base}/geo/cartogram/state-house.topojson`).catch(() => ({ districts: [] })),
+  "carto-senate": (base) => loadTopo(`${base}/geo/cartogram/state-senate.topojson`).catch(() => ({ districts: [] })),
+};
+function bundlePart(b, key) {
+  if (!b.parts[key]) b.parts[key] = LAZY_GEO[key](b.base);
+  return b.parts[key];
 }
+function groupByState(feats) {
+  const m = new Map();
+  for (const f of feats) {
+    const st = f.properties.state;
+    if (!m.has(st)) m.set(st, []);
+    m.get(st).push(f);
+  }
+  return m;
+}
+// The states that report by town (geo/towns.topojson).
+const TOWN_STATES = new Set(["CT", "MA", "ME", "NH", "RI", "VT"]);
 
 /* The same counties and districts at full 1:500,000 detail, for inside a
  * state (scripts/build_geo.sh). The national files are thinned to 15% of
@@ -433,7 +445,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   let cdsByState = new Map();     // congressional districts, when the file exists
   let cds26ByState = new Map();   // the same on 2026 lines, see newLines
   let fine = null;                // the same at full detail, once loaded: see loadDetail
-  let carto = null;               // the cartogram, once loaded: see loadCarto
+  let carto = null;               // the cartogram's national layout, once loaded: see LAZY_GEO
   let unitIndex = new Map();      // every unit id at every tier -> feature
   let stateFeatures = [];
   let focus = null;               // state abbreviation, or null for national
@@ -468,6 +480,61 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
   // Cities and towns, biggest first: { byState: st -> [place], byDistrict:
   // "cd24:PA-12" -> [place] }. See adoptPlaces.
   let places = null;
+  /* Geometry loaded as views ask (LAZY_GEO): need(key) fetches it once per
+   * bundle and takes it into this panel when it lands (partsIn). */
+  let partsAsked = new Set();
+  let partsIn = new Set();
+  let houseFeats = [];              // state house districts, once loaded
+  let senateFeats = [];             // state senate districts, once loaded
+  let cartoCells = { cd: null, cd26: null, house: null, senate: null };
+  let cartoFailed = false;
+  function need(key) {
+    if (!bundle || partsAsked.has(key)) return;
+    partsAsked.add(key);
+    const b = bundle;
+    bundlePart(b, key).then((d) => { if (bundle === b) takePart(key, d); });
+  }
+  function indexUnits() {
+    unitIndex = new Map([...indexBy(geo.towns), ...indexBy(houseFeats), ...indexBy(senateFeats),
+                         ...indexBy(geo.cds), ...geo.countyIndex]);
+  }
+  function takePart(key, d) {
+    partsIn.add(key);
+    if (key === "places") {
+      if (d) adoptPlaces(d);
+      view.render();
+      showReadout(hovered || pinned);
+      return;
+    }
+    if (key === "towns") {
+      geo.towns = (d && d.towns) || [];
+      townsByState = groupByState(geo.towns);
+      indexUnits();
+    } else if (key === "house") {
+      houseFeats = (d && d.districts) || [];
+      districtsByState = groupByState(houseFeats);
+      indexUnits();
+    } else if (key === "senate") {
+      senateFeats = (d && d.districts) || [];
+      senatesByState = groupByState(senateFeats);
+      indexUnits();
+    } else if (key === "carto-nat") {
+      if (!d) { cartoFailed = true; return; }
+      // Its states are states to the pointer and the readout (stateUnder).
+      for (const f of d.states || []) f.properties.tier = "state";
+      carto = { states: d.states || [], cd2024: d.cd2024 || [], cd2026: d.cd2026 || [] };
+    } else if (key.startsWith("carto-")) {
+      cartoCells[key.slice(6)] = groupByState((d && d.districts) || []);
+    }
+    changed();
+  }
+  /** A tier's units by state, asking for its file the first time. */
+  function tierUnits(tier) {
+    if (tier === "town") { need("towns"); return townsByState; }
+    if (tier === "district") { need("house"); return districtsByState; }
+    if (tier === "senate-district") { need("senate"); return senatesByState; }
+    return null;
+  }
 
   /** The registry's race, else a pending legislature race. */
   function raceOf(id) {
@@ -510,10 +577,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const w = typeof window !== "undefined" && window.wall;
     const src = w && w.source;
     const st = src && src.status ? src.status() : null;
-    const man = src && src.manifest;
-    const ids = man && man.races ? Object.keys(man.races) : [];
-    loaded = !!(st && (st.ageMs != null || st.failures > 0)) ||
-      (ids.length > 0 && ids.every((id) => store.hasResults(id)));
+    // In once the first poll is, and no race group this view asked for is
+    // still on its way (data/poller.js loads results as views ask).
+    loaded = !!(st && ((st.ageMs != null && !st.loading) || st.failures > 0));
     if (loaded) {
       readyAt = performance.now();
       requestAnimationFrame(() => { syncButtons(); showReadout(hovered || pinned); view.render(); });
@@ -534,7 +600,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     let still = 0;
     const hold = () => {
       if (revealed) return;
-      if (!dataReady() || !geo) { still = 0; requestAnimationFrame(hold); return; }
+      if (!geo || !dataReady()) { still = 0; requestAnimationFrame(hold); return; }
       const t = view.transform;
       fitWatch(t);
       const settledNow = !fitQueued && !morphing() && (t.k !== 1 || t.x !== 0 || t.y !== 0 || boxesSig() === fitSig);
@@ -1225,9 +1291,22 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     extentFeatures: () => (focus ? countiesByState.get(focus) : geo && nationalFrame()),
   });
   const nationalProj = view.projection;   // see unfocus
-  const cartoProj = d3.geoEquirectangular();   // the cartogram's national layout, see loadCarto
+  const cartoProj = d3.geoEquirectangular();   // the cartogram's national layout, see LAZY_GEO
 
   /* --------------------------------------------------------- race modes */
+
+  /* Whether a race has votes in, without loading it: its numbers if they
+   * are in the store, else the manifest's word. raceModes() counts every
+   * mode for the office bar's titles, and reading each race would load
+   * every race of every year (the user, November 26: "Can things load as
+   * needed instead?"); a mode's races load when it is drawn. */
+  function votesIn(id, race) {
+    const d = store.peek(id);
+    if (d) return store.totalVotes(store.partyTotals(statewideVotes(d), race)) > 0;
+    const src = typeof window !== "undefined" && window.wall && window.wall.source;
+    const meta = src && src.manifest && src.manifest.races && src.manifest.races[id];
+    return !!(meta && (meta.final || meta.reporting_pct > 0));
+  }
 
   function raceModes() {
     const out = [];
@@ -1276,8 +1355,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
         const r = primaryRace(st, m);
         if (!r) continue;
         states += 1;
-        const d = store.results(r.race_id);
-        if (d && store.totalVotes(store.partyTotals(statewideVotes(d), r)) > 0) reporting += 1;
+        if (votesIn(r.race_id, r)) reporting += 1;
       }
       for (const k of seatsUp.keys()) {
         const [cycle, office, st] = k.split(" ");
@@ -1303,10 +1381,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       if (exp.size) {
         const n = { reporting: 0, staged: 0, waiting: 0, nolive: 0 };
         for (const id of ids) {
-          const d = store.results(id);
-          if (d) {
-            const votes = store.totalVotes(store.partyTotals(statewideVotes(d), store.race(id)));
-            n[votes > 0 ? "reporting" : "staged"] += 1;
+          if (store.hasResults(id)) {
+            n[votesIn(id, store.race(id)) ? "reporting" : "staged"] += 1;
           } else {
             const f = (exp.get(id) || {}).feed;
             n[f === "staged" ? "staged" : f === "waiting" ? "waiting" : "nolive"] += 1;
@@ -1335,7 +1411,8 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     for (const st of new Set([...store.states(), ...[...pending.values()].map((r) => r.state)])) {
       const race = primaryRace(st, m);
       if (!race || !LEGISLATURE.has(race.office)) continue;
-      const data = store.results(race.race_id);
+      // Not loaded for the count alone: by its expected seats until drawn.
+      const data = store.peek(race.race_id);
       if (data) {
         for (const u of data.units || []) {
           n.total += 1;
@@ -2578,6 +2655,16 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * new count). A legislature chamber is one race for all its seats, so its
    * race id is left out: those are looked up by seat. */
   let seatIdx = null, seatIdxOf = null;
+  /* The chamber a race or seat id belongs to, so only that chamber's seats
+   * are built: building all of them read every chamber's races, which
+   * loaded the Senate, governors and the legislatures for the House map. */
+  const CHAMBER_OF = { sen: "senate", gov: "governor", house: "house", statehouse: "house", statesenate: "senate" };
+  function chamberOf(id) {
+    const m = /^\d{4}-(sen|gov|house|statehouse|statesenate)-([a-z]{2})(?:-|:|$)/.exec(id);
+    if (!m) return null;
+    const ch = CHAMBER_OF[m[1]];
+    return m[1].startsWith("state") ? `${m[2]}-${ch}` : ch;
+  }
   function seatByRace(id) {
     const S = seatsSrc();
     if (!S || !S.seats) return null;
@@ -2586,18 +2673,20 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       seatIdx = null;
       if (S.onChange) S.onChange(() => { seatIdx = null; });
     }
-    if (!seatIdx) {
-      const idx = new Map();
-      for (const ch of ALL_CHAMBERS) {
-        for (const s of S.seats(ch)) {
-          idx.set(s.id, s);
-          if (s.raceId && !s.id.includes(":") && !idx.has(s.raceId)) idx.set(s.raceId, s);
-        }
+    const ch = chamberOf(String(id));
+    if (!ch || !ALL_CHAMBERS.includes(ch)) return null;
+    if (!seatIdx) seatIdx = new Map();
+    let idx = seatIdx.get(ch);
+    if (!idx) {
+      idx = new Map();
+      for (const s of S.seats(ch)) {
+        idx.set(s.id, s);
+        if (s.raceId && !s.id.includes(":") && !idx.has(s.raceId)) idx.set(s.raceId, s);
       }
       if (!idx.size) return null;            // seats not loaded yet: ask again later
-      seatIdx = idx;
+      seatIdx.set(ch, idx);
     }
-    return seatIdx.get(id) || null;
+    return idx.get(id) || null;
   }
 
   /** The seat behind a whole-race shape when it has changed hands tonight:
@@ -2820,9 +2909,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * mode. */
   function tierOf(st) {
     const race = raceId ? raceOf(raceId) : null;
-    if (race && race.unit_tier === "town" && townsByState.has(st)) return "town";
-    if (race && race.unit_tier === "district" && districtsByState.has(st)) return "district";
-    if (race && race.unit_tier === "senate-district" && senatesByState.has(st)) return "senate-district";
+    // Until a tier's file is in, the state draws counties.
+    const lazy = race && tierUnits(race.unit_tier);
+    if (lazy && lazy.has(st)) return race.unit_tier;
     if (!race && store.baselineTier(drawKey()) === "cd" && cdsByState.has(st)) return "cd";
     // (House 2026 names house-2024 as its drawKey, so it lands here too.)
     return "county";
@@ -2955,12 +3044,14 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    *  2026 adds the 2024 lines; Pennsylvania's legislature has one plan for
    *  2022-2030, so its lines are its lines. */
   function shapeChoices() {
-    if (!carto) return [];
+    if (cartoFailed) return [];
     const r = raceId ? raceOf(raceId) : null;
     const office = r ? r.office : mode().office;
     if (LEGISLATURE.has(office)) {
-      const m = cartoUnits();
-      return (focus ? m.has(focus) : m.size) ? ["cartogram", "lines"] : [];
+      // Offered before its cells are in; once they are, only where they
+      // cover the state.
+      const m = cartoCells[cartoChamber()];
+      return !m || (focus ? m.has(focus) : m.size) ? ["cartogram", "lines"] : [];
     }
     if (r || office !== "house") return [];
     // The 2024 lines are no longer offered (the user, November 10); a stored
@@ -2972,20 +3063,41 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (!c.length) return null;
     return c.includes(shapes) ? shapes : shapes === "lines2024" ? "lines" : c[0];
   }
+  /* On the cartogram once its files are in: the national layout, and the
+   * chamber's cells inside a state or for a legislature. Asked for here,
+   * the first time Cartogram is what is wanted; lines meanwhile. */
   function cartoOn() {
-    return shapesNow() === "cartogram";
+    if (shapesNow() !== "cartogram" || !cartoPart("carto-nat") || !carto) return false;
+    const r = raceId ? raceOf(raceId) : null;
+    if (focus || LEGISLATURE.has(r ? r.office : mode().office)) return cartoPart(`carto-${cartoChamber()}`);
+    return true;
+  }
+  /* A cartogram file is asked for a moment later, and only if Cartogram is
+   * still what is wanted then: the opening view switches a stored Cartogram
+   * to the map in the same breath as it draws (shell.js). */
+  const cartoSoon = new Set();
+  function cartoPart(key) {
+    if (partsIn.has(key)) return true;
+    if (!partsAsked.has(key) && !cartoSoon.has(key)) {
+      cartoSoon.add(key);
+      setTimeout(() => { cartoSoon.delete(key); if (shapesNow() === "cartogram") need(key); }, 0);
+    }
+    return false;
   }
   /** The House at national zoom on the cartogram's own layout and projection. */
   function cartoNational() {
     return !focus && mode().office === "house" && cartoOn();
   }
   /** The cartogram's cells for what is drawn, by state. */
-  function cartoUnits() {
+  function cartoChamber() {
     const r = raceId ? raceOf(raceId) : null;
     const office = r ? r.office : mode().office;
-    if (office === "state-house") return carto.house;
-    if (office === "state-senate") return carto.senate;
-    return mode().districts ? carto.cd26 : carto.cd;
+    if (office === "state-house") return "house";
+    if (office === "state-senate") return "senate";
+    return mode().districts ? "cd26" : "cd";
+  }
+  function cartoUnits() {
+    return cartoCells[cartoChamber()] || new Map();
   }
   /** The states drawn at national zoom, outlined, labeled and pointed at. */
   function natStates() {
@@ -3085,8 +3197,6 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
 
   function statewideUnits() {
     const m = mode();
-    const byTier = { county: countiesByState, town: townsByState, district: districtsByState,
-                     "senate-district": senatesByState };
     const out = [];
     natRaceOf = new Map();
     const cells = cartoOn() ? cartoUnits() : null;   // a legislature on the cartogram
@@ -3104,7 +3214,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       const st = s.properties.id;
       const race = whole ? null : unitRace(st, m);
       const feats = race ? (cells && cells.get(st)) ||
-        (byTier[race.unit_tier || "county"] || countiesByState).get(st) : null;
+        (tierUnits(race.unit_tier) || countiesByState).get(st) : null;
       if (feats && feats.length) {
         out.push(...feats);
         natRaceOf.set(st, race.race_id);
@@ -3749,7 +3859,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     if (only.length === 1 && !redrawn.has(st)) {
       return districtReadout(only[0].properties.id) +
         // New England counts by town, which the pieces (counties) do not match.
-        (focus ? `<p class="hint">${townsByState.has(st) ? "" : `Tap the district for ${st === "AK" ? "its state house districts" : "its counties"}, each with its own count. `}Tap outside the state to go back.</p>` : "");
+        (focus ? `<p class="hint">${TOWN_STATES.has(st) ? "" : `Tap the district for ${st === "AK" ? "its state house districts" : "its counties"}, each with its own count. `}Tap outside the state to go back.</p>` : "");
     }
     return `<h2>${esc(stateName(st))}</h2><p class="hint" style="margin:-6px 0 10px">${esc(m.label)} — by district</p>` +
       (redrawn.has(st) ? (newLines(st)
@@ -3968,8 +4078,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const data = store.results(race.race_id);
     const st = race.state;
     // By the race's own tier: at national zoom tierOf() has no race to go on.
-    const tiers = { district: districtsByState, "senate-district": senatesByState };
-    const drawn = ((tiers[race.unit_tier] || TIER_MAPS()[tierOf(st)]).get(st) || []).length;
+    const drawn = ((tierUnits(race.unit_tier) || TIER_MAPS()[tierOf(st)]).get(st) || []).length;
     if (!data) {
       const up = race.up ? race.up.size : drawn;
       return `<h2>${esc(stateName(st))}</h2>` +
@@ -5860,6 +5969,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    *  Bethel Park and North Huntingdon". Real geography, so the same on the
    *  cartogram's cell as on the district's lines. */
   function placeLine(f) {
+    if (!places) need("places");
     if (!places || !f) return "";
     const p = f.properties;
     const key = p.tier === "cd" ? (Number(p.vintage) === 2026 ? "cd26" : "cd24")
@@ -5876,6 +5986,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
    * Not on the cartogram: its cells are not where the towns are, so a town
    * would sit in the wrong district. */
   function drawCities(ctx, dpr, W, H, transform, obstacles) {
+    if (!places) need("places");
     if (!places || cartoOn()) return;
     const list = places.byState.get(focus);
     if (!list) return;
@@ -6531,8 +6642,9 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     const year = (k) => Number((/(\d{4})/.exec(k) || [])[1] || 0);
     // Never a later election, nor one with no votes yet: Pennsylvania's
     // 2024 president beside its staged 2026 governor compares with zeros.
-    const counted = (k) => !store.race(k) || store.totalVotes(store.partyTotals(
-      statewideVotes(store.results(k) || {}), store.race(k))) > 0;
+    // Asked without loading each candidate (votesIn); the pick loads when
+    // it is drawn.
+    const counted = (k) => !store.race(k) || votesIn(k, store.race(k));
     // A state's presidential file and the national one are one election.
     const r = raceOf(own);
     const same = (k) => k === own || (r && r.office === "president" && k === `pres-${year(own)}`);
@@ -6590,7 +6702,7 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
     adopt(b) {
       bundle = b;
       if (!pollFirst) loadPollClose(b.base);
-      const { counties, towns, basemap, districts, congress, congress26, house, holdovers } = b;
+      const { counties, basemap, congress, congress26, house, holdovers } = b;
       ballots = new Map(Object.entries((b.candidates && b.candidates.races) || {}));
       pending = new Map();
       for (const r of (b.expected && b.expected.races) || []) {
@@ -6613,51 +6725,32 @@ export function createMapApp({ stage, canvas, readout, store, onState, link = nu
       cds2026 = null;
       if (house && !store.baseline("house-2024")) store.setBaseline("house-2024", house);
       const name = Object.keys(counties).find((k) => k !== "__topo");
-      geo = { counties: counties[name], towns: towns.towns, nation: basemap.nation,
+      geo = { counties: counties[name], towns: [], nation: basemap.nation,
               cds: congress.districts || [], cds26: (congress26 && congress26.districts) || [] };
-      const group = (feats) => {
-        const m = new Map();
-        for (const f of feats) {
-          const st = f.properties.state;
-          if (!m.has(st)) m.set(st, []);
-          m.get(st).push(f);
-        }
-        return m;
-      };
-      districtsByState = group(districts.districts || []);
-      senatesByState = group((b.senates && b.senates.districts) || []);
-      townsByState = group(geo.towns);
-      cdsByState = group(geo.cds);
-      cds26ByState = group(geo.cds26);
+      houseFeats = [];
+      senateFeats = [];
+      districtsByState = new Map();
+      senatesByState = new Map();
+      townsByState = new Map();
+      cdsByState = groupByState(geo.cds);
+      cds26ByState = groupByState(geo.cds26);
       // State outlines dissolved from the counties, not taken from the
       // basemap: the basemap's states carry no identity, and two files from
       // different Census releases do not agree on a shared border.
       const outlines = dissolveBy(counties, name, "state");
       stateFeatures = Object.values(outlines);
-      countiesByState = group(geo.counties);
+      countiesByState = groupByState(geo.counties);
       geo.countyIndex = indexBy(geo.counties);
-      unitIndex = new Map([...indexBy(geo.towns), ...indexBy(districts.districts || []),
-                           ...indexBy((b.senates && b.senates.districts) || []),
-                           ...indexBy(geo.cds), ...geo.countyIndex]);
-      if (b.carto) {
-        b.carto.then((c) => {
-          if (!c || bundle !== b) return;
-          // Its states are states to the pointer and the readout (stateUnder).
-          for (const f of c.nat.states || []) f.properties.tier = "state";
-          carto = { states: c.nat.states || [], cd2024: c.nat.cd2024 || [], cd2026: c.nat.cd2026 || [],
-                    cd: group(c.cd.districts || []), cd26: group(c.cd26.districts || []),
-                    house: group(c.house.districts || []), senate: group(c.senate.districts || []) };
-          changed();
-        });
-      }
-      if (b.places) {
-        b.places.then((d) => {
-          if (!d || bundle !== b) return;
-          adoptPlaces(d);
-          view.render();
-          showReadout(hovered || pinned);
-        });
-      }
+      indexUnits();
+      carto = null;
+      cartoCells = { cd: null, cd26: null, house: null, senate: null };
+      cartoFailed = false;
+      places = null;
+      // What this panel has asked for; what the other panel already loaded
+      // is taken now.
+      partsAsked = new Set();
+      partsIn = new Set();
+      for (const key of Object.keys(b.parts)) need(key);
       autoBaseline();
       view.setLayers(layers());
       /* The first frame is drawn after load() returns, not inside it. In

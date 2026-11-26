@@ -69,6 +69,15 @@ export function createStore() {
   // race_id -> AP's incumbents on that ballot, as parts (an empty list: none).
   let apFlags = new Map();
   const incMemo = new Map();
+  /* Results load as the views ask (data/poller.js): `listed` is every race
+   * the manifest says has a results file, loaded or not, and a read of one
+   * not yet loaded tells `onMiss`, which fetches it (with its group). A
+   * view keeps drawing "awaiting" until the file lands, as it did before
+   * the first poll. Without a poller (a replay) nothing is listed, and
+   * hasResults means loaded, as it always did. */
+  let listed = new Set();
+  let onMiss = null;
+  const miss = (id) => { if (onMiss && listed.has(id)) onMiss(id); };
 
   function indexUnits(data) {
     const m = new Map();
@@ -186,14 +195,28 @@ export function createStore() {
     override(id) { return overrides[id] || null; },
     results(id) {
       const r = results.get(id);
+      if (!r) miss(id);
       return r ? r.data : null;
     },
     unit(raceId, unitId) {
       const r = results.get(raceId);
+      if (!r) miss(raceId);
       return r ? r.units.get(String(unitId)) || null : null;
     },
-    hasResults(id) { return results.has(id); },
+    /** Its numbers if they are in, without asking for them (a count across
+     *  every mode must not load every mode). */
+    peek(id) {
+      const r = results.get(id);
+      return r ? r.data : null;
+    },
+    /** A results file exists for this race: loaded, or listed in the manifest. */
+    hasResults(id) { return results.has(id) || listed.has(id); },
+    /** Its numbers are in the store now. */
+    isLoaded(id) { return results.has(id); },
     loadedRaces() { return [...results.keys()]; },
+    /** The races the manifest lists, and who to tell when one not loaded is read. */
+    setListed(ids) { listed = new Set(ids); return api; },
+    onMiss(fn) { onMiss = fn; return api; },
 
     setBaseline(key, data) {
       baselines.set(key, { data, units: indexUnits(data) });
@@ -208,12 +231,14 @@ export function createStore() {
       const b = baselines.get(key);
       if (b) return b.data;
       const r = results.get(key);
+      if (!r) miss(key);
       return r ? r.data : null;
     },
     baselineUnit(key, unitId) {
       const b = baselines.get(key);
       if (b) return b.units.get(String(unitId)) || null;
       const r = results.get(key);
+      if (!r) miss(key);
       return r ? r.units.get(String(unitId)) || null : null;
     },
     baselineLabel(key) {
